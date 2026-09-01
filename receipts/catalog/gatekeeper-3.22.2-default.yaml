@@ -1,0 +1,136 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "catalog-gatekeeper-gatekeeper-3.22.2-default"
+spec:
+  producer:
+    name: "config-workshop-catalog"
+    repository: "https://github.com/confighub/helm-expt"
+  source:
+    kind: "helm-chart"
+    charts:
+      -
+        repository: "https://open-policy-agent.github.io/gatekeeper/charts"
+        name: "gatekeeper"
+        version: "3.22.2"
+        packageSHA256: "aadb0419b4e85feaa838de14a2f51342543047e20f9e3d2920f83244e10bc801"
+    evidence:
+      - "recipes/gatekeeper/gatekeeper/3.22.2/source-lock.yaml"
+      - "recipes/gatekeeper/gatekeeper/3.22.2/revisions/default/r001/variant-revision.yaml"
+      - "recipes/gatekeeper/gatekeeper/3.22.2/publication/flattening-safety-verdict.yaml"
+  bundle:
+    contentsKind: "rendered-config"
+    files:
+      -
+        path: "packages/gatekeeper/gatekeeper/3.22.2/bases/default/upstream.yaml"
+        sha256: "757e7fe97f5331bd964463ed228d147bdc090f3bb6d7c34b319522124efd2e5d"
+        bytes: 268270
+        role: "rendered object set"
+      -
+        path: "data/certified-bundles/routes/catalog/gatekeeper-gatekeeper-3.22.2-default/crd-ordering.yaml"
+        sha256: "a768afa139762c03cd2c97f4d99f53e358a6849ab29ac8798c60a2030bf4b7f4"
+        bytes: 2759
+        role: "route: crd-ordering"
+      -
+        path: "data/certified-bundles/routes/catalog/gatekeeper-gatekeeper-3.22.2-default/lifecycle.yaml"
+        sha256: "fcd71ec7bc06720fb02c9f97700a9e6316baf386b7a30b01594e897438dbb1f3"
+        bytes: 7108
+        role: "route: helm-hooks"
+      -
+        path: "data/certified-bundles/guides/catalog/gatekeeper-gatekeeper-3.22.2-default/space-guide.md"
+        sha256: "cedc3deab3d9e49ae695da651ecad8e4f564def6e7dd814e8271fe87162467ed"
+        bytes: 1409
+        role: "space-guide"
+    objectCount: 30
+    objectInventoryRef: "recipes/gatekeeper/gatekeeper/3.22.2/revisions/default/r001/rendered/object-inventory.yaml"
+    images:
+      scannedFrom: "image: keys in the rendered object set, which covers containers and initContainers"
+      count: 1
+      pinnedByDigest: 0
+      pinnedByTag: 1
+      boundary: "this receipt certifies the rendered bytes, not the images they name: a tag can be repushed under the same string"
+      references:
+        -
+          reference: "openpolicyagent/gatekeeper:v3.22.2"
+          pinnedBy: "tag"
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-gatekeeper-gatekeeper-3-22-2-default:latest"
+    manifestDigest: "sha256:ff993bc8233dfc3f0483fad74de3f8fac0d314aaa3d48252ae694a0a980b7119"
+    layerDigest: "sha256:6ceb90c120d6e9059397dbe15d4a94d9ad8d0785b6d33150b7031f68292cdf22"
+    reproducible: true
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "present"
+      detail: "17 hook object(s) in the packaged chart, none of which survive into the committed default render"
+      disposition: "discharged by the route this bundle ships at data/certified-bundles/routes/catalog/gatekeeper-gatekeeper-3.22.2-default/lifecycle.yaml, whose stages were observed on a live cluster"
+      companionRequired: "lifecycle-job"
+      evidence: "runs/hook-lifecycle/gatekeeper-gatekeeper/default/latest/receipt.yaml"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the committed default render; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/gatekeeper/gatekeeper/3.22.2/publication/flattening-safety-verdict.yaml"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "webhook-ca"
+      finding: "present"
+      detail: "2 webhook configuration(s), 1 with an empty caBundle, in the committed default render"
+      disposition: "route to cert-manager or a certgen lifecycle route"
+    -
+      class: "capabilities-api-versions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/gatekeeper/gatekeeper/3.22.2/publication/flattening-safety-verdict.yaml"
+      disposition: "render inputs pin the kube version and are recorded in this receipt"
+    -
+      class: "generated-secrets"
+      finding: "present"
+      detail: "1 Secret object(s) in the committed default render, none carrying data; these are placeholders a controller populates after apply"
+      disposition: "nothing to externalise: the bundle ships the Secret empty and its own controller writes the material"
+    -
+      class: "crd-ordering"
+      finding: "present"
+      detail: "17 CustomResourceDefinition(s) in the committed default render; per-file Units can race their CRDs"
+      disposition: "discharged by the route this bundle ships at data/certified-bundles/routes/catalog/gatekeeper-gatekeeper-3.22.2-default/crd-ordering.yaml"
+      companionRequired: "apply-ordering"
+    -
+      class: "immutable-fields"
+      finding: "not-evaluated"
+      detail: "a cross-version property; no second version is compared in this receipt"
+      disposition: "versioned replacement route when an upgrade pair is audited"
+    -
+      class: "namespace-creation"
+      finding: "absent"
+      detail: "no Namespace object ships in the bundle; the target namespace must exist before apply"
+      disposition: "declared at ingest"
+    -
+      class: "subchart-conditions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/gatekeeper/gatekeeper/3.22.2/publication/flattening-safety-verdict.yaml"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the committed default render"
+      disposition: "none required"
+  verdict:
+    lane: "flatten-with-routes"
+    status: "certified"
+    decidedBy: "the flattening-safety audit at recipes/gatekeeper/gatekeeper/3.22.2/publication/flattening-safety-verdict.yaml"
+    notes: "The first bundle whose hook disposition points at a route rather than at an intention. The chart defines 17 hook objects and none of them travel here, so the lifecycle route carries the stages a recorded live run watched instead: the separated Secret, CRD establishment, controller and webhook readiness, and a server-side admission dry-run. The route is not automatic, because it runs work rather than declaring order."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "recipes/gatekeeper/gatekeeper/3.22.2/source-lock.yaml"
+      - "recipes/gatekeeper/gatekeeper/3.22.2/revisions/default/r001/variant-revision.yaml"
+      - "recipes/gatekeeper/gatekeeper/3.22.2/revisions/default/r001/rendered/release-objects.yaml"
+      - "packages/gatekeeper/gatekeeper/3.22.2/bases/default/upstream.yaml"
+      - "runs/certified-bundles/catalog-gatekeeper-gatekeeper-3-22-2-default/publication-receipt.yaml"

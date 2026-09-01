@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: auth
+  labels: {team: platform-team}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity
+  namespace: auth
+  labels: {app: identity, team: platform-team}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: identity}
+  template:
+    metadata:
+      labels: {app: identity, team: platform-team}
+    spec:
+      containers:
+        - name: identity
+          image: registry.k8s.io/pause:3.10
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity
+  namespace: auth
+  labels: {app: identity, team: platform-team}
+spec:
+  selector: {app: identity}
+  ports:
+    - port: 80
+      targetPort: 8080

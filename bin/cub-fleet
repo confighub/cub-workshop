@@ -1,0 +1,2 @@
+#!/usr/bin/env node
+import(new URL("../lib/fleet.mjs", import.meta.url).href);

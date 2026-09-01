@@ -1,0 +1,129 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "catalog-external-dns-external-dns-1.21.1-default"
+spec:
+  producer:
+    name: "config-workshop-catalog"
+    repository: "https://github.com/confighub/helm-expt"
+  source:
+    kind: "helm-chart"
+    charts:
+      -
+        repository: "https://kubernetes-sigs.github.io/external-dns/"
+        name: "external-dns"
+        version: "1.21.1"
+        packageSHA256: "5dd033a4b872bf641860695705ee460031d0bc695f114bf8926fee6736814e19"
+    evidence:
+      - "recipes/external-dns/external-dns/1.21.1/source-lock.yaml"
+      - "recipes/external-dns/external-dns/1.21.1/revisions/default/r001/variant-revision.yaml"
+      - "recipes/external-dns/external-dns/1.21.1/publication/flattening-safety-verdict.yaml"
+  bundle:
+    contentsKind: "rendered-config"
+    files:
+      -
+        path: "packages/external-dns/external-dns/1.21.1/bases/default/upstream.yaml"
+        sha256: "764caa006e0e36ed1ad27659090d71a9ca5ff4d671962684b49500971c57ee74"
+        bytes: 8829
+        role: "rendered object set"
+      -
+        path: "data/certified-bundles/routes/catalog/external-dns-external-dns-1.21.1-default/crd-ordering.yaml"
+        sha256: "19df033eb18d8d127c155ef015663024647f11ad4af61b565bbe1b02e735625f"
+        bytes: 1878
+        role: "route: crd-ordering"
+      -
+        path: "data/certified-bundles/guides/catalog/external-dns-1.21.1-default/space-guide.md"
+        sha256: "0a8833d3dfe087b7c4e14208733031e6f7dcd18a72d78bb400f210b00f2ca591"
+        bytes: 1315
+        role: "space-guide"
+    objectCount: 6
+    objectInventoryRef: "recipes/external-dns/external-dns/1.21.1/revisions/default/r001/rendered/object-inventory.yaml"
+    images:
+      scannedFrom: "image: keys in the rendered object set, which covers containers and initContainers"
+      count: 1
+      pinnedByDigest: 0
+      pinnedByTag: 1
+      boundary: "this receipt certifies the rendered bytes, not the images they name: a tag can be repushed under the same string"
+      references:
+        -
+          reference: "registry.k8s.io/external-dns/external-dns:v0.21.0"
+          pinnedBy: "tag"
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-external-dns-external-dns-1-21-1-default:latest"
+    manifestDigest: "sha256:2c1f356182245164e26f6107054aeb96be0f5a690a778ea06a094f795f034c25"
+    layerDigest: "sha256:1aae7003909e0d6c1553da739a50ccce120d3cf49d7023655e6328e08a17030c"
+    reproducible: true
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "absent"
+      detail: "no helm.sh/hook annotation in the committed default render"
+      disposition: "none required"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the committed default render; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/external-dns/external-dns/1.21.1/publication/flattening-safety-verdict.yaml"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "webhook-ca"
+      finding: "absent"
+      detail: "no webhook configuration in the committed default render"
+      disposition: "none required"
+    -
+      class: "capabilities-api-versions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/external-dns/external-dns/1.21.1/publication/flattening-safety-verdict.yaml"
+      disposition: "render inputs pin the kube version and are recorded in this receipt"
+    -
+      class: "generated-secrets"
+      finding: "absent"
+      detail: "no Secret object in the committed default render"
+      disposition: "none required"
+    -
+      class: "crd-ordering"
+      finding: "present"
+      detail: "1 CustomResourceDefinition(s) in the committed default render; per-file Units can race their CRDs"
+      disposition: "discharged by the route this bundle ships at data/certified-bundles/routes/catalog/external-dns-external-dns-1.21.1-default/crd-ordering.yaml"
+      companionRequired: "apply-ordering"
+    -
+      class: "immutable-fields"
+      finding: "not-evaluated"
+      detail: "a cross-version property; no second version is compared in this receipt"
+      disposition: "versioned replacement route when an upgrade pair is audited"
+    -
+      class: "namespace-creation"
+      finding: "absent"
+      detail: "no Namespace object ships in the bundle; the target namespace must exist before apply"
+      disposition: "declared at ingest"
+    -
+      class: "subchart-conditions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/external-dns/external-dns/1.21.1/publication/flattening-safety-verdict.yaml"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the committed default render"
+      disposition: "none required"
+  verdict:
+    lane: "flatten-with-routes"
+    status: "certified"
+    decidedBy: "the flattening-safety audit at recipes/external-dns/external-dns/1.21.1/publication/flattening-safety-verdict.yaml"
+    notes: "This base needs a companion for the 1 CustomResourceDefinition(s) it renders, which per-file Units can otherwise race. Each ships inside the bundle beside the rendered configuration."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "recipes/external-dns/external-dns/1.21.1/source-lock.yaml"
+      - "recipes/external-dns/external-dns/1.21.1/revisions/default/r001/variant-revision.yaml"
+      - "recipes/external-dns/external-dns/1.21.1/revisions/default/r001/rendered/release-objects.yaml"
+      - "packages/external-dns/external-dns/1.21.1/bases/default/upstream.yaml"
+      - "runs/certified-bundles/catalog-external-dns-external-dns-1-21-1-default/publication-receipt.yaml"

@@ -1,0 +1,123 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "catalog-prometheus-community-kube-state-metrics-7.4.0-default"
+spec:
+  producer:
+    name: "config-workshop-catalog"
+    repository: "https://github.com/confighub/helm-expt"
+  source:
+    kind: "helm-chart"
+    charts:
+      -
+        repository: "https://prometheus-community.github.io/helm-charts"
+        name: "kube-state-metrics"
+        version: "7.4.0"
+        packageSHA256: "1cb1b6ac50b02a2ae691f895358959d61d377168c820cf51f2d0ea8a739e1b7f"
+    evidence:
+      - "recipes/prometheus-community/kube-state-metrics/7.4.0/source-lock.yaml"
+      - "recipes/prometheus-community/kube-state-metrics/7.4.0/revisions/default/r001/variant-revision.yaml"
+      - "recipes/prometheus-community/kube-state-metrics/7.4.0/publication/flattening-safety-verdict.yaml"
+  bundle:
+    contentsKind: "rendered-config"
+    files:
+      -
+        path: "packages/prometheus-community/kube-state-metrics/7.4.0/bases/default/upstream.yaml"
+        sha256: "b892be5f9969f39e3a7a0fadacde77cf3b9a86ca16485d5712cc2a476bda14bc"
+        bytes: 7739
+        role: "rendered object set"
+      -
+        path: "data/certified-bundles/guides/catalog/kube-state-metrics-7.4.0-default/space-guide.md"
+        sha256: "209a27e904be15b2f1d1b198b00cee7062df8a7116106079d155c521d5b09ece"
+        bytes: 1149
+        role: "space-guide"
+    objectCount: 5
+    objectInventoryRef: "recipes/prometheus-community/kube-state-metrics/7.4.0/revisions/default/r001/rendered/object-inventory.yaml"
+    images:
+      scannedFrom: "image: keys in the rendered object set, which covers containers and initContainers"
+      count: 1
+      pinnedByDigest: 0
+      pinnedByTag: 1
+      boundary: "this receipt certifies the rendered bytes, not the images they name: a tag can be repushed under the same string"
+      references:
+        -
+          reference: "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.19.0"
+          pinnedBy: "tag"
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-prometheus-community-kube-state-metrics-7-4-0-default:latest"
+    manifestDigest: "sha256:923c55b9b35ab1c4419fae4ddfc3f7baee033e835d7829087b68009d79d25df2"
+    layerDigest: "sha256:e0d22f0cda7569fc964dda1556fc114912fc228a60892723341d7c304a960a82"
+    reproducible: true
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "absent"
+      detail: "no helm.sh/hook annotation in the committed default render"
+      disposition: "none required"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the committed default render; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/prometheus-community/kube-state-metrics/7.4.0/publication/flattening-safety-verdict.yaml"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "webhook-ca"
+      finding: "absent"
+      detail: "no webhook configuration in the committed default render"
+      disposition: "none required"
+    -
+      class: "capabilities-api-versions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/prometheus-community/kube-state-metrics/7.4.0/publication/flattening-safety-verdict.yaml"
+      disposition: "render inputs pin the kube version and are recorded in this receipt"
+    -
+      class: "generated-secrets"
+      finding: "absent"
+      detail: "no Secret object in the committed default render"
+      disposition: "none required"
+    -
+      class: "crd-ordering"
+      finding: "absent"
+      detail: "no CustomResourceDefinition in the committed default render"
+      disposition: "none required"
+    -
+      class: "immutable-fields"
+      finding: "not-evaluated"
+      detail: "a cross-version property; no second version is compared in this receipt"
+      disposition: "versioned replacement route when an upgrade pair is audited"
+    -
+      class: "namespace-creation"
+      finding: "absent"
+      detail: "no Namespace object ships in the bundle; the target namespace must exist before apply"
+      disposition: "declared at ingest"
+    -
+      class: "subchart-conditions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/prometheus-community/kube-state-metrics/7.4.0/publication/flattening-safety-verdict.yaml"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the committed default render"
+      disposition: "none required"
+  verdict:
+    lane: "safe-to-flatten"
+    status: "certified"
+    decidedBy: "the flattening-safety audit at recipes/prometheus-community/kube-state-metrics/7.4.0/publication/flattening-safety-verdict.yaml"
+    notes: "Nothing this base renders is discharged at render time, so the rendered configuration is the whole delivery and no companion travels with it."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "recipes/prometheus-community/kube-state-metrics/7.4.0/source-lock.yaml"
+      - "recipes/prometheus-community/kube-state-metrics/7.4.0/revisions/default/r001/variant-revision.yaml"
+      - "recipes/prometheus-community/kube-state-metrics/7.4.0/revisions/default/r001/rendered/release-objects.yaml"
+      - "packages/prometheus-community/kube-state-metrics/7.4.0/bases/default/upstream.yaml"
+      - "runs/certified-bundles/catalog-prometheus-community-kube-state-metrics-7-4-0-default/publication-receipt.yaml"

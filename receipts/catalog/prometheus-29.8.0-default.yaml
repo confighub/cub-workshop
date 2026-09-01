@@ -1,0 +1,138 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "catalog-prometheus-community-prometheus-29.8.0-default"
+spec:
+  producer:
+    name: "config-workshop-catalog"
+    repository: "https://github.com/confighub/helm-expt"
+  source:
+    kind: "helm-chart"
+    charts:
+      -
+        repository: "https://prometheus-community.github.io/helm-charts"
+        name: "prometheus"
+        version: "29.8.0"
+        packageSHA256: "daba2821dd7c0d29267c8be5056cfbb7ebbf8784cb3159fa55f266615df68e3d"
+    evidence:
+      - "recipes/prometheus-community/prometheus/29.8.0/source-lock.yaml"
+      - "recipes/prometheus-community/prometheus/29.8.0/revisions/default/r001/variant-revision.yaml"
+      - "recipes/prometheus-community/prometheus/29.8.0/publication/flattening-safety-verdict.yaml"
+  bundle:
+    contentsKind: "rendered-config"
+    files:
+      -
+        path: "packages/prometheus-community/prometheus/29.8.0/bases/default/upstream.yaml"
+        sha256: "c11349803ddbb44562066474dd04d47d7c5c75d083dbc96162224573f949c11b"
+        bytes: 38656
+        role: "rendered object set"
+      -
+        path: "data/certified-bundles/guides/catalog/prometheus-29.8.0-default/space-guide.md"
+        sha256: "419ab830af0b5e7d9b658a2807f16b3e2bc51b127257d545a0d234db0741732b"
+        bytes: 1114
+        role: "space-guide"
+    objectCount: 23
+    objectInventoryRef: "recipes/prometheus-community/prometheus/29.8.0/revisions/default/r001/rendered/object-inventory.yaml"
+    images:
+      scannedFrom: "image: keys in the rendered object set, which covers containers and initContainers"
+      count: 6
+      pinnedByDigest: 0
+      pinnedByTag: 6
+      boundary: "this receipt certifies the rendered bytes, not the images they name: a tag can be repushed under the same string"
+      references:
+        -
+          reference: "quay.io/prometheus-operator/prometheus-config-reloader:v0.91.0"
+          pinnedBy: "tag"
+        -
+          reference: "quay.io/prometheus/alertmanager:v0.32.1"
+          pinnedBy: "tag"
+        -
+          reference: "quay.io/prometheus/node-exporter:v1.11.1"
+          pinnedBy: "tag"
+        -
+          reference: "quay.io/prometheus/prometheus:v3.11.3"
+          pinnedBy: "tag"
+        -
+          reference: "quay.io/prometheus/pushgateway:v1.11.2"
+          pinnedBy: "tag"
+        -
+          reference: "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.19.0"
+          pinnedBy: "tag"
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-prometheus-community-prometheus-29-8-0-default:latest"
+    manifestDigest: "sha256:6f40c80011a2fb6d28f404703acf53ebaf45af923f735206b2a63444568df2b5"
+    layerDigest: "sha256:907ae3d46946dfd1521b52dfdbac430c03e551a4bd00bd300bc0cabc37150591"
+    reproducible: true
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "absent"
+      detail: "no helm.sh/hook annotation in the committed default render"
+      disposition: "none required"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the committed default render; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/prometheus-community/prometheus/29.8.0/publication/flattening-safety-verdict.yaml"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "webhook-ca"
+      finding: "absent"
+      detail: "no webhook configuration in the committed default render"
+      disposition: "none required"
+    -
+      class: "capabilities-api-versions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/prometheus-community/prometheus/29.8.0/publication/flattening-safety-verdict.yaml"
+      disposition: "render inputs pin the kube version and are recorded in this receipt"
+    -
+      class: "generated-secrets"
+      finding: "absent"
+      detail: "no Secret object in the committed default render"
+      disposition: "none required"
+    -
+      class: "crd-ordering"
+      finding: "absent"
+      detail: "no CustomResourceDefinition in the committed default render"
+      disposition: "none required"
+    -
+      class: "immutable-fields"
+      finding: "not-evaluated"
+      detail: "a cross-version property; no second version is compared in this receipt"
+      disposition: "versioned replacement route when an upgrade pair is audited"
+    -
+      class: "namespace-creation"
+      finding: "absent"
+      detail: "no Namespace object ships in the bundle; the target namespace must exist before apply"
+      disposition: "declared at ingest"
+    -
+      class: "subchart-conditions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/prometheus-community/prometheus/29.8.0/publication/flattening-safety-verdict.yaml"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the committed default render"
+      disposition: "none required"
+  verdict:
+    lane: "safe-to-flatten"
+    status: "certified"
+    decidedBy: "the flattening-safety audit at recipes/prometheus-community/prometheus/29.8.0/publication/flattening-safety-verdict.yaml"
+    notes: "Nothing this base renders is discharged at render time, so the rendered configuration is the whole delivery and no companion travels with it."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "recipes/prometheus-community/prometheus/29.8.0/source-lock.yaml"
+      - "recipes/prometheus-community/prometheus/29.8.0/revisions/default/r001/variant-revision.yaml"
+      - "recipes/prometheus-community/prometheus/29.8.0/revisions/default/r001/rendered/release-objects.yaml"
+      - "packages/prometheus-community/prometheus/29.8.0/bases/default/upstream.yaml"
+      - "runs/certified-bundles/catalog-prometheus-community-prometheus-29-8-0-default/publication-receipt.yaml"

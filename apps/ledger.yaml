@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: payments
+  labels: {team: payments-core}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ledger
+  namespace: payments
+  labels: {app: ledger, team: payments-core}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: ledger}
+  template:
+    metadata:
+      labels: {app: ledger, team: payments-core}
+    spec:
+      containers:
+        - name: ledger
+          image: registry.k8s.io/pause:3.10
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ledger
+  namespace: payments
+  labels: {app: ledger, team: payments-core}
+spec:
+  selector: {app: ledger}
+  ports:
+    - port: 80
+      targetPort: 8080

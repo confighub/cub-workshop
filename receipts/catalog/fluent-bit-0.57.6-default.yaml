@@ -1,0 +1,123 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "catalog-fluent-fluent-bit-0.57.6-default"
+spec:
+  producer:
+    name: "config-workshop-catalog"
+    repository: "https://github.com/confighub/helm-expt"
+  source:
+    kind: "helm-chart"
+    charts:
+      -
+        repository: "https://fluent.github.io/helm-charts"
+        name: "fluent-bit"
+        version: "0.57.6"
+        packageSHA256: "dba34ec5f57a69a91b391077fefc58db7431e5fe30c4da25df8b65240abb30f8"
+    evidence:
+      - "recipes/fluent/fluent-bit/0.57.6/source-lock.yaml"
+      - "recipes/fluent/fluent-bit/0.57.6/revisions/default/r001/variant-revision.yaml"
+      - "recipes/fluent/fluent-bit/0.57.6/publication/flattening-safety-verdict.yaml"
+  bundle:
+    contentsKind: "rendered-config"
+    files:
+      -
+        path: "packages/fluent/fluent-bit/0.57.6/bases/default/upstream.yaml"
+        sha256: "464d9136c0ba9e845fd81c1dbea556e717d47930d7cb58755de67ead7f8f2a2b"
+        bytes: 5669
+        role: "rendered object set"
+      -
+        path: "data/certified-bundles/guides/catalog/fluent-bit-0.57.6-default/space-guide.md"
+        sha256: "cd5c8c697185061a730bb11964be2fac81a1b70e880b277f9a0cca2e4e797bc6"
+        bytes: 1058
+        role: "space-guide"
+    objectCount: 6
+    objectInventoryRef: "recipes/fluent/fluent-bit/0.57.6/revisions/default/r001/rendered/object-inventory.yaml"
+    images:
+      scannedFrom: "image: keys in the rendered object set, which covers containers and initContainers"
+      count: 1
+      pinnedByDigest: 0
+      pinnedByTag: 1
+      boundary: "this receipt certifies the rendered bytes, not the images they name: a tag can be repushed under the same string"
+      references:
+        -
+          reference: "cr.fluentbit.io/fluent/fluent-bit:5.0.6"
+          pinnedBy: "tag"
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-fluent-fluent-bit-0-57-6-default:latest"
+    manifestDigest: "sha256:added102e3f2373eb579d7e90d344b3e901046c2e4f45798dc36413e06510d4a"
+    layerDigest: "sha256:a8af7c036c38f9248a0a6e9bb335b7f38bb3b2dbf78ff421e685aa8b58d8b9d3"
+    reproducible: true
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "absent"
+      detail: "no helm.sh/hook annotation in the committed default render"
+      disposition: "none required"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the committed default render; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/fluent/fluent-bit/0.57.6/publication/flattening-safety-verdict.yaml"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "webhook-ca"
+      finding: "absent"
+      detail: "no webhook configuration in the committed default render"
+      disposition: "none required"
+    -
+      class: "capabilities-api-versions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/fluent/fluent-bit/0.57.6/publication/flattening-safety-verdict.yaml"
+      disposition: "render inputs pin the kube version and are recorded in this receipt"
+    -
+      class: "generated-secrets"
+      finding: "absent"
+      detail: "no Secret object in the committed default render"
+      disposition: "none required"
+    -
+      class: "crd-ordering"
+      finding: "absent"
+      detail: "no CustomResourceDefinition in the committed default render"
+      disposition: "none required"
+    -
+      class: "immutable-fields"
+      finding: "not-evaluated"
+      detail: "a cross-version property; no second version is compared in this receipt"
+      disposition: "versioned replacement route when an upgrade pair is audited"
+    -
+      class: "namespace-creation"
+      finding: "absent"
+      detail: "no Namespace object ships in the bundle; the target namespace must exist before apply"
+      disposition: "declared at ingest"
+    -
+      class: "subchart-conditions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default render; the chart's template-level evidence is recorded in recipes/fluent/fluent-bit/0.57.6/publication/flattening-safety-verdict.yaml"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the committed default render"
+      disposition: "none required"
+  verdict:
+    lane: "safe-to-flatten"
+    status: "certified"
+    decidedBy: "the flattening-safety audit at recipes/fluent/fluent-bit/0.57.6/publication/flattening-safety-verdict.yaml"
+    notes: "Nothing this base renders is discharged at render time, so the rendered configuration is the whole delivery and no companion travels with it."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "recipes/fluent/fluent-bit/0.57.6/source-lock.yaml"
+      - "recipes/fluent/fluent-bit/0.57.6/revisions/default/r001/variant-revision.yaml"
+      - "recipes/fluent/fluent-bit/0.57.6/revisions/default/r001/rendered/release-objects.yaml"
+      - "packages/fluent/fluent-bit/0.57.6/bases/default/upstream.yaml"
+      - "runs/certified-bundles/catalog-fluent-fluent-bit-0-57-6-default/publication-receipt.yaml"

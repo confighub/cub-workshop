@@ -1,0 +1,114 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Fleet
+metadata:
+  name: meridian
+spec:
+  description: "A meridian-shaped fleet: eight teams, nineteen components, ten regional clusters. Platform components come from published certified bundles; the applications are authored. Generated entirely through the governed verbs."
+  clusters:
+    - name: ap-northeast-dev1
+    - name: ap-southeast-dev1
+    - name: eu-central-dev1
+    - name: eu-central-dev2
+    - name: eu-central-logistics-dev1
+    - name: eu-central-payments-dev1
+    - name: eu-north-dev1
+    - name: us-east-dev1
+    - name: us-west-dev1
+    - name: sa-east-dev1
+  placements:
+    - app: cert-manager
+      team: platform-team
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-jetstack-cert-manager-v1-21-0-crds-enabled@sha256:e8d20c4184cbd842d8975d15477c4a462a1f18de36af3c7eb8bde1cff4a9d69d"
+      receipt: receipts/catalog/cert-manager-v1.21.0-crds-enabled.yaml
+      clusters: ["*"]
+    - app: traefik
+      team: platform-team
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-traefik-traefik-41-0-2-default@sha256:1414198b6b71d7b187904ec88c3c3093b21b849016f6922fbcff41a19e8e5c3b"
+      receipt: receipts/catalog/traefik-traefik-41.0.2-default.yaml
+      clusters: ["*"]
+    - app: external-dns
+      team: platform-team
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-external-dns-external-dns-1-21-1-default@sha256:2c1f356182245164e26f6107054aeb96be0f5a690a778ea06a094f795f034c25"
+      receipt: receipts/catalog/external-dns-1.21.1-default.yaml
+      clusters: ["*"]
+    - app: external-secrets
+      team: platform-team
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-external-secrets-external-secrets-2-8-0-default@sha256:07c59422c14c9d8eb9a7aff9bd41b747ed306a38b65ef872bb8f00ab3b6dfa81"
+      receipt: receipts/catalog/external-secrets-2.8.0-default.yaml
+      clusters: ["*"]
+    - app: metrics-server
+      team: platform-sre
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-metrics-server-metrics-server-3-13-1-default@sha256:c4a4976f073a9f79fee82ed6c6aecf108c4f48a2481b51e8cd82178f8757fef1"
+      receipt: receipts/catalog/metrics-server-3.13.1-default.yaml
+      clusters: ["*"]
+    - app: fluent-bit
+      team: platform-sre
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-fluent-fluent-bit-0-57-6-default@sha256:added102e3f2373eb579d7e90d344b3e901046c2e4f45798dc36413e06510d4a"
+      receipt: receipts/catalog/fluent-bit-0.57.6-default.yaml
+      clusters: ["*"]
+    - app: prometheus
+      team: platform-sre
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-prometheus-community-prometheus-29-8-0-default@sha256:6f40c80011a2fb6d28f404703acf53ebaf45af923f735206b2a63444568df2b5"
+      receipt: receipts/catalog/prometheus-29.8.0-default.yaml
+      clusters: ["*"]
+    - app: kube-state-metrics
+      team: platform-sre
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-prometheus-community-kube-state-metrics-7-4-0-default@sha256:923c55b9b35ab1c4419fae4ddfc3f7baee033e835d7829087b68009d79d25df2"
+      receipt: receipts/catalog/kube-state-metrics-7.4.0-default.yaml
+      clusters: ["*"]
+    - app: gatekeeper
+      team: platform-sec
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-gatekeeper-gatekeeper-3-22-2-default@sha256:ff993bc8233dfc3f0483fad74de3f8fac0d314aaa3d48252ae694a0a980b7119"
+      receipt: receipts/catalog/gatekeeper-3.22.2-default.yaml
+      clusters: ["*"]
+    - app: identity
+      team: platform-team
+      authored: apps/identity.yaml
+      clusters: [ap-northeast-dev1, eu-central-dev1, eu-north-dev1, us-east-dev1]
+    - app: ledger
+      team: payments-core
+      authored: apps/ledger.yaml
+      clusters: [eu-central-payments-dev1, eu-central-dev1]
+    - app: payment-gateway
+      team: payments-core
+      authored: apps/payment-gateway.yaml
+      clusters: [eu-central-payments-dev1, eu-central-dev1, us-east-dev1]
+    - app: fraud-scoring
+      team: payments-risk
+      authored: apps/fraud-scoring.yaml
+      clusters: [eu-central-payments-dev1, us-east-dev1]
+    - app: shipment-tracker
+      team: logistics-eng
+      authored: apps/shipment-tracker.yaml
+      clusters: [eu-central-logistics-dev1, ap-southeast-dev1, us-west-dev1]
+    - app: warehouse-api
+      team: logistics-eng
+      authored: apps/warehouse-api.yaml
+      clusters: [eu-central-logistics-dev1, ap-southeast-dev1]
+    - app: cart
+      team: retail-platform
+      authored: apps/cart.yaml
+      clusters: [us-east-dev1, us-west-dev1, eu-central-dev2, ap-northeast-dev1]
+    - app: catalog-api
+      team: retail-platform
+      authored: apps/catalog-api.yaml
+      clusters: [us-east-dev1, us-west-dev1, eu-central-dev2, sa-east-dev1]
+    - app: checkout
+      team: retail-platform
+      authored: apps/checkout.yaml
+      clusters: [us-east-dev1, us-west-dev1, eu-central-dev2]
+    - app: storefront
+      team: retail-web
+      authored: apps/storefront.yaml
+      clusters: [us-east-dev1, us-west-dev1, eu-central-dev2, sa-east-dev1, ap-northeast-dev1]
+    - app: search
+      team: retail-web
+      authored: apps/search.yaml
+      clusters: [us-east-dev1, eu-central-dev2, sa-east-dev1]
+  demoAging:
+    - {kind: pending, space: storefront-us-east-dev1, where: "Slug LIKE '%deployment%'", annotation: "meridian.example/reviewed=pending"}
+    - {kind: pending, space: cart-eu-central-dev2, where: "Slug LIKE '%deployment%'", annotation: "meridian.example/reviewed=pending"}
+    - {kind: advance-base, component: cert-manager, where: "Slug LIKE '%deployment%'", annotation: "meridian.example/base-rev=2"}
+    - {kind: advance-base, component: traefik, where: "Slug LIKE '%deployment%'", annotation: "meridian.example/base-rev=2"}
+    - {kind: gate, space: gatekeeper-eu-central-payments-dev1}
+    - {kind: changeorder, component: prometheus, name: prometheus-wave, scope: [prometheus-eu-central-dev1, prometheus-eu-north-dev1]}
