@@ -1,0 +1,13 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Stack
+metadata:
+  name: observability-base
+spec:
+  description: "A base observability platform: certificates, cluster metrics, and the Prometheus stack."
+  components:
+    - name: cert-manager
+      render: "renders/cert-manager.yaml"
+    - name: metrics-server
+      render: "renders/metrics-server.yaml"
+    - name: kube-prometheus-stack
+      render: "renders/kube-prometheus-stack.yaml"

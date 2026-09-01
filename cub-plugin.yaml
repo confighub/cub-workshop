@@ -1,8 +1,14 @@
-name: stack
-version: 0.2.0
+name: workshop
+version: 0.3.0
 commands:
+    - name: config
+      summary: 'One config, one chart: render it for free and see what it installs'
+      entrypoint: bin/cub-config
+    - name: app
+      summary: 'A workload: check what it needs, upload it under governance, export it to Score'
+      entrypoint: bin/cub-app
     - name: stack
-      summary: 'A certified composition of components, spoken by name: certify, sandbox, and upload stacks built from digest-pinned certified bundles'
+      summary: 'A certified composition of components, spoken by name: certify, sandbox, and upload'
       entrypoint: bin/cub-stack
     - name: fleet
       summary: 'Placement as data: build, age, and read a whole governed fleet from a fleet manifest'

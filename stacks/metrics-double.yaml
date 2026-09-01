@@ -1,0 +1,11 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Stack
+metadata:
+  name: metrics-double
+spec:
+  description: "Two copies of metrics-server, composed to show the certify step catching a resource conflict."
+  components:
+    - name: metrics-server
+      render: "renders/metrics-server.yaml"
+    - name: metrics-server-again
+      render: "renders/metrics-server.yaml"

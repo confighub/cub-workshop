@@ -1,0 +1,13 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Stack
+metadata:
+  name: web-platform
+spec:
+  description: "A platform for web apps: ingress, certificates, and monitoring. Carries exactly what an app like shop-web depends on."
+  components:
+    - name: cert-manager
+      render: "renders/cert-manager.yaml"
+    - name: ingress-nginx
+      render: "renders/ingress-nginx.yaml"
+    - name: kube-prometheus-stack
+      render: "renders/kube-prometheus-stack.yaml"

@@ -1,0 +1,13 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Stack
+metadata:
+  name: data-services
+spec:
+  description: "A stateful data tier: cache, relational database, and message queue."
+  components:
+    - name: redis
+      render: "renders/redis.yaml"
+    - name: postgresql
+      render: "renders/postgresql.yaml"
+    - name: rabbitmq
+      render: "renders/rabbitmq.yaml"

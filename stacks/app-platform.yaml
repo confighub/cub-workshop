@@ -1,0 +1,17 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Stack
+metadata:
+  name: app-platform
+spec:
+  description: "A full platform for a web application: database, cache, ingress, certificates, and monitoring. The shape a Spring Boot app lands on."
+  components:
+    - name: cert-manager
+      render: "renders/cert-manager.yaml"
+    - name: ingress-nginx
+      render: "renders/ingress-nginx.yaml"
+    - name: postgresql
+      render: "renders/postgresql.yaml"
+    - name: redis
+      render: "renders/redis.yaml"
+    - name: kube-prometheus-stack
+      render: "renders/kube-prometheus-stack.yaml"

@@ -1,0 +1,11 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Stack
+metadata:
+  name: web-tiny
+spec:
+  description: "A tiny two-component web stack, used to run cub stack install end to end without burning quota."
+  components:
+    - name: frontend
+      authored: "components/frontend-config.yaml"
+    - name: backend
+      authored: "components/backend-config.yaml"

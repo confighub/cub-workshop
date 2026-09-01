@@ -1,0 +1,13 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Stack
+metadata:
+  name: redis-platform
+spec:
+  description: "A managed Redis platform: the cache, its secrets, and monitoring. After the redis-platform pattern in confighub/examples."
+  components:
+    - name: redis
+      render: "renders/redis.yaml"
+    - name: external-secrets
+      render: "renders/external-secrets.yaml"
+    - name: kube-prometheus-stack
+      render: "renders/kube-prometheus-stack.yaml"
