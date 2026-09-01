@@ -36,6 +36,13 @@ cub stack sandbox eks-inference       # certify, then render the whole platform 
 cub fleet list
 ```
 
+Bringing your own chart? The config catalog here is fixed to the nine shipped
+renders, so render yours first and check the result: `helm template <chart> >
+my-app.yaml`, then either drop the file into `apps/` and run `cub app check
+my-app`, or use the browser check on the Config Workshop site, which accepts any
+rendered YAML without an account. Coming from Flux or Argo CD, nothing changes on
+your side: every governed rung below publishes OCI your reconciler pulls as usual.
+
 With an account (the governed rungs):
 
 ```bash
