@@ -1,0 +1,11 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Stack
+metadata:
+  name: conflict-demo
+spec:
+  description: "Two components claim the same object with different content. Certify must refuse this composition."
+  components:
+    - name: team-a
+      authored: apps/conflict-a.yaml
+    - name: team-b
+      authored: apps/conflict-b.yaml

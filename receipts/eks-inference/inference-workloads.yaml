@@ -1,0 +1,117 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "eks-inference-inference-workloads"
+spec:
+  producer:
+    name: "eks-inference"
+    repository: "https://github.com/confighub/eks-inference"
+    commit: "f6a1689c2fe231d1bc2262d9916aa69a774882b4"
+  source:
+    kind: "literal-yaml"
+    evidence:
+      - "data/certified-bundles/witnesses/eks-inference-inference-workloads/witness.yaml"
+  bundle:
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "ghcr.io/confighub/configs/eks-inference/inference-workloads:latest"
+    manifestDigest: "sha256:4ae5737725c86f7a07cf3366a7eafee8625a0dd8487784aa581ce7e33d460eb2"
+    layerDigest: "sha256:4fa2011ee1d3752941c5c84ee764249b5433f37513d3c4ee7ba97b932128c8f4"
+    reproducible: true
+    contentsKind: "literal-config"
+    files:
+      -
+        path: "00-namespace.yaml"
+        sha256: "55afb0ec3344145bb0d124ee88406c807655aea095a4bf3e90a1be0b1c988c50"
+        bytes: 691
+      -
+        path: "chat.yaml"
+        sha256: "dd372089d2593cadea977bc1b1d8f48b8896508f0d4441fa210fa0d3627b1976"
+        bytes: 4219
+      -
+        path: "smoke-cpu.yaml"
+        sha256: "87cc494d388100617c36072bf847accc244daf6abb3ca027a007eeec257fb863"
+        bytes: 1571
+      -
+        path: "smoke-gpu.yaml"
+        sha256: "86742368268f62b67545f6bbc9438dcd3747e3f7f2dd4d167daf4bdcc8b53edf"
+        bytes: 2489
+      -
+        path: "vllm-qwen.yaml"
+        sha256: "0732999e14d819966f9dc442ad632e8d78a5c64817549f3bc3db66b2b24cb249"
+        bytes: 3503
+      -
+        path: "data/certified-bundles/guides/eks-inference/inference-workloads/space-guide.md"
+        sha256: "6590e6e9ac00633ae72cb6ec53509e8108e0ed0982ff15ac8de335e3b643b721"
+        bytes: 932
+        role: "space-guide"
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+    uploadCommand: "cub variant upload --component inference-workloads --variant base --granularity per-file oci://ghcr.io/confighub/configs/eks-inference/inference-workloads"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "absent"
+      detail: "no helm.sh/hook annotation in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the witnessed bundle files; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "webhook-ca"
+      finding: "absent"
+      detail: "no webhook configuration in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "capabilities-api-versions"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "generated-secrets"
+      finding: "absent"
+      detail: "no Secret object in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "crd-ordering"
+      finding: "absent"
+      detail: "no CustomResourceDefinition in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "immutable-fields"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "namespace-creation"
+      finding: "present"
+      detail: "1 Namespace object(s) ship in the bundle"
+      disposition: "namespace ships as its own Unit"
+    -
+      class: "subchart-conditions"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the witnessed bundle files"
+      disposition: "none required"
+  verdict:
+    lane: "born-flattened"
+    status: "certified"
+    decidedBy: "the producer's source for this component is literal YAML; nothing renders, so nothing is lost at render time"
+    notes: "The model-serving workloads themselves, as literal Kubernetes objects."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "data/certified-bundles/witnesses/eks-inference-inference-workloads/witness.yaml"
+    witness: "data/certified-bundles/witnesses/eks-inference-inference-workloads/witness.yaml"

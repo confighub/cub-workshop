@@ -1,0 +1,133 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "catalog-traefik-traefik-41.0.2-default"
+spec:
+  producer:
+    name: "config-workshop-catalog"
+    repository: "https://github.com/confighub/helm-expt"
+  source:
+    kind: "helm-chart"
+    charts:
+      -
+        repository: "oci://ghcr.io/traefik/helm"
+        name: "traefik"
+        version: "41.0.2"
+        appVersion: "v3.7.6"
+        packageSHA256: "a84ec5eae9f5507c8f0632d58a7eb10c9b7fd2a277b77740ee7460c55ecde49a"
+        exactArtifactUrl: "oci://ghcr.io/traefik/helm/traefik:41.0.2"
+    evidence:
+      - "recipes/traefik/traefik/41.0.2/source-lock.yaml"
+      - "recipes/traefik/traefik/41.0.2/variants/default/variant.yaml"
+      - "recipes/traefik/traefik/41.0.2/revisions/default/r001/variant-revision.yaml"
+      - "recipes/traefik/traefik/41.0.2/publication/installer-package-receipt.yaml"
+  renderInputs:
+    renderer: "helm"
+    kubeVersion: "1.30.0"
+    apiVersions:
+      []
+    hookPolicy: "no-hooks"
+    releaseName: "traefik"
+    namespace: "traefik"
+    valuesRef: "recipes/traefik/traefik/41.0.2/effective-values.yaml"
+    valuesSHA256: "ca58d8863370f685bd9e66b46bf33a0c61aa187cc6225401bb8dabe4d31fbf4a"
+  bundle:
+    contentsKind: "rendered-config"
+    files:
+      -
+        path: "packages/traefik/traefik/41.0.2/bases/default/upstream.yaml"
+        sha256: "460d20fb9271461c0ccf38da58c7aa940fd691aca94b48cf76aed24465a982ac"
+        bytes: 432022
+        role: "rendered object set"
+      -
+        path: "data/certified-bundles/routes/catalog/traefik-traefik-41.0.2-default/crd-ordering.yaml"
+        sha256: "3c13f46e18b2fe192d7729f9326b4662bbf683fde93a776618d5c15b6b8b390c"
+        bytes: 2884
+        role: "route: crd-ordering"
+      -
+        path: "data/certified-bundles/guides/catalog/traefik-traefik-41.0.2-default/space-guide.md"
+        sha256: "4868eabd818d9850de674d772844d22883bf413890f5739fc8b29478db868084"
+        bytes: 1260
+        role: "space-guide"
+    objectCount: 31
+    objectInventoryRef: "recipes/traefik/traefik/41.0.2/revisions/default/r001/rendered/object-inventory.yaml"
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-traefik-traefik-41-0-2-default:latest"
+    manifestDigest: "sha256:1414198b6b71d7b187904ec88c3c3093b21b849016f6922fbcff41a19e8e5c3b"
+    layerDigest: "sha256:4ed68eb9efd552548077f050df389c6698400318d21f780c2c728555b65c73bb"
+    reproducible: true
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "absent"
+      detail: "no helm.sh/hook annotation in the committed default-variant render"
+      disposition: "none required"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the committed default-variant render; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default-variant render; the chart family shows lookup and capabilities use in data/master-catalog-matrix (40.2.0 rows)"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "webhook-ca"
+      finding: "absent"
+      detail: "no webhook configuration in the committed default-variant render"
+      disposition: "none required"
+    -
+      class: "capabilities-api-versions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default-variant render; the chart family shows lookup and capabilities use in data/master-catalog-matrix (40.2.0 rows)"
+      disposition: "render inputs pin the kube version and are recorded in this receipt"
+    -
+      class: "generated-secrets"
+      finding: "absent"
+      detail: "no Secret object in the committed default-variant render"
+      disposition: "none required"
+    -
+      class: "crd-ordering"
+      finding: "present"
+      detail: "25 CustomResourceDefinition(s) in the committed default-variant render; per-file Units can race their CRDs"
+      disposition: "discharged by the route this bundle ships at data/certified-bundles/routes/catalog/traefik-traefik-41.0.2-default/crd-ordering.yaml"
+      companionRequired: "apply-ordering"
+    -
+      class: "immutable-fields"
+      finding: "not-evaluated"
+      detail: "a cross-version property; no second version is compared in this receipt"
+      disposition: "versioned replacement route when an upgrade pair is audited"
+    -
+      class: "namespace-creation"
+      finding: "absent"
+      detail: "no Namespace object ships in the bundle; the target namespace must exist before apply"
+      disposition: "declared at ingest"
+    -
+      class: "subchart-conditions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the committed default-variant render; the chart family shows lookup and capabilities use in data/master-catalog-matrix (40.2.0 rows)"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the committed default-variant render"
+      disposition: "none required"
+  verdict:
+    lane: "flatten-with-routes"
+    status: "certified"
+    decidedBy: "the flattening-safety audit at recipes/traefik/traefik/41.0.2/publication/flattening-safety-verdict.yaml"
+    notes: "The lane holds for the default base; the verdict's variantScope records how hub webhooks and persistence move it."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "recipes/traefik/traefik/41.0.2/source-lock.yaml"
+      - "recipes/traefik/traefik/41.0.2/variants/default/variant.yaml"
+      - "recipes/traefik/traefik/41.0.2/revisions/default/r001/variant-revision.yaml"
+      - "recipes/traefik/traefik/41.0.2/revisions/default/r001/rendered/release-objects.yaml"
+      - "packages/traefik/traefik/41.0.2/bases/default/upstream.yaml"
+      - "runs/certified-bundles/catalog-traefik-traefik-41-0-2-default/publication-receipt.yaml"

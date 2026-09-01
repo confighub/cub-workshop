@@ -1,0 +1,105 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "eks-inference-aws-network"
+spec:
+  producer:
+    name: "eks-inference"
+    repository: "https://github.com/confighub/eks-inference"
+    commit: "f6a1689c2fe231d1bc2262d9916aa69a774882b4"
+  source:
+    kind: "literal-yaml"
+    evidence:
+      - "data/certified-bundles/witnesses/eks-inference-aws-network/witness.yaml"
+  bundle:
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "ghcr.io/confighub/configs/eks-inference/aws-network:latest"
+    manifestDigest: "sha256:b71b990fe90bbe8fc32855d2eeae379711f826247851a6c1450cd32fbcc2f903"
+    layerDigest: "sha256:1b3322e79db5f843b9289e90c64604ca8fb7e85b995952a384886da7c3343dfa"
+    reproducible: true
+    contentsKind: "literal-config"
+    files:
+      -
+        path: "00-namespace.yaml"
+        sha256: "07048daa6608387186531256ad640dc1909bf3ab25022c75a64f033fbe8bae81"
+        bytes: 485
+      -
+        path: "network.yaml"
+        sha256: "8efc3b5f5feae2857ff727c78d97880dfa03c54c2bac7fe99cd8a014ad796a6c"
+        bytes: 11606
+      -
+        path: "data/certified-bundles/guides/eks-inference/aws-network/space-guide.md"
+        sha256: "08372f93dc51f1eaea879e78b3670e008a78e582d4e30b2f954b261c5a30e2e2"
+        bytes: 908
+        role: "space-guide"
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+    uploadCommand: "cub variant upload --component aws-network --variant base --granularity per-file oci://ghcr.io/confighub/configs/eks-inference/aws-network"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "absent"
+      detail: "no helm.sh/hook annotation in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the witnessed bundle files; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "webhook-ca"
+      finding: "absent"
+      detail: "no webhook configuration in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "capabilities-api-versions"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "generated-secrets"
+      finding: "absent"
+      detail: "no Secret object in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "crd-ordering"
+      finding: "absent"
+      detail: "no CustomResourceDefinition in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "immutable-fields"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "namespace-creation"
+      finding: "present"
+      detail: "1 Namespace object(s) ship in the bundle"
+      disposition: "namespace ships as its own Unit"
+    -
+      class: "subchart-conditions"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the witnessed bundle files"
+      disposition: "none required"
+  verdict:
+    lane: "born-flattened"
+    status: "certified"
+    decidedBy: "the producer's source for this component is literal YAML; nothing renders, so nothing is lost at render time"
+    notes: "ACK custom resources describing the VPC and its address plan. Nothing templates."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "data/certified-bundles/witnesses/eks-inference-aws-network/witness.yaml"
+    witness: "data/certified-bundles/witnesses/eks-inference-aws-network/witness.yaml"

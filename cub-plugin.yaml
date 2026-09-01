@@ -1,0 +1,6 @@
+name: stack
+version: 0.1.0
+commands:
+    - name: stack
+      summary: 'A certified composition of components, spoken by name: certify, sandbox, and upload stacks built from digest-pinned certified bundles'
+      entrypoint: bin/cub-stack

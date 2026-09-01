@@ -1,0 +1,101 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "eks-inference-karpenter-aws"
+spec:
+  producer:
+    name: "eks-inference"
+    repository: "https://github.com/confighub/eks-inference"
+    commit: "f6a1689c2fe231d1bc2262d9916aa69a774882b4"
+  source:
+    kind: "literal-yaml"
+    evidence:
+      - "data/certified-bundles/witnesses/eks-inference-karpenter-aws/witness.yaml"
+  bundle:
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "ghcr.io/confighub/configs/eks-inference/karpenter-aws:latest"
+    manifestDigest: "sha256:535376df49b0fe8f11f0cda012fb5399a7c70f59f4932335faee92a3cf0ad194"
+    layerDigest: "sha256:10b0631b882b60e6dfca2b6e121e98622678a43f60eebcd51648d17f7afb1c90"
+    reproducible: true
+    contentsKind: "literal-config"
+    files:
+      -
+        path: "controller-identity.yaml"
+        sha256: "dc12b7d561b221cc88b9ffff956ee866e2b18207875bab508d1e7baecbffde1f"
+        bytes: 5657
+      -
+        path: "data/certified-bundles/guides/eks-inference/karpenter-aws/space-guide.md"
+        sha256: "eb7d8e597470cacee1e5b90506981bb5e2509865ef6cb9670ddba539909b5b3b"
+        bytes: 914
+        role: "space-guide"
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+    uploadCommand: "cub variant upload --component karpenter-aws --variant base --granularity per-file oci://ghcr.io/confighub/configs/eks-inference/karpenter-aws"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "absent"
+      detail: "no helm.sh/hook annotation in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the witnessed bundle files; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "webhook-ca"
+      finding: "absent"
+      detail: "no webhook configuration in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "capabilities-api-versions"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "generated-secrets"
+      finding: "absent"
+      detail: "no Secret object in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "crd-ordering"
+      finding: "absent"
+      detail: "no CustomResourceDefinition in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "immutable-fields"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "namespace-creation"
+      finding: "absent"
+      detail: "no Namespace object ships in the bundle; the target namespace must exist before apply"
+      disposition: "declared at ingest"
+    -
+      class: "subchart-conditions"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the witnessed bundle files"
+      disposition: "none required"
+  verdict:
+    lane: "born-flattened"
+    status: "certified"
+    decidedBy: "the producer's source for this component is literal YAML; nothing renders, so nothing is lost at render time"
+    notes: "The AWS-side identity wiring Karpenter needs, as ACK custom resources."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "data/certified-bundles/witnesses/eks-inference-karpenter-aws/witness.yaml"
+    witness: "data/certified-bundles/witnesses/eks-inference-karpenter-aws/witness.yaml"

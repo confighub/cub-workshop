@@ -1,0 +1,113 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "eks-inference-eks-cluster"
+spec:
+  producer:
+    name: "eks-inference"
+    repository: "https://github.com/confighub/eks-inference"
+    commit: "f6a1689c2fe231d1bc2262d9916aa69a774882b4"
+  source:
+    kind: "literal-yaml"
+    evidence:
+      - "data/certified-bundles/witnesses/eks-inference-eks-cluster/witness.yaml"
+  bundle:
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "ghcr.io/confighub/configs/eks-inference/eks-cluster:latest"
+    manifestDigest: "sha256:cc6ae42f8347d5e06d7ad787f5582d96a3005c55674cc52c8c2a2d849917899f"
+    layerDigest: "sha256:8aded0150d6f4d0bff5ba7c5bde5923f0a15cab4761d2d1d31d07b55483a60bb"
+    reproducible: true
+    contentsKind: "literal-config"
+    files:
+      -
+        path: "addons.yaml"
+        sha256: "900906201f93497e07928543ee2341949db709a3a54e0e30613bddaaffca1a0d"
+        bytes: 1218
+      -
+        path: "cluster.yaml"
+        sha256: "43e649d14aafb1d958103de3418294faa19369ff138d427a9f1af6b4a8a48a2f"
+        bytes: 2090
+      -
+        path: "iam-roles.yaml"
+        sha256: "c6613e3b508602ac35ace4dc4b2e7f605fe25772f7414bf696c802cc28b542fa"
+        bytes: 1978
+      -
+        path: "nodegroup.yaml"
+        sha256: "c688de50bb8eb8d2f547f994ca6180040f07ce386b276f75d03e3d7b8807f6fe"
+        bytes: 1482
+      -
+        path: "data/certified-bundles/guides/eks-inference/eks-cluster/space-guide.md"
+        sha256: "a395189caf2c8e329b049522a8647edf14ec09b46303a5db7e0626f1bb7f85fe"
+        bytes: 908
+        role: "space-guide"
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+    uploadCommand: "cub variant upload --component eks-cluster --variant base --granularity per-file oci://ghcr.io/confighub/configs/eks-inference/eks-cluster"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "absent"
+      detail: "no helm.sh/hook annotation in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the witnessed bundle files; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "webhook-ca"
+      finding: "absent"
+      detail: "no webhook configuration in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "capabilities-api-versions"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "generated-secrets"
+      finding: "absent"
+      detail: "no Secret object in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "crd-ordering"
+      finding: "absent"
+      detail: "no CustomResourceDefinition in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "immutable-fields"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "namespace-creation"
+      finding: "absent"
+      detail: "no Namespace object ships in the bundle; the target namespace must exist before apply"
+      disposition: "declared at ingest"
+    -
+      class: "subchart-conditions"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the witnessed bundle files"
+      disposition: "none required"
+  verdict:
+    lane: "born-flattened"
+    status: "certified"
+    decidedBy: "the producer's source for this component is literal YAML; nothing renders, so nothing is lost at render time"
+    notes: "ACK custom resources for the cluster, its node group, and its addons."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "data/certified-bundles/witnesses/eks-inference-eks-cluster/witness.yaml"
+    witness: "data/certified-bundles/witnesses/eks-inference-eks-cluster/witness.yaml"

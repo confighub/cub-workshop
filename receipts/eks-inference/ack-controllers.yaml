@@ -1,0 +1,134 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "eks-inference-ack-controllers"
+spec:
+  producer:
+    name: "eks-inference"
+    repository: "https://github.com/confighub/eks-inference"
+    commit: "f6a1689c2fe231d1bc2262d9916aa69a774882b4"
+  source:
+    kind: "helm-chart"
+    evidence:
+      - "data/certified-bundles/witnesses/eks-inference-ack-controllers/witness.yaml"
+      - "recipes/aws-controllers-k8s/ec2-chart/1.18.4/source-lock.yaml"
+      - "recipes/aws-controllers-k8s/iam-chart/1.7.3/source-lock.yaml"
+      - "recipes/aws-controllers-k8s/eks-chart/1.16.3/source-lock.yaml"
+  bundle:
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "ghcr.io/confighub/configs/eks-inference/ack-controllers:latest"
+    manifestDigest: "sha256:7f318e6448a35ac89cc465e476f9c73dcbde73dc213b7e13746ac01864a67566"
+    layerDigest: "sha256:d4d32f11a09e37441ea70d11d6ca741d766c3c6cd897be283d3915f66f128841"
+    reproducible: true
+    contentsKind: "rendered-config"
+    files:
+      -
+        path: "ec2-controller.yaml"
+        sha256: "9ceaaa0814d4dd6b6f7a7ddc41eb9a34f9cc2bdf56da87a0ca320c9d017982cd"
+        bytes: 13973
+      -
+        path: "ec2-crds.yaml"
+        sha256: "4f37b2caa19997ca03fe53027fd8b7b52e8e56f726596bf734a06a1b297eff1e"
+        bytes: 307879
+      -
+        path: "eks-controller.yaml"
+        sha256: "2eb5e14b8fba9b6248d308e94b5d2056a6202f46a6bea7b963e862a6ded130d4"
+        bytes: 12480
+      -
+        path: "eks-crds.yaml"
+        sha256: "0a15b81029ea0c831565194e3376bedab8bb34b36e6814362b1cb085ce731dbf"
+        bytes: 148360
+      -
+        path: "iam-controller.yaml"
+        sha256: "15a1d7ed1d0fca9de6f918a5861ce8b85ecce615e4213e08908e0fe5f145ae49"
+        bytes: 11783
+      -
+        path: "iam-crds.yaml"
+        sha256: "3981e1deed6a4f263315b653e2f18635b6ca411ab9cef387b94c199f20cacb9e"
+        bytes: 94699
+      -
+        path: "namespace.yaml"
+        sha256: "fa0a3b002b3400f24f4d1ff16ba4918523be316d1d138e79e5b650b83bee7596"
+        bytes: 593
+      -
+        path: "data/certified-bundles/routes/eks-inference/ack-controllers/crd-ordering.yaml"
+        sha256: "e9cbdfd14d486ab04ba676519e7a11266f26b5825a8e639e86a7f1ef3b818119"
+        bytes: 2342
+        role: "route: crd-ordering"
+      -
+        path: "data/certified-bundles/guides/eks-inference/ack-controllers/space-guide.md"
+        sha256: "36c0f5754344db1ff4b72bacf91391f2104ae7bc87c2aad4988b8f1f4294f132"
+        bytes: 1186
+        role: "space-guide"
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+    uploadCommand: "cub variant upload --component ack-controllers --variant base --granularity per-file oci://ghcr.io/confighub/configs/eks-inference/ack-controllers"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "absent"
+      detail: "no helm.sh/hook annotation in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the witnessed bundle files; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the witnessed bundle files; the chart's template-level evidence lives in its catalog entry"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "webhook-ca"
+      finding: "absent"
+      detail: "no webhook configuration in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "capabilities-api-versions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the witnessed bundle files; the chart's template-level evidence lives in its catalog entry"
+      disposition: "render inputs pin the kube version and are recorded in this receipt"
+    -
+      class: "generated-secrets"
+      finding: "absent"
+      detail: "no Secret object in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "crd-ordering"
+      finding: "present"
+      detail: "41 CustomResourceDefinition(s) in the witnessed bundle files; per-file Units can race their CRDs"
+      disposition: "discharged by the route this bundle ships at data/certified-bundles/routes/eks-inference/ack-controllers/crd-ordering.yaml"
+      companionRequired: "apply-ordering"
+    -
+      class: "immutable-fields"
+      finding: "not-evaluated"
+      detail: "a cross-version property; no second version is compared in this receipt"
+      disposition: "versioned replacement route when an upgrade pair is audited"
+    -
+      class: "namespace-creation"
+      finding: "present"
+      detail: "1 Namespace object(s) ship in the bundle"
+      disposition: "namespace ships as its own Unit"
+    -
+      class: "subchart-conditions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the witnessed bundle files; the chart's template-level evidence lives in its catalog entry"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the witnessed bundle files"
+      disposition: "none required"
+  verdict:
+    lane: "flatten-with-routes"
+    status: "certified"
+    decidedBy: "the strictest of 3 cited flattening-safety verdicts, recipes/aws-controllers-k8s/ec2-chart/1.18.4/publication/flattening-safety-verdict.yaml"
+    notes: "Three ACK controller charts rendered into one component. The producer already splits CRDs from controllers across Argo sync waves, which is exactly the ordering companion those verdicts require."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "data/certified-bundles/witnesses/eks-inference-ack-controllers/witness.yaml"
+    witness: "data/certified-bundles/witnesses/eks-inference-ack-controllers/witness.yaml"

@@ -1,0 +1,101 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "eks-inference-platform-profile"
+spec:
+  producer:
+    name: "eks-inference"
+    repository: "https://github.com/confighub/eks-inference"
+    commit: "f6a1689c2fe231d1bc2262d9916aa69a774882b4"
+  source:
+    kind: "literal-yaml"
+    evidence:
+      - "data/certified-bundles/witnesses/eks-inference-platform-profile/witness.yaml"
+  bundle:
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "ghcr.io/confighub/configs/eks-inference/platform-profile:latest"
+    manifestDigest: "sha256:af2a1d3dd9c74839c22121dcda1ac38c6600d67dd927a7a42280464a375acfcd"
+    layerDigest: "sha256:1bbb4b7cc2fd87c37d7fdc701665032700bc734b6f9a0b83104e277006ec5efa"
+    reproducible: true
+    contentsKind: "literal-config"
+    files:
+      -
+        path: "profile.yaml"
+        sha256: "5a2fb0f41e3b81943f78947c451e822766fbd16308ad5968fc7c14ac785a8806"
+        bytes: 3121
+      -
+        path: "data/certified-bundles/guides/eks-inference/platform-profile/space-guide.md"
+        sha256: "b40edfd12c7d5ac4709c4708e4ea58d559e1e8f8fd96e60bd9c1d3e1dc8ebb2c"
+        bytes: 923
+        role: "space-guide"
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+    uploadCommand: "cub variant upload --component platform-profile --variant base --granularity per-file oci://ghcr.io/confighub/configs/eks-inference/platform-profile"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "absent"
+      detail: "no helm.sh/hook annotation in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the witnessed bundle files; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "webhook-ca"
+      finding: "absent"
+      detail: "no webhook configuration in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "capabilities-api-versions"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "generated-secrets"
+      finding: "absent"
+      detail: "no Secret object in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "crd-ordering"
+      finding: "absent"
+      detail: "no CustomResourceDefinition in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "immutable-fields"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "namespace-creation"
+      finding: "absent"
+      detail: "no Namespace object ships in the bundle; the target namespace must exist before apply"
+      disposition: "declared at ingest"
+    -
+      class: "subchart-conditions"
+      finding: "absent"
+      detail: "literal YAML; no template-time construct exists"
+      disposition: "none required"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the witnessed bundle files"
+      disposition: "none required"
+  verdict:
+    lane: "born-flattened"
+    status: "certified"
+    decidedBy: "the producer's source for this component is literal YAML; nothing renders, so nothing is lost at render time"
+    notes: "The environment-owned values the rest of the stack links against. It renders nothing, so a flattened bundle loses nothing."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "data/certified-bundles/witnesses/eks-inference-platform-profile/witness.yaml"
+    witness: "data/certified-bundles/witnesses/eks-inference-platform-profile/witness.yaml"

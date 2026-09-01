@@ -1,0 +1,120 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "eks-inference-karpenter"
+spec:
+  producer:
+    name: "eks-inference"
+    repository: "https://github.com/confighub/eks-inference"
+    commit: "f6a1689c2fe231d1bc2262d9916aa69a774882b4"
+  source:
+    kind: "helm-chart"
+    evidence:
+      - "data/certified-bundles/witnesses/eks-inference-karpenter/witness.yaml"
+      - "recipes/karpenter/karpenter/1.14.0/source-lock.yaml"
+  bundle:
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "ghcr.io/confighub/configs/eks-inference/karpenter:latest"
+    manifestDigest: "sha256:d182fce8c942d0a40497b1d13ec067e4707c0c31027fc049d256afab01b1814e"
+    layerDigest: "sha256:0c07463e6d5d337b9371191fa4f907eaf2dbadf15ce42b437f9ab88c868ee22f"
+    reproducible: true
+    contentsKind: "rendered-config"
+    files:
+      -
+        path: "karpenter-controller.yaml"
+        sha256: "698ec08b56e8a4928cdb65f5bf84136e022fa91bb095fd0fd745bfd837738970"
+        bytes: 14436
+      -
+        path: "karpenter-crds.yaml"
+        sha256: "d980d00493f0f6fa7453e71c5a5810ed346cfe7a75d502b1bba8188f98002320"
+        bytes: 141167
+      -
+        path: "nodeclasses.yaml"
+        sha256: "d3876b3d62a0d6d723e6889c96dfb092462cb06d4b563bc1e850133ee4f44da3"
+        bytes: 5273
+      -
+        path: "nodepools.yaml"
+        sha256: "57bebc8c4a807150008addc448fa5eb1786db1b9e90ce9af3c35085027f4c626"
+        bytes: 5706
+      -
+        path: "data/certified-bundles/routes/eks-inference/karpenter/crd-ordering.yaml"
+        sha256: "a72c44bbce5b0fbb0dfc774593b30f01d8affa32087ef5533899e558d6c1065c"
+        bytes: 2371
+        role: "route: crd-ordering"
+      -
+        path: "data/certified-bundles/guides/eks-inference/karpenter/space-guide.md"
+        sha256: "943b0839c98ccff58aa7a092957da093f570feb85c58254412ccb9e66e4f9bb8"
+        bytes: 1130
+        role: "space-guide"
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+    uploadCommand: "cub variant upload --component karpenter --variant base --granularity per-file oci://ghcr.io/confighub/configs/eks-inference/karpenter"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "absent"
+      detail: "no helm.sh/hook annotation in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the witnessed bundle files; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the witnessed bundle files; the chart's template-level evidence lives in its catalog entry"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "webhook-ca"
+      finding: "absent"
+      detail: "no webhook configuration in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "capabilities-api-versions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the witnessed bundle files; the chart's template-level evidence lives in its catalog entry"
+      disposition: "render inputs pin the kube version and are recorded in this receipt"
+    -
+      class: "generated-secrets"
+      finding: "absent"
+      detail: "no Secret object in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "crd-ordering"
+      finding: "present"
+      detail: "5 CustomResourceDefinition(s) in the witnessed bundle files; per-file Units can race their CRDs"
+      disposition: "discharged by the route this bundle ships at data/certified-bundles/routes/eks-inference/karpenter/crd-ordering.yaml"
+      companionRequired: "apply-ordering"
+    -
+      class: "immutable-fields"
+      finding: "not-evaluated"
+      detail: "a cross-version property; no second version is compared in this receipt"
+      disposition: "versioned replacement route when an upgrade pair is audited"
+    -
+      class: "namespace-creation"
+      finding: "absent"
+      detail: "no Namespace object ships in the bundle; the target namespace must exist before apply"
+      disposition: "declared at ingest"
+    -
+      class: "subchart-conditions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the witnessed bundle files; the chart's template-level evidence lives in its catalog entry"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the witnessed bundle files"
+      disposition: "none required"
+  verdict:
+    lane: "flatten-with-routes"
+    status: "certified"
+    decidedBy: "the flattening-safety audit at recipes/karpenter/karpenter/1.14.0/publication/flattening-safety-verdict.yaml"
+    notes: "The Karpenter controller chart, with the producer's handwritten NodePools and EC2NodeClasses shipped beside it in the same bundle."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "data/certified-bundles/witnesses/eks-inference-karpenter/witness.yaml"
+    witness: "data/certified-bundles/witnesses/eks-inference-karpenter/witness.yaml"

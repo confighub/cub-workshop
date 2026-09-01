@@ -1,0 +1,106 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CertifiedBundleReceipt"
+metadata:
+  name: "eks-inference-gpu-runtime"
+spec:
+  producer:
+    name: "eks-inference"
+    repository: "https://github.com/confighub/eks-inference"
+    commit: "f6a1689c2fe231d1bc2262d9916aa69a774882b4"
+  source:
+    kind: "helm-chart"
+    evidence:
+      - "data/certified-bundles/witnesses/eks-inference-gpu-runtime/witness.yaml"
+      - "recipes/nvidia/nvidia-device-plugin/0.19.3/source-lock.yaml"
+  bundle:
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "ghcr.io/confighub/configs/eks-inference/gpu-runtime:latest"
+    manifestDigest: "sha256:588aa8431fa26fe41e8bc3eaac1bc156e7be6749577ef484fffcf6e953215e16"
+    layerDigest: "sha256:79a51d40098d1b70304b1ecca898a360c89a66c6045c2db61c84a2ec9ea78659"
+    reproducible: true
+    contentsKind: "rendered-config"
+    files:
+      -
+        path: "00-namespace.yaml"
+        sha256: "3777a2a023671fd8894943a27916af8603e1719685b709f39f9814bee050446f"
+        bytes: 776
+      -
+        path: "nvidia-device-plugin-controller.yaml"
+        sha256: "5b4b4766301821fec558ecd02a58fc2e3140c32b051864aef5d9965a784f870d"
+        bytes: 7534
+      -
+        path: "data/certified-bundles/guides/eks-inference/gpu-runtime/space-guide.md"
+        sha256: "d5054c9181bf44039c3eb3ba5d4a61c66f04a7a404e5c65f3f4e1490db8d04a6"
+        bytes: 946
+        role: "space-guide"
+  ingest:
+    granularity: "per-file"
+    spacePattern: "{{.Labels.Component}}-{{.Labels.Variant}}"
+    externalSourceAnnotation: "confighub.com/external-source"
+    uploadCommand: "cub variant upload --component gpu-runtime --variant base --granularity per-file oci://ghcr.io/confighub/configs/eks-inference/gpu-runtime"
+  dispositions:
+    -
+      class: "helm-hooks"
+      finding: "absent"
+      detail: "no helm.sh/hook annotation in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "resource-policy-keep"
+      finding: "absent"
+      detail: "no helm.sh/resource-policy annotation in the witnessed bundle files; the catalog does not yet scan this class as its own axis (data/quirk-coverage/coverage.csv)"
+      disposition: "none required"
+    -
+      class: "lookup"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the witnessed bundle files; the chart's template-level evidence lives in its catalog entry"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "webhook-ca"
+      finding: "absent"
+      detail: "no webhook configuration in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "capabilities-api-versions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the witnessed bundle files; the chart's template-level evidence lives in its catalog entry"
+      disposition: "render inputs pin the kube version and are recorded in this receipt"
+    -
+      class: "generated-secrets"
+      finding: "absent"
+      detail: "no Secret object in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "crd-ordering"
+      finding: "absent"
+      detail: "no CustomResourceDefinition in the witnessed bundle files"
+      disposition: "none required"
+    -
+      class: "immutable-fields"
+      finding: "not-evaluated"
+      detail: "a cross-version property; no second version is compared in this receipt"
+      disposition: "versioned replacement route when an upgrade pair is audited"
+    -
+      class: "namespace-creation"
+      finding: "present"
+      detail: "1 Namespace object(s) ship in the bundle"
+      disposition: "namespace ships as its own Unit"
+    -
+      class: "subchart-conditions"
+      finding: "not-evaluated"
+      detail: "template-time construct, invisible in the witnessed bundle files; the chart's template-level evidence lives in its catalog entry"
+      disposition: "the flattening-safety audit decides the certified disposition"
+    -
+      class: "test-hooks"
+      finding: "absent"
+      detail: "no test hook in the witnessed bundle files"
+      disposition: "none required"
+  verdict:
+    lane: "safe-to-flatten"
+    status: "certified"
+    decidedBy: "the flattening-safety audit at recipes/nvidia/nvidia-device-plugin/0.19.3/publication/flattening-safety-verdict.yaml"
+    notes: "The NVIDIA device plugin, so GPU nodes advertise their hardware. The chart's node-feature-discovery subchart stays gated off in this render."
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "data/certified-bundles/witnesses/eks-inference-gpu-runtime/witness.yaml"
+    witness: "data/certified-bundles/witnesses/eks-inference-gpu-runtime/witness.yaml"
