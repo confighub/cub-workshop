@@ -7,7 +7,8 @@ each speaking the settled verbs:
 cub plugin install confighub/cub-workshop --source-repo   # or from a local clone: cub plugin install /path/to/cub-workshop
 ```
 
-Requires `node`, `oras`, and `cub` on the PATH.
+Requires `node`, `oras`, and `cub` on the PATH. [DEMO.md](./DEMO.md) walks the whole
+ladder in ten minutes, copy-paste.
 
 ## The nouns
 
@@ -73,3 +74,8 @@ Everything is a prototype of the proposed `cub <noun>` surface, packaged so it r
 as cub itself. The manifest formats (stack, fleet) are documented in the Config
 Workshop repository's planning notes, and the receipts derive from the public
 evidence in confighub/helm-expt at the pinned digests they name.
+
+Maintenance rule: `receipts/` and `renders/` are copies of that public evidence.
+When a chart re-renders or a bundle republishes upstream, refresh the copy and its
+digest here in the same change — the resolver hash-verifies every bundle against
+these receipts, so a stale copy fails loudly rather than drifting silently.

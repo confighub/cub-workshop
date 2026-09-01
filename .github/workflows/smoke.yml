@@ -1,0 +1,56 @@
+name: smoke
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  offline:
+    name: nouns and verbs, offline lanes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: config lists and checks a shipped render
+        run: |
+          node bin/cub-config list
+          node bin/cub-config check redis
+          node bin/cub-config check kube-prometheus-stack
+      - name: app checks both teaching apps and exports Score
+        run: |
+          node bin/cub-app list
+          node bin/cub-app check hello-standalone
+          node bin/cub-app check shop-web
+          node bin/cub-app score shop-web
+      - name: stack certifies render-form compositions
+        run: |
+          node bin/cub-stack list
+          node bin/cub-stack sandbox observability-base
+          node bin/cub-stack sandbox web-tiny
+      - name: certify refuses both known conflicts
+        run: |
+          for broken in metrics-double conflict-demo; do
+            if node bin/cub-stack certify "$broken"; then
+              echo "$broken certified but must be refused" && exit 1
+            else
+              echo "$broken refused as designed"
+            fi
+          done
+      - name: fleet lists the shipped manifest
+        run: node bin/cub-fleet list
+
+  bundles:
+    name: bundle-form stacks, pulled by digest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: oras-project/setup-oras@v1
+      - name: sandbox the bundle-form platforms from public registries
+        run: |
+          node bin/cub-stack sandbox eks-inference
+          node bin/cub-stack sandbox kubara-platform
