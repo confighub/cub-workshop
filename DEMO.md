@@ -7,7 +7,7 @@ sandbox from `cub server` is ideal, and the hosted hub works the same way.
 ## 0. Install the family
 
 ```bash
-cub plugin install confighub/cub-workshop --source-repo
+cub plugin install confighub/cub-workshop
 ```
 
 ## 1. config — see what one chart installs (free)

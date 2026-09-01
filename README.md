@@ -4,7 +4,8 @@ The Config Workshop noun family as a real cub plugin. Four commands, one per nou
 each speaking the settled verbs:
 
 ```bash
-cub plugin install confighub/cub-workshop --source-repo   # or from a local clone: cub plugin install /path/to/cub-workshop
+cub plugin install confighub/cub-workshop
+# tracking main instead: add --source-repo; from a local clone: cub plugin install /path/to/cub-workshop
 ```
 
 Requires `node`, `oras`, and `cub` on the PATH. [DEMO.md](./DEMO.md) walks the whole
