@@ -44,8 +44,10 @@ jobs:
               echo "$broken refused as designed"
             fi
           done
-      - name: fleet lists the shipped manifest
-        run: node bin/cub-fleet list
+      - name: fleet lists and plans the shipped manifest
+        run: |
+          node bin/cub-fleet list
+          node bin/cub-fleet plan meridian
 
   oci:
     name: certified bundles round-trip through a registry
@@ -60,6 +62,7 @@ jobs:
         with:
           node-version: 22
       - uses: oras-project/setup-oras@v1
+      - uses: sigstore/cosign-installer@v3
       - name: push a config as a certified bundle and verify it from its digest
         run: |
           out=$(node bin/cub-config check redis --out oci://localhost:5001/workshop/redis:ci)
@@ -72,6 +75,13 @@ jobs:
         run: |
           node bin/cub-stack sandbox shop-platform --out oci://localhost:5001/workshop/shop-platform:release
           node bin/cub-stack publish shop-platform --out oci://localhost:5001/workshop/shop-platform:index
+      - name: an index is consumable by digest, and a key signs and verifies
+        run: |
+          index=$(node bin/cub-stack publish web-tiny --out oci://localhost:5001/workshop/web-tiny:idx | grep -oE 'oci://[^ ]+@sha256:[0-9a-f]{64}' | tail -1)
+          node bin/cub-stack certify "$index"
+          mkdir -p /tmp/keys && (cd /tmp/keys && COSIGN_PASSWORD="" cosign generate-key-pair)
+          signed=$(node bin/cub-config check redis --out oci://localhost:5001/workshop/signed:ci --sign /tmp/keys/cosign.key | grep -oE 'oci://[^ ]+@sha256:[0-9a-f]{64}' | head -1)
+          node bin/cub-config verify "$signed" --key /tmp/keys/cosign.pub
       - name: a digest without a receipt is refused
         run: |
           echo plain > /tmp/plain.txt

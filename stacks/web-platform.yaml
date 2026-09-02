@@ -6,8 +6,11 @@ spec:
   description: "A platform for web apps: ingress, certificates, and monitoring. Carries exactly what an app like shop-web depends on."
   components:
     - name: cert-manager
-      render: "renders/cert-manager.yaml"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-cert-manager@sha256:4bd8b82b898da503a774d47348532d85a18910ca635ae2f772354777636ca134"
+      receipt: "receipts/workshop/cert-manager.json"
     - name: ingress-nginx
-      render: "renders/ingress-nginx.yaml"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-ingress-nginx@sha256:a35e80f1f8333716d6867128391ccfc777a72240c63bb920106be47f5a76d8f2"
+      receipt: "receipts/workshop/ingress-nginx.json"
     - name: kube-prometheus-stack
-      render: "renders/kube-prometheus-stack.yaml"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-kube-prometheus-stack@sha256:1c485c529c60588924e11a6e3f27ff8899802045672c1f80aa26a049e49d6a6a"
+      receipt: "receipts/workshop/kube-prometheus-stack.json"

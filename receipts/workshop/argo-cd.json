@@ -1,0 +1,40 @@
+{
+  "apiVersion": "evidence.confighub.com/v1alpha1",
+  "kind": "CertifiedBundleReceipt",
+  "metadata": {
+    "name": "argo-cd",
+    "producedAt": "2026-09-02T10:10:33.032Z"
+  },
+  "spec": {
+    "producer": {
+      "name": "cub-workshop",
+      "version": "0.5.0",
+      "repository": "https://github.com/confighub/cub-workshop"
+    },
+    "source": {
+      "kind": "render",
+      "name": "argo-cd",
+      "origin": "cub-workshop renders/"
+    },
+    "checks": [
+      {
+        "result": "PASS",
+        "text": "49 objects"
+      }
+    ],
+    "bundle": {
+      "contentsKind": "rendered-config",
+      "files": [
+        {
+          "path": "argo-cd.yaml",
+          "sha256": "66c97f6d90166727a1b3967db69013de088bbd59eaac797a53aa4972d76e3d93",
+          "bytes": 1904304
+        }
+      ],
+      "artifactType": "application/vnd.confighub.config.bundle.v1",
+      "reference": "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-argo-cd@sha256:9a94ac48250d304b5772d0ee287839ba8639049572b1126092702fd1001c2e52",
+      "digest": "sha256:9a94ac48250d304b5772d0ee287839ba8639049572b1126092702fd1001c2e52",
+      "layerSHA256": "9df19ff84a06a271b6416c39462bd7c9ac055de4c81052a1b6456ac6896b22bb"
+    }
+  }
+}

@@ -6,6 +6,8 @@ spec:
   description: "Two copies of metrics-server, composed to show the certify step catching a resource conflict."
   components:
     - name: metrics-server
-      render: "renders/metrics-server.yaml"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-metrics-server@sha256:31bb7fedb9866cfad873848733eb5fc06071ff41222ac07bf9f1475f220ce868"
+      receipt: "receipts/workshop/metrics-server.json"
     - name: metrics-server-again
-      render: "renders/metrics-server.yaml"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-metrics-server@sha256:31bb7fedb9866cfad873848733eb5fc06071ff41222ac07bf9f1475f220ce868"
+      receipt: "receipts/workshop/metrics-server.json"

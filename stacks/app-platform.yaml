@@ -6,12 +6,17 @@ spec:
   description: "A full platform for a web application: database, cache, ingress, certificates, and monitoring. The shape a Spring Boot app lands on."
   components:
     - name: cert-manager
-      render: "renders/cert-manager.yaml"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-cert-manager@sha256:4bd8b82b898da503a774d47348532d85a18910ca635ae2f772354777636ca134"
+      receipt: "receipts/workshop/cert-manager.json"
     - name: ingress-nginx
-      render: "renders/ingress-nginx.yaml"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-ingress-nginx@sha256:a35e80f1f8333716d6867128391ccfc777a72240c63bb920106be47f5a76d8f2"
+      receipt: "receipts/workshop/ingress-nginx.json"
     - name: postgresql
-      render: "renders/postgresql.yaml"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-postgresql@sha256:6eaabcd4a6d0c3445d21759eb99b498a0aa7c8ba55228575adeeecd8cfd1ed6f"
+      receipt: "receipts/workshop/postgresql.json"
     - name: redis
-      render: "renders/redis.yaml"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-redis@sha256:0db01a1068b7a18ec99a0f5c287dcc0b3765b81c60af44da798c52540c810fe9"
+      receipt: "receipts/workshop/redis.json"
     - name: kube-prometheus-stack
-      render: "renders/kube-prometheus-stack.yaml"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-kube-prometheus-stack@sha256:1c485c529c60588924e11a6e3f27ff8899802045672c1f80aa26a049e49d6a6a"
+      receipt: "receipts/workshop/kube-prometheus-stack.json"

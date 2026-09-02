@@ -1,0 +1,40 @@
+{
+  "apiVersion": "evidence.confighub.com/v1alpha1",
+  "kind": "CertifiedBundleReceipt",
+  "metadata": {
+    "name": "postgresql",
+    "producedAt": "2026-09-02T10:10:33.847Z"
+  },
+  "spec": {
+    "producer": {
+      "name": "cub-workshop",
+      "version": "0.5.0",
+      "repository": "https://github.com/confighub/cub-workshop"
+    },
+    "source": {
+      "kind": "render",
+      "name": "postgresql",
+      "origin": "cub-workshop renders/"
+    },
+    "checks": [
+      {
+        "result": "PASS",
+        "text": "7 objects"
+      }
+    ],
+    "bundle": {
+      "contentsKind": "rendered-config",
+      "files": [
+        {
+          "path": "postgresql.yaml",
+          "sha256": "873380e64c54009b37008b88c79f00732895bfc5e1e90c057e70447697293c52",
+          "bytes": 9648
+        }
+      ],
+      "artifactType": "application/vnd.confighub.config.bundle.v1",
+      "reference": "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-postgresql@sha256:6eaabcd4a6d0c3445d21759eb99b498a0aa7c8ba55228575adeeecd8cfd1ed6f",
+      "digest": "sha256:6eaabcd4a6d0c3445d21759eb99b498a0aa7c8ba55228575adeeecd8cfd1ed6f",
+      "layerSHA256": "fc56dde74a5a3b13565272be7c9938740bbe7d2cc0a0a68f75f72369ae9f59ca"
+    }
+  }
+}

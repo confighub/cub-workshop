@@ -29,7 +29,15 @@ cub stack publish shop-platform --out oci://registry.example.com/team/shop-platf
 ```
 
 A component named only by `bundle: oci://…@sha256:…` needs no local receipt when
-one is attached in the registry; the resolver discovers it. Registries on
+one is attached in the registry; the resolver discovers it. A published index is a
+stack you can certify or sandbox by digest: `cub stack certify oci://…@sha256:<index>`.
+Add `--sign cosign.key` to any publish and `--key cosign.pub` to verify; without a key,
+verify says plainly that the signature was not checked. The shipped stacks name their
+components as images: the nine renders are published as certified bundles whose bytes
+ship in `cache/` keyed by digest, so certify works offline and still hash-verifies
+every file against the receipt in `receipts/workshop/`. `scripts/seed-cache.mjs`
+rebuilds that from `renders/`, and the same script pushes the same digests to the
+public registry. Registries on
 localhost are spoken to over plain HTTP, so `docker run -d -p 5001:5000 registry:2`
 is enough to try all of this. The design note is
 `docs/planning/oci-design-center.md` in the Config Workshop repository.
@@ -61,6 +69,7 @@ cub stack sandbox shop-platform --out shop-platform.yaml   # and write the rende
 cub stack certify ./my-stack.yaml     # your own manifest, anywhere on disk
 
 cub fleet list
+cub fleet plan meridian               # the expanded placements, a whole stack per line if you place one
 ```
 
 Writing your own stack? Put a manifest anywhere and pass its path. Its `render:`
@@ -85,6 +94,7 @@ With an account (the governed rungs):
 cub app upload hello-standalone --run     # one Unit per resource, release gated on review
 cub stack upload eks-inference --run      # base Spaces and profile links for a certified composition
 cub fleet up meridian                     # scaffold clusters, upload bases, place and release everything
+                                          # a placement may name a whole stack: `stack: web-platform`
 cub fleet age meridian                    # replay the declared operations so real attention states exist
 cub fleet status meridian                 # the four attention tiles, recomputed from fleet queries
 cub fleet down meridian                   # delete everything the manifest names
@@ -98,7 +108,7 @@ From there the generic cub verbs continue the ladder: `cub release publish`,
 - `renders/` — nine verified chart renders from the public catalog, the config catalog.
 - `apps/` — thirteen authored workloads: two teaching apps (`hello-standalone`,
   `shop-web`) and the eleven services the meridian fleet places.
-- `stacks/` — twelve stack manifests: nine composed from the shipped renders
+- `stacks/` — twelve stack manifests: nine composed from the shipped renders, now named as images by digest with the bytes in `cache/`
   (including `metrics-double`, which certify rightly rejects), plus `eks-inference`
   and `kubara-platform` built from digest-pinned certified bundles pulled by `oras`
   and hash-verified against `receipts/`, and `conflict-demo`.

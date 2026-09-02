@@ -1,0 +1,40 @@
+{
+  "apiVersion": "evidence.confighub.com/v1alpha1",
+  "kind": "CertifiedBundleReceipt",
+  "metadata": {
+    "name": "cert-manager",
+    "producedAt": "2026-09-02T10:10:33.172Z"
+  },
+  "spec": {
+    "producer": {
+      "name": "cub-workshop",
+      "version": "0.5.0",
+      "repository": "https://github.com/confighub/cub-workshop"
+    },
+    "source": {
+      "kind": "render",
+      "name": "cert-manager",
+      "origin": "cub-workshop renders/"
+    },
+    "checks": [
+      {
+        "result": "PASS",
+        "text": "42 objects"
+      }
+    ],
+    "bundle": {
+      "contentsKind": "rendered-config",
+      "files": [
+        {
+          "path": "cert-manager.yaml",
+          "sha256": "45029db19d75e578bec74b82a0476a6580d1f7193239a210bf4873156ac725ce",
+          "bytes": 41880
+        }
+      ],
+      "artifactType": "application/vnd.confighub.config.bundle.v1",
+      "reference": "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-cert-manager@sha256:4bd8b82b898da503a774d47348532d85a18910ca635ae2f772354777636ca134",
+      "digest": "sha256:4bd8b82b898da503a774d47348532d85a18910ca635ae2f772354777636ca134",
+      "layerSHA256": "02c002c71f9e8abd778cefb9688969b80e58e0b5c41f6acc1131a8a1fdc89bcf"
+    }
+  }
+}

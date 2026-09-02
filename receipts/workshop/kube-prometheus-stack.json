@@ -1,0 +1,40 @@
+{
+  "apiVersion": "evidence.confighub.com/v1alpha1",
+  "kind": "CertifiedBundleReceipt",
+  "metadata": {
+    "name": "kube-prometheus-stack",
+    "producedAt": "2026-09-02T10:10:33.535Z"
+  },
+  "spec": {
+    "producer": {
+      "name": "cub-workshop",
+      "version": "0.5.0",
+      "repository": "https://github.com/confighub/cub-workshop"
+    },
+    "source": {
+      "kind": "render",
+      "name": "kube-prometheus-stack",
+      "origin": "cub-workshop renders/"
+    },
+    "checks": [
+      {
+        "result": "PASS",
+        "text": "124 objects"
+      }
+    ],
+    "bundle": {
+      "contentsKind": "rendered-config",
+      "files": [
+        {
+          "path": "kube-prometheus-stack.yaml",
+          "sha256": "a9df6a24768af1e03b22e6a3b5a6ebd0873fe3e7fbae43c6113b24fe4311b238",
+          "bytes": 5129306
+        }
+      ],
+      "artifactType": "application/vnd.confighub.config.bundle.v1",
+      "reference": "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-kube-prometheus-stack@sha256:1c485c529c60588924e11a6e3f27ff8899802045672c1f80aa26a049e49d6a6a",
+      "digest": "sha256:1c485c529c60588924e11a6e3f27ff8899802045672c1f80aa26a049e49d6a6a",
+      "layerSHA256": "17660cdb7ad0265e188c349412eae7e26d340ac9df4a370cd4cdd5fa84c7f305"
+    }
+  }
+}

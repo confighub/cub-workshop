@@ -1,0 +1,40 @@
+{
+  "apiVersion": "evidence.confighub.com/v1alpha1",
+  "kind": "CertifiedBundleReceipt",
+  "metadata": {
+    "name": "rabbitmq",
+    "producedAt": "2026-09-02T10:10:33.931Z"
+  },
+  "spec": {
+    "producer": {
+      "name": "cub-workshop",
+      "version": "0.5.0",
+      "repository": "https://github.com/confighub/cub-workshop"
+    },
+    "source": {
+      "kind": "render",
+      "name": "rabbitmq",
+      "origin": "cub-workshop renders/"
+    },
+    "checks": [
+      {
+        "result": "PASS",
+        "text": "10 objects"
+      }
+    ],
+    "bundle": {
+      "contentsKind": "rendered-config",
+      "files": [
+        {
+          "path": "rabbitmq.yaml",
+          "sha256": "3e62e9c1190360d24596d8dba02b0be280a8146b79188917010ef4c1bddf0a97",
+          "bytes": 15267
+        }
+      ],
+      "artifactType": "application/vnd.confighub.config.bundle.v1",
+      "reference": "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-rabbitmq@sha256:d94f26b2a0cbf1b02966855ff1f7c61742c7b54d599f2fa99539ccc97ac94e01",
+      "digest": "sha256:d94f26b2a0cbf1b02966855ff1f7c61742c7b54d599f2fa99539ccc97ac94e01",
+      "layerSHA256": "9233d3a9acadfd86486767a86d13dee23aeaf9253286d1b4d830413734e77597"
+    }
+  }
+}
