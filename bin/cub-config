@@ -1,2 +1,7 @@
 #!/usr/bin/env node
-import(new URL("../lib/config.mjs", import.meta.url).href);
+import(new URL("../lib/config.mjs", import.meta.url).href).catch((error) => {
+  // A failure reads as one line, never a stack trace.
+  const text = String(error.stderr ?? error.message).trim().split("\n").filter(Boolean).pop() ?? "unknown error";
+  console.error(text.startsWith("Failed") ? text : `Failed: ${text}`);
+  process.exit(1);
+});
