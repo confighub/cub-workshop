@@ -47,6 +47,37 @@ jobs:
       - name: fleet lists the shipped manifest
         run: node bin/cub-fleet list
 
+  oci:
+    name: certified bundles round-trip through a registry
+    runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports: ["5001:5000"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: oras-project/setup-oras@v1
+      - name: push a config as a certified bundle and verify it from its digest
+        run: |
+          out=$(node bin/cub-config check redis --out oci://localhost:5001/workshop/redis:ci)
+          echo "$out"
+          digest=$(echo "$out" | grep -oE 'oci://[^ ]+@sha256:[0-9a-f]{64}' | head -1)
+          node bin/cub-config verify "$digest"
+          printf 'apiVersion: helm-expt.confighub.com/v1alpha1\nkind: Stack\nmetadata:\n  name: from-registry\nspec:\n  description: "a bundle whose receipt lives in the registry"\n  components:\n    - name: redis\n      bundle: "%s"\n' "$digest" > /tmp/from-registry.yaml
+          node bin/cub-stack certify /tmp/from-registry.yaml
+      - name: publish a stack as a flattened release and as an index
+        run: |
+          node bin/cub-stack sandbox shop-platform --out oci://localhost:5001/workshop/shop-platform:release
+          node bin/cub-stack publish shop-platform --out oci://localhost:5001/workshop/shop-platform:index
+      - name: a digest without a receipt is refused
+        run: |
+          echo plain > /tmp/plain.txt
+          digest=$(cd /tmp && oras push localhost:5001/workshop/plain:ci plain.txt --plain-http | grep -oE 'sha256:[0-9a-f]{64}' | tail -1)
+          if node bin/cub-config verify "oci://localhost:5001/workshop/plain@$digest"; then echo "verified a bundle with no receipt" && exit 1; else echo "refused as designed"; fi
+
   bundles:
     name: bundle-form stacks, pulled by digest
     runs-on: ubuntu-latest

@@ -43,6 +43,21 @@ digest-pinned certified bundles, pulled and hash-verified against shipped receip
 The second exits non-zero because two components claim the same objects — the gate
 refuses rather than reports.
 
+## 3b. Hand it on as an image (free, any registry)
+
+```bash
+docker run -d -p 5001:5000 registry:2            # or any registry you can push to
+cub config check redis --out oci://localhost:5001/demo/redis:v1
+cub config verify oci://localhost:5001/demo/redis@sha256:<the digest it printed>
+cub stack publish shop-platform --out oci://localhost:5001/demo/shop-platform:v1
+```
+
+The first command pushes the render as a certified bundle with its receipt
+attached and pulls it back to verify it. The second re-hashes every file against
+that receipt from nothing but the digest. The third publishes the stack as an
+index of five images with the manifest and verdict attached: the form a catalog
+holds, and the form an assistant picks from.
+
 ## 4. fleet — a governed fleet from two manifests (account)
 
 Prerequisite: a ConfigHub org with room for 155 Spaces. The self-hosted sandbox

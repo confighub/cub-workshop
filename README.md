@@ -12,6 +12,28 @@ cub plugin install confighub/cub-workshop
 Requires `node`, `oras`, and `cub` on the PATH. [DEMO.md](./DEMO.md) walks the whole
 ladder in ten minutes, copy-paste.
 
+## The design center: every result is an OCI image
+
+Every verb can hand its result on as a certified bundle: an OCI artifact of the
+same type the Config Workshop catalog publishes, with the receipt attached to the
+digest, so anyone can pull it and verify it. A stack publishes as an index of
+those images with its manifest and verdict attached; the flattened stack is the
+release form a reconciler pulls. One receipt links them.
+
+```bash
+cub config check redis --out oci://registry.example.com/team/redis:v1     # push a verified image, receipt attached
+cub config verify oci://registry.example.com/team/redis@sha256:<digest>   # pull it back and re-hash it
+cub app check shop-web --out oci://registry.example.com/team/shop-web:v1
+cub stack sandbox shop-platform --out oci://registry.example.com/team/shop-platform:release   # the flattened release form
+cub stack publish shop-platform --out oci://registry.example.com/team/shop-platform:v1        # the index of images, the catalog form
+```
+
+A component named only by `bundle: oci://…@sha256:…` needs no local receipt when
+one is attached in the registry; the resolver discovers it. Registries on
+localhost are spoken to over plain HTTP, so `docker run -d -p 5001:5000 registry:2`
+is enough to try all of this. The design note is
+`docs/planning/oci-design-center.md` in the Config Workshop repository.
+
 ## The nouns
 
 - **config** — one config, one chart. The smallest noun.
