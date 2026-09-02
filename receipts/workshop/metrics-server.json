@@ -3,12 +3,12 @@
   "kind": "CertifiedBundleReceipt",
   "metadata": {
     "name": "metrics-server",
-    "producedAt": "2026-09-02T10:10:33.765Z"
+    "producedAt": "2026-09-02T10:21:14.811Z"
   },
   "spec": {
     "producer": {
       "name": "cub-workshop",
-      "version": "0.5.0",
+      "version": "0.6.2",
       "repository": "https://github.com/confighub/cub-workshop"
     },
     "source": {
@@ -32,9 +32,9 @@
         }
       ],
       "artifactType": "application/vnd.confighub.config.bundle.v1",
-      "reference": "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-metrics-server@sha256:31bb7fedb9866cfad873848733eb5fc06071ff41222ac07bf9f1475f220ce868",
-      "digest": "sha256:31bb7fedb9866cfad873848733eb5fc06071ff41222ac07bf9f1475f220ce868",
-      "layerSHA256": "a80cd95531328de87115b2c6c0713b6cf5d509245fd760242d9e24fdead80dd5"
+      "reference": "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-metrics-server@sha256:db0795803b4a7d2ac7112ef6b5939174266022d75764e757cdd11db72d265fff",
+      "digest": "sha256:db0795803b4a7d2ac7112ef6b5939174266022d75764e757cdd11db72d265fff",
+      "layerSHA256": "5d9fc6472f360e92cde3def97dc9cec0390a7e7a0e0b723566eb8188fc05054c"
     }
   }
 }

@@ -3,12 +3,12 @@
   "kind": "CertifiedBundleReceipt",
   "metadata": {
     "name": "kube-prometheus-stack",
-    "producedAt": "2026-09-02T10:10:33.535Z"
+    "producedAt": "2026-09-02T10:21:14.701Z"
   },
   "spec": {
     "producer": {
       "name": "cub-workshop",
-      "version": "0.5.0",
+      "version": "0.6.2",
       "repository": "https://github.com/confighub/cub-workshop"
     },
     "source": {
@@ -32,9 +32,9 @@
         }
       ],
       "artifactType": "application/vnd.confighub.config.bundle.v1",
-      "reference": "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-kube-prometheus-stack@sha256:1c485c529c60588924e11a6e3f27ff8899802045672c1f80aa26a049e49d6a6a",
-      "digest": "sha256:1c485c529c60588924e11a6e3f27ff8899802045672c1f80aa26a049e49d6a6a",
-      "layerSHA256": "17660cdb7ad0265e188c349412eae7e26d340ac9df4a370cd4cdd5fa84c7f305"
+      "reference": "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-kube-prometheus-stack@sha256:d46ddb13b9453b54f0125035a435349b0053dde7dd945ac63249f1834eafbac2",
+      "digest": "sha256:d46ddb13b9453b54f0125035a435349b0053dde7dd945ac63249f1834eafbac2",
+      "layerSHA256": "4d9e0cf1fa67bee6371cf2f58deb7de5bfa4b937becb2416a05662095ffd24a8"
     }
   }
 }

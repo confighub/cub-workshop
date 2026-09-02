@@ -3,12 +3,12 @@
   "kind": "CertifiedBundleReceipt",
   "metadata": {
     "name": "ingress-nginx",
-    "producedAt": "2026-09-02T10:10:33.427Z"
+    "producedAt": "2026-09-02T10:21:14.588Z"
   },
   "spec": {
     "producer": {
       "name": "cub-workshop",
-      "version": "0.5.0",
+      "version": "0.6.2",
       "repository": "https://github.com/confighub/cub-workshop"
     },
     "source": {
@@ -32,9 +32,9 @@
         }
       ],
       "artifactType": "application/vnd.confighub.config.bundle.v1",
-      "reference": "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-ingress-nginx@sha256:a35e80f1f8333716d6867128391ccfc777a72240c63bb920106be47f5a76d8f2",
-      "digest": "sha256:a35e80f1f8333716d6867128391ccfc777a72240c63bb920106be47f5a76d8f2",
-      "layerSHA256": "b7f62ec5a75e8960859cc72c2f1c51e219ddcbbdea20eeeabcf19fa75f56b52d"
+      "reference": "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-ingress-nginx@sha256:e0e01c0e758fc117bb6b6391d2268b9be1182d1cf3fdcc4aaaaa8564c2fea5f2",
+      "digest": "sha256:e0e01c0e758fc117bb6b6391d2268b9be1182d1cf3fdcc4aaaaa8564c2fea5f2",
+      "layerSHA256": "36a4f1306b178fab67a0a0d196dc1af7b9320c5ab56289ccda6ffb0cb24815f0"
     }
   }
 }

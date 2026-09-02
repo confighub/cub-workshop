@@ -3,12 +3,12 @@
   "kind": "CertifiedBundleReceipt",
   "metadata": {
     "name": "redis",
-    "producedAt": "2026-09-02T10:10:34.012Z"
+    "producedAt": "2026-09-02T10:21:15.108Z"
   },
   "spec": {
     "producer": {
       "name": "cub-workshop",
-      "version": "0.5.0",
+      "version": "0.6.2",
       "repository": "https://github.com/confighub/cub-workshop"
     },
     "source": {
@@ -32,9 +32,9 @@
         }
       ],
       "artifactType": "application/vnd.confighub.config.bundle.v1",
-      "reference": "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-redis@sha256:0db01a1068b7a18ec99a0f5c287dcc0b3765b81c60af44da798c52540c810fe9",
-      "digest": "sha256:0db01a1068b7a18ec99a0f5c287dcc0b3765b81c60af44da798c52540c810fe9",
-      "layerSHA256": "772136d87ff683ebefa8cf5dcf346b4e69fe9861d5dcb4e6c7495b06f211da9e"
+      "reference": "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-redis@sha256:150fd899d02168ce712cd5dc04b14a6a883ae8702aa59e6dc3a9bede6d3dfaaa",
+      "digest": "sha256:150fd899d02168ce712cd5dc04b14a6a883ae8702aa59e6dc3a9bede6d3dfaaa",
+      "layerSHA256": "bba571578753edca43f8c850ff5a52f9addad4fce9ad2d1ebd766fee56c8836d"
     }
   }
 }
