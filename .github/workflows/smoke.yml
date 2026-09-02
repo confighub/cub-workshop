@@ -29,6 +29,12 @@ jobs:
           node bin/cub-stack list
           node bin/cub-stack sandbox observability-base
           node bin/cub-stack sandbox web-tiny
+          node bin/cub-stack sandbox shop-platform --out /tmp/shop-platform.yaml
+          test -s /tmp/shop-platform.yaml
+      - name: a manifest anywhere on disk resolves the shipped sources
+        run: |
+          cp stacks/web-tiny.yaml /tmp/my-stack.yaml
+          node bin/cub-stack certify /tmp/my-stack.yaml
       - name: certify refuses both known conflicts
         run: |
           for broken in metrics-double conflict-demo; do

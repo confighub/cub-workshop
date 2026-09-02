@@ -5,6 +5,7 @@ each speaking the settled verbs:
 
 ```bash
 cub plugin install confighub/cub-workshop
+# already installed? cub plugin upgrade workshop
 # tracking main instead: add --source-repo; from a local clone: cub plugin install /path/to/cub-workshop
 ```
 
@@ -34,9 +35,20 @@ cub app score shop-web                # export its workloads to Score (score.dev
 cub stack list
 cub stack certify metrics-double      # the composition gate alone; exits non-zero on a conflict
 cub stack sandbox eks-inference       # certify, then render the whole platform with no infrastructure
+cub stack sandbox shop-platform --out shop-platform.yaml   # and write the rendered objects, in plane order
+cub stack certify ./my-stack.yaml     # your own manifest, anywhere on disk
 
 cub fleet list
 ```
+
+Writing your own stack? Put a manifest anywhere and pass its path. Its `render:`
+and `authored:` sources resolve relative to the manifest first, then to this plugin,
+so it can name the nine shipped renders (`renders/argo-cd.yaml`, `cert-manager`,
+`external-secrets`, `ingress-nginx`, `kube-prometheus-stack`, `metrics-server`,
+`postgresql`, `rabbitmq`, `redis`) and put an app in the stack with
+`authored: apps/<name>.yaml`. `stacks/shop-platform.yaml` was composed that way by
+an assistant pointed at the Config Workshop site; the recorded run is in
+`proofs/assistant-composition-2026-09-02/`.
 
 Bringing your own chart? The config catalog here is fixed to the nine shipped
 renders, so render yours first and check the result: `helm template <chart> >
@@ -64,7 +76,7 @@ From there the generic cub verbs continue the ladder: `cub release publish`,
 - `renders/` — nine verified chart renders from the public catalog, the config catalog.
 - `apps/` — thirteen authored workloads: two teaching apps (`hello-standalone`,
   `shop-web`) and the eleven services the meridian fleet places.
-- `stacks/` — eleven stack manifests: eight composed from the shipped renders
+- `stacks/` — twelve stack manifests: nine composed from the shipped renders
   (including `metrics-double`, which certify rightly rejects), plus `eks-inference`
   and `kubara-platform` built from digest-pinned certified bundles pulled by `oras`
   and hash-verified against `receipts/`, and `conflict-demo`.

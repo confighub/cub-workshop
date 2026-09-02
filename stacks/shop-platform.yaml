@@ -1,0 +1,27 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Stack
+metadata:
+  name: shop-platform
+spec:
+  description: "A web platform with monitoring and a message queue, with the shop app running on it: ingress, certificates, the Prometheus stack, RabbitMQ, and shop-web."
+  components:
+    - name: cert-manager
+      plane: mgmt
+      order: 1
+      render: "renders/cert-manager.yaml"
+    - name: ingress-nginx
+      plane: mgmt
+      order: 2
+      render: "renders/ingress-nginx.yaml"
+    - name: kube-prometheus-stack
+      plane: mgmt
+      order: 3
+      render: "renders/kube-prometheus-stack.yaml"
+    - name: rabbitmq
+      plane: workload
+      order: 1
+      render: "renders/rabbitmq.yaml"
+    - name: shop-web
+      plane: workload
+      order: 2
+      authored: "apps/shop-web.yaml"
