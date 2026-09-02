@@ -108,7 +108,7 @@ spec:
   demoAging:
     - {kind: pending, space: storefront-us-east-dev1, where: "Slug LIKE '%deployment%'", annotation: "meridian.example/reviewed=pending"}
     - {kind: pending, space: cart-eu-central-dev2, where: "Slug LIKE '%deployment%'", annotation: "meridian.example/reviewed=pending"}
-    - {kind: advance-base, component: cert-manager, where: "Slug LIKE '%deployment%'", annotation: "meridian.example/base-rev=2"}
-    - {kind: advance-base, component: traefik, where: "Slug LIKE '%deployment%'", annotation: "meridian.example/base-rev=2"}
+    - {kind: advance-base, component: cert-manager, where: "Slug = 'upstream'", annotation: "meridian.example/base-rev=2"}
+    - {kind: advance-base, component: traefik, where: "Slug = 'upstream'", annotation: "meridian.example/base-rev=2"}
     - {kind: gate, space: gatekeeper-eu-central-payments-dev1}
     - {kind: changeorder, component: prometheus, name: prometheus-wave, scope: [prometheus-eu-central-dev1, prometheus-eu-north-dev1]}
