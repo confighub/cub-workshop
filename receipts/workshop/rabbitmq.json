@@ -3,7 +3,7 @@
   "kind": "CertifiedBundleReceipt",
   "metadata": {
     "name": "rabbitmq",
-    "producedAt": "2026-09-02T10:21:15.001Z"
+    "producedAt": "2026-09-02T10:23:51.261Z"
   },
   "spec": {
     "producer": {

@@ -6,11 +6,11 @@ spec:
   description: "A platform for web apps: ingress, certificates, and monitoring. Carries exactly what an app like shop-web depends on."
   components:
     - name: cert-manager
-      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-cert-manager@sha256:4bd8b82b898da503a774d47348532d85a18910ca635ae2f772354777636ca134"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-cert-manager@sha256:76314143ef5017951d1351732eb0796707e73797c2a67ace5fb4202a62bbad70"
       receipt: "receipts/workshop/cert-manager.json"
     - name: ingress-nginx
-      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-ingress-nginx@sha256:a35e80f1f8333716d6867128391ccfc777a72240c63bb920106be47f5a76d8f2"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-ingress-nginx@sha256:e0e01c0e758fc117bb6b6391d2268b9be1182d1cf3fdcc4aaaaa8564c2fea5f2"
       receipt: "receipts/workshop/ingress-nginx.json"
     - name: kube-prometheus-stack
-      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-kube-prometheus-stack@sha256:1c485c529c60588924e11a6e3f27ff8899802045672c1f80aa26a049e49d6a6a"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-kube-prometheus-stack@sha256:d46ddb13b9453b54f0125035a435349b0053dde7dd945ac63249f1834eafbac2"
       receipt: "receipts/workshop/kube-prometheus-stack.json"

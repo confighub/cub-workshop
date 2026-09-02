@@ -6,11 +6,11 @@ spec:
   description: "A base observability platform: certificates, cluster metrics, and the Prometheus stack."
   components:
     - name: cert-manager
-      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-cert-manager@sha256:4bd8b82b898da503a774d47348532d85a18910ca635ae2f772354777636ca134"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-cert-manager@sha256:76314143ef5017951d1351732eb0796707e73797c2a67ace5fb4202a62bbad70"
       receipt: "receipts/workshop/cert-manager.json"
     - name: metrics-server
-      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-metrics-server@sha256:31bb7fedb9866cfad873848733eb5fc06071ff41222ac07bf9f1475f220ce868"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-metrics-server@sha256:db0795803b4a7d2ac7112ef6b5939174266022d75764e757cdd11db72d265fff"
       receipt: "receipts/workshop/metrics-server.json"
     - name: kube-prometheus-stack
-      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-kube-prometheus-stack@sha256:1c485c529c60588924e11a6e3f27ff8899802045672c1f80aa26a049e49d6a6a"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-kube-prometheus-stack@sha256:d46ddb13b9453b54f0125035a435349b0053dde7dd945ac63249f1834eafbac2"
       receipt: "receipts/workshop/kube-prometheus-stack.json"

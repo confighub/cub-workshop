@@ -6,11 +6,11 @@ spec:
   description: "A stateful data tier: cache, relational database, and message queue."
   components:
     - name: redis
-      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-redis@sha256:0db01a1068b7a18ec99a0f5c287dcc0b3765b81c60af44da798c52540c810fe9"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-redis@sha256:150fd899d02168ce712cd5dc04b14a6a883ae8702aa59e6dc3a9bede6d3dfaaa"
       receipt: "receipts/workshop/redis.json"
     - name: postgresql
-      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-postgresql@sha256:6eaabcd4a6d0c3445d21759eb99b498a0aa7c8ba55228575adeeecd8cfd1ed6f"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-postgresql@sha256:5afcd95b43f76c2df0d9d23946b9e2d66566b67098d09872526f8fec94b92d23"
       receipt: "receipts/workshop/postgresql.json"
     - name: rabbitmq
-      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-rabbitmq@sha256:d94f26b2a0cbf1b02966855ff1f7c61742c7b54d599f2fa99539ccc97ac94e01"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-rabbitmq@sha256:0433facdcf8d0c65506849bf02a40534ff07be69fd3d72c44de8e887a7d52dcb"
       receipt: "receipts/workshop/rabbitmq.json"

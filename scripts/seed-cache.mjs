@@ -51,5 +51,12 @@ for (const file of readdirSync(stacksDir).filter((entry) => entry.endsWith(".yam
     changed = true;
     return `${indent}bundle: "oci://${publicBase}/workshop-${name}@${published[name]}"\n${indent}receipt: "receipts/workshop/${name}.json"`;
   });
+  // Already-migrated components: refresh the digest if the bytes republished differently.
+  text = text.replace(/^(\s*)bundle: "oci:\/\/[^"]*\/workshop-([a-z0-9-]+)@sha256:[0-9a-f]{64}"\s*$/gm, (match, indent, name) => {
+    if (!published[name]) return match;
+    const next = `${indent}bundle: "oci://${publicBase}/workshop-${name}@${published[name]}"`;
+    if (next !== match) changed = true;
+    return next;
+  });
   if (changed) { writeFileSync(path, text); console.log(`rewrote ${file}`); }
 }

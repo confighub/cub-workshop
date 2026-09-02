@@ -3,7 +3,7 @@
   "kind": "CertifiedBundleReceipt",
   "metadata": {
     "name": "kube-prometheus-stack",
-    "producedAt": "2026-09-02T10:21:14.701Z"
+    "producedAt": "2026-09-02T10:23:51.080Z"
   },
   "spec": {
     "producer": {

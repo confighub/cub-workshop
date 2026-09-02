@@ -6,11 +6,11 @@ spec:
   description: "A managed Redis platform: the cache, its secrets, and monitoring. After the redis-platform pattern in confighub/examples."
   components:
     - name: redis
-      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-redis@sha256:0db01a1068b7a18ec99a0f5c287dcc0b3765b81c60af44da798c52540c810fe9"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-redis@sha256:150fd899d02168ce712cd5dc04b14a6a883ae8702aa59e6dc3a9bede6d3dfaaa"
       receipt: "receipts/workshop/redis.json"
     - name: external-secrets
-      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-external-secrets@sha256:5c069011f905e494bb2eee89f2312fcd6ce55c555d41be79a3b6b40d9c768dde"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-external-secrets@sha256:1b0808e8185f291a2339efdf341c1e110e63487aa913171ca25658d2a0605e3e"
       receipt: "receipts/workshop/external-secrets.json"
     - name: kube-prometheus-stack
-      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-kube-prometheus-stack@sha256:1c485c529c60588924e11a6e3f27ff8899802045672c1f80aa26a049e49d6a6a"
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-kube-prometheus-stack@sha256:d46ddb13b9453b54f0125035a435349b0053dde7dd945ac63249f1834eafbac2"
       receipt: "receipts/workshop/kube-prometheus-stack.json"
