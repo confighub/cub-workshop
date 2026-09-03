@@ -55,6 +55,22 @@ cub app check shop-web-kubara               # the app adapted: Traefik's class, 
 cub stack sandbox kubara-shop-platform      # CERTIFIED: the platform grew by external-secrets, every need carried
 ```
 
+### A platform Kubara generated
+
+If a Kubara platform already exists, its own output becomes a stack, rendered
+with the values Kubara generated, so certify judges the platform you actually
+have rather than the catalog's copy of its parts:
+
+```
+kubara --work-dir . --config-file config.yaml --env-file .env generate --helm
+cub stack from-kubara . --app shop-web-kubara        # renders each umbrella chart with its values; one owner per object
+cub stack certify ./confighub/stack.yaml
+cub stack upload  ./confighub/stack.yaml --run
+```
+
+A fleet manifest may place that stack by path (`stack: ./confighub/stack.yaml`),
+and `cub fleet up path/to/fleet.yaml` builds it like any shipped fleet.
+
 ## 3b. Hand it on as an image (free, any registry)
 
 ```bash
