@@ -1,0 +1,26 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Fleet
+metadata:
+  name: demo-platform
+spec:
+  description: "The platform Kubara picked (cert-manager, Traefik, metrics-server) placed on a dev and a staging cluster, with two retail apps on dev. The small fleet a demo walks through end to end."
+  clusters:
+    - name: demo-dev
+    - name: demo-staging
+  placements:
+    - stack: kubara-platform
+      team: platform-team
+      clusters: ["*"]
+    - app: storefront
+      team: retail-web
+      authored: apps/storefront.yaml
+      clusters: [demo-dev]
+    - app: cart
+      team: retail-web
+      authored: apps/cart.yaml
+      clusters: [demo-dev]
+  demoAging:
+    - {kind: pending, space: cart-demo-dev, where: "Slug LIKE '%deployment%'", annotation: "demo.example/reviewed=pending"}
+    - {kind: advance-base, component: metrics-server, where: "Slug = 'upstream'", annotation: "demo.example/base-rev=2"}
+    - {kind: gate, space: storefront-demo-dev}
+    - {kind: changeorder, component: traefik, name: traefik-wave, scope: [traefik-demo-dev, traefik-demo-staging]}
