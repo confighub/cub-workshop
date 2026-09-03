@@ -1,0 +1,26 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Stack
+metadata:
+  name: kubara-shop-first-try
+spec:
+  description: "The Kubara platform as first picked (cert-manager, Traefik, metrics-server) with the shop app placed on it. Certify refuses it: the app asks for things the platform does not carry."
+  components:
+    - name: cert-manager
+      plane: mgmt
+      order: 0
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-jetstack-cert-manager-v1-21-0-crds-enabled@sha256:e8d20c4184cbd842d8975d15477c4a462a1f18de36af3c7eb8bde1cff4a9d69d"
+      receipt: receipts/catalog/cert-manager-v1.21.0-crds-enabled.yaml
+    - name: traefik
+      plane: mgmt
+      order: 1
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-traefik-traefik-41-0-2-default@sha256:1414198b6b71d7b187904ec88c3c3093b21b849016f6922fbcff41a19e8e5c3b"
+      receipt: receipts/catalog/traefik-traefik-41.0.2-default.yaml
+    - name: metrics-server
+      plane: mgmt
+      order: 2
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-metrics-server-metrics-server-3-13-1-default@sha256:c4a4976f073a9f79fee82ed6c6aecf108c4f48a2481b51e8cd82178f8757fef1"
+      receipt: receipts/catalog/metrics-server-3.13.1-default.yaml
+    - name: shop-web
+      plane: workload
+      order: 3
+      authored: "apps/shop-web.yaml"

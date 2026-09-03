@@ -1,0 +1,31 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Stack
+metadata:
+  name: kubara-shop-platform
+spec:
+  description: "The Kubara platform grown to what the shop app needs: cert-manager, Traefik, metrics-server, and external-secrets, with the app adapted to it: Traefik's ingress class and a secret pulled through external-secrets."
+  components:
+    - name: cert-manager
+      plane: mgmt
+      order: 0
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-jetstack-cert-manager-v1-21-0-crds-enabled@sha256:e8d20c4184cbd842d8975d15477c4a462a1f18de36af3c7eb8bde1cff4a9d69d"
+      receipt: receipts/catalog/cert-manager-v1.21.0-crds-enabled.yaml
+    - name: traefik
+      plane: mgmt
+      order: 1
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-traefik-traefik-41-0-2-default@sha256:1414198b6b71d7b187904ec88c3c3093b21b849016f6922fbcff41a19e8e5c3b"
+      receipt: receipts/catalog/traefik-traefik-41.0.2-default.yaml
+    - name: metrics-server
+      plane: mgmt
+      order: 2
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-metrics-server-metrics-server-3-13-1-default@sha256:c4a4976f073a9f79fee82ed6c6aecf108c4f48a2481b51e8cd82178f8757fef1"
+      receipt: receipts/catalog/metrics-server-3.13.1-default.yaml
+    - name: external-secrets
+      plane: mgmt
+      order: 3
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-external-secrets-external-secrets-2-8-0-default@sha256:07c59422c14c9d8eb9a7aff9bd41b747ed306a38b65ef872bb8f00ab3b6dfa81"
+      receipt: receipts/catalog/external-secrets-2.8.0-default.yaml
+    - name: shop-web
+      plane: workload
+      order: 4
+      authored: "apps/shop-web-kubara.yaml"

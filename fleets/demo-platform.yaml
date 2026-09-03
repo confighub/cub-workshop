@@ -3,18 +3,14 @@ kind: Fleet
 metadata:
   name: demo-platform
 spec:
-  description: "The platform Kubara picked (cert-manager, Traefik, metrics-server) placed on a dev and a staging cluster, with two retail apps on dev. The small fleet a demo walks through end to end."
+  description: "The Kubara platform grown to what the shop app needs, placed on a dev and a staging cluster with the app on both, plus the cart app on dev. The small fleet a demo walks through end to end."
   clusters:
     - name: demo-dev
     - name: demo-staging
   placements:
-    - stack: kubara-platform
+    - stack: kubara-shop-platform
       team: platform-team
       clusters: ["*"]
-    - app: storefront
-      team: retail-web
-      authored: apps/storefront.yaml
-      clusters: [demo-dev]
     - app: cart
       team: retail-web
       authored: apps/cart.yaml
