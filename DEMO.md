@@ -71,6 +71,19 @@ cub fleet age meridian
 cub fleet status meridian
 ```
 
+What `cub fleet up` puts into ConfigHub, exactly: for each cluster, a Space with
+a server-hosted worker and an OCI target; for each component and app, the
+certified image or the authored YAML uploaded as a base variant, one Unit per
+file or resource; for each placement, a deployment variant cloned from its base,
+bound to its cluster's target, with a release published for it, an OCI image in
+ConfigHub's registry pinned to its digest. Everything after that, the aging, a
+promotion, a gate, an approval, a ChangeOrder, is ConfigHub's own verbs on those
+Spaces.
+
+What it does not do: nothing pulls those releases. The sandbox has no reconciler
+attached, so the fleet is loaded into ConfigHub and governed there, and it runs
+nowhere. Attaching a cluster that pulls is what `cub cluster up` adds.
+
 `up` scaffolds ten regional cluster Spaces, uploads twenty component bases, and
 places and releases 125 deployments through the ordinary governed verbs. `age`
 replays declared operations — an edit pending deployment, a base advancing, an
