@@ -1,6 +1,6 @@
 # cub-workshop
 
-The Config Workshop noun family as a real cub plugin. Four commands, one per noun,
+The ConfigHub Workshop noun family as a real cub plugin. Four commands, one per noun,
 each speaking the settled verbs:
 
 ```bash
@@ -15,7 +15,7 @@ ladder in ten minutes, copy-paste.
 ## The design center: every result is an OCI image
 
 Every verb can hand its result on as a certified bundle: an OCI artifact of the
-same type the Config Workshop catalog publishes, with the receipt attached to the
+same type the ConfigHub Workshop catalog publishes, with the receipt attached to the
 digest, so anyone can pull it and verify it. A stack publishes as an index of
 those images with its manifest and verdict attached; the flattened stack is the
 release form a reconciler pulls. One receipt links them.
@@ -40,7 +40,7 @@ rebuilds that from `renders/`, and the same script pushes the same digests to th
 public registry. Registries on
 localhost are spoken to over plain HTTP, so `docker run -d -p 5001:5000 registry:2`
 is enough to try all of this. The design note is
-`docs/planning/oci-design-center.md` in the Config Workshop repository.
+`docs/planning/oci-design-center.md` in the ConfigHub Workshop repository.
 
 ## The nouns
 
@@ -78,13 +78,13 @@ so it can name the nine shipped renders (`renders/argo-cd.yaml`, `cert-manager`,
 `external-secrets`, `ingress-nginx`, `kube-prometheus-stack`, `metrics-server`,
 `postgresql`, `rabbitmq`, `redis`) and put an app in the stack with
 `authored: apps/<name>.yaml`. `stacks/shop-platform.yaml` was composed that way by
-an assistant pointed at the Config Workshop site; the recorded run is in
+an assistant pointed at the ConfigHub Workshop site; the recorded run is in
 `proofs/assistant-composition-2026-09-02/`.
 
 Bringing your own chart? The config catalog here is fixed to the nine shipped
 renders, so render yours first and check the result: `helm template <chart> >
 my-app.yaml`, then either drop the file into `apps/` and run `cub app check
-my-app`, or use the browser check on the Config Workshop site, which accepts any
+my-app`, or use the browser check on the ConfigHub Workshop site, which accepts any
 rendered YAML without an account. Coming from Flux or Argo CD, nothing changes on
 your side: every governed rung below publishes OCI your reconciler pulls as usual.
 
