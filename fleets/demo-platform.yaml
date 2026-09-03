@@ -22,5 +22,5 @@ spec:
   demoAging:
     - {kind: pending, space: cart-demo-dev, where: "Slug LIKE '%deployment%'", annotation: "demo.example/reviewed=pending"}
     - {kind: advance-base, component: metrics-server, where: "Slug = 'upstream'", annotation: "demo.example/base-rev=2"}
-    - {kind: gate, space: storefront-demo-dev}
+    - {kind: gate, space: cart-demo-dev}
     - {kind: changeorder, component: traefik, name: traefik-wave, scope: [traefik-demo-dev, traefik-demo-staging]}
