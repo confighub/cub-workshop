@@ -43,6 +43,18 @@ digest-pinned certified bundles, pulled and hash-verified against shipped receip
 The second exits non-zero because two components claim the same objects — the gate
 refuses rather than reports.
 
+### An app tells the platform what it needs
+
+Certify also reads what each authored app needs from the platform under it, off
+the app's own objects, and refuses a stack that does not carry it:
+
+```
+cub app check shop-web                      # needs an ingress controller, cert-manager, a Prometheus operator
+cub stack certify kubara-shop-first-try     # REJECTED: the Ingress asks for class nginx and the platform's controller is Traefik; nothing provides the operator
+cub app check shop-web-kubara               # the app adapted: Traefik's class, a secret through external-secrets
+cub stack sandbox kubara-shop-platform      # CERTIFIED: the platform grew by external-secrets, every need carried
+```
+
 ## 3b. Hand it on as an image (free, any registry)
 
 ```bash
