@@ -96,8 +96,8 @@ an assistant pointed at the ConfigHub Workshop site; the recorded run is in
 
 Bringing your own chart? The config catalog here is fixed to the nine shipped
 renders, so render yours first and check the result: `helm template <chart> >
-my-app.yaml`, then either drop the file into `apps/` and run `cub app check
-my-app`, or use the browser check on the ConfigHub Workshop site, which accepts any
+my-app.yaml`, then run `cub config check ./my-app.yaml` or `cub app check
+./my-app.yaml`, or use the browser check on the ConfigHub Workshop site, which accepts any
 rendered YAML without an account. Coming from Flux or Argo CD, nothing changes on
 your side: every governed rung below publishes OCI your reconciler pulls as usual.
 
@@ -227,3 +227,16 @@ not exhaustive: credentials, storage, DNS, workload scheduling, implicit/default
 namespaces, arbitrary resource references and application responses are outside
 this check. Neither people nor assistants should use `certified: true` as a
 permission or readiness signal for deployment.
+### Check configuration you already have
+
+```sh
+cub config check ./rendered.yaml --out ./retained.yaml
+cub app check ./my-app.yaml
+```
+
+Local YAML or JSON files can be outside the plugin installation. The check reads
+named Kubernetes objects and refuses empty or partly invalid documents. A local
+`--out` copy preserves the original bytes. These inspections summarize resources
+and recognized dependencies; they do not prove target compatibility or that a
+workload runs. Keep the source version and your authored values or edits when
+bringing a new upstream render; this command does not merge upstream changes.
