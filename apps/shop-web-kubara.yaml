@@ -51,7 +51,7 @@ spec:
   issuerRef: { name: letsencrypt, kind: ClusterIssuer }
   dnsNames: [shop.example.com]
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: shop-web-db

@@ -72,6 +72,12 @@ cub fleet list
 cub fleet plan meridian               # the expanded placements, a whole stack per line if you place one
 ```
 
+For custom resources with a bundled CRD, certification checks the exact group,
+kind and served API version. A declared but unserved version is refused before
+sandbox output or publication. The Kubara shop example uses the served
+`external-secrets.io/v1` API. These checks do not discover APIs on a target or
+establish namespace, issuer, secret-store or application readiness.
+
 Writing your own stack? Put a manifest anywhere and pass its path. Its `render:`
 and `authored:` sources resolve relative to the manifest first, then to this plugin,
 so it can name the nine shipped renders (`renders/argo-cd.yaml`, `cert-manager`,
