@@ -109,6 +109,53 @@ cub fleet down meridian                   # delete everything the manifest names
 From there the generic cub verbs continue the ladder: `cub release publish`,
 `cub variant promote`, gates and ChangeOrders for governance.
 
+## Save, change and hand over a local stack
+
+With workshop plugin 0.6.14 or newer, start with a checked editing copy, without
+a cluster or ConfigHub account:
+
+```bash
+cub stack sandbox kubara-shop-platform --workspace ./my-platform
+```
+
+The directory must not already exist, and its parent must exist. The command checks
+the composition before creating anything. It writes `stack.yaml`, separate files
+under `components/`, the baseline `rendered.yaml`, and `result.json` with checks,
+original component sources, file hashes and explicit not-checked target status.
+
+For this example, edit only `spec.replicas` in the `shop-web` Deployment in
+`my-platform/components/05-shop-web.yaml`, from `3` to `2`. Check and render the
+candidate under new names:
+
+```bash
+cub stack certify ./my-platform/stack.yaml --json > ./my-platform/changed-result.json &&
+  cub stack sandbox ./my-platform/stack.yaml --out ./my-platform/changed.yaml &&
+  git diff --no-index ./my-platform/rendered.yaml ./my-platform/changed.yaml
+```
+
+Run the render only after certification succeeds. The diff command exits 1 when it
+finds a change; inspect that difference. The saved baseline should remain unchanged.
+The new JSON result's `renderedFile.sha256` identifies the bytes in `changed.yaml`.
+If certification refuses a change, repair its findings before rendering or sharing
+that candidate as checked.
+
+To resume tomorrow or hand over to someone else, keep the entire directory and run
+the same certify command against its `stack.yaml`. The saved component files are
+materialized copies, so continuation does not need the original charts, plugin
+sample data or registry. It still needs the plugin runtime. Component names,
+planes, order, app roles and declared bindings are preserved; original source
+references remain in the baseline result. Edits are new local configuration, not
+updates to the original published bundles or their certification.
+
+An existing directory is never overwritten, even when empty. If creation is
+interrupted before `stack.yaml` appears, keep the partial directory for inspection
+and choose a new output directory. A complete saved directory is the resume point;
+re-running the creation command against it is deliberately refused.
+
+This example still needs target namespaces, an issuer and a secret store before
+live use. No target has been checked, no application response has been observed,
+and this local copy is not a published OCI artifact.
+
 ## Certification for assistants and automation
 
 ```bash

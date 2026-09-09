@@ -107,3 +107,6 @@ jobs:
           node bin/cub-stack sandbox kubara-platform
           node bin/cub-stack sandbox kubara-shop-platform
           if node bin/cub-stack certify kubara-shop-first-try; then exit 1; fi
+
+      - name: saved workspace survives handoff and a local edit
+        run: node --test tests/stack-workspace.test.mjs
