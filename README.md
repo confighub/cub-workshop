@@ -109,6 +109,31 @@ cub fleet down meridian                   # delete everything the manifest names
 From there the generic cub verbs continue the ladder: `cub release publish`,
 `cub variant promote`, gates and ChangeOrders for governance.
 
+## Certification for assistants and automation
+
+```bash
+cub stack certify web-tiny --json > result.json
+cub stack certify conflict-demo --json > refused.json
+```
+
+A completed check writes one `StackCertificationResult` JSON object to stdout.
+Exit 0 means the composition passed the implemented checks; exit 1 with a JSON
+result means it was refused. Execution or setup errors remain on stderr; an empty
+stdout is not a certification result. JSON mode is supported only for `certify`.
+
+The result includes `certified`, component counts and sources, the existing receipt
+check fields (`result` and `text`), and `renderedFile` with the SHA-256 and size of
+the exact bytes a sandbox would write. A rejected candidate also has a byte hash;
+that hash does not make it approved or published. `scope` explicitly marks target
+availability and application health as `not-checked`. No account or target is
+contacted by certification; uncached bundle inputs may require registry access.
+
+Claude Code, Codex and other consumers should use `certified` and the scope fields
+for control flow, preserve warnings and findings for review, and retain the result
+when handing work to another person. Do not infer deployment approval or a healthy
+application from a static result. Run the same command without `--json` for human
+output; both forms use the same certification function.
+
 ## What ships in the plugin
 
 - `renders/` — nine verified chart renders from the public catalog, the config catalog.
