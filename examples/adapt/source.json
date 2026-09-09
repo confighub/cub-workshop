@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/confighub/helm-expt",
+  "revision": "dd9d7f7c54b24e480e887c18447e1cee611192fc",
+  "path": "recipes/prometheus-community/prometheus/29.8.0/revisions/server-only-ephemeral/r001/rendered/release-objects.yaml",
+  "sourceSha256": "174e1729753ef551fa059f86111cfd87653ea2380dc879238cf5cc4987e78812",
+  "excerptSha256": "556cbf4cc1e0412d5bc0b10591b7db522e994287063cb79cd45fd375a9944ea8",
+  "selection": "Only Deployment monitoring/prometheus-server, extracted as YAML text with document separators and surrounding whitespace removed. This is not the complete chart."
+}
