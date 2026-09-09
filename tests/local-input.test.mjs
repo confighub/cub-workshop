@@ -26,7 +26,7 @@ test('missing, empty and partially invalid inputs fail before writing an output'
   const dir = mkdtempSync(join(tmpdir(), 'local-invalid-'));
   try {
     const path = join(dir, 'input.yaml');
-    for (const content of ['', 'hello', 'apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: good\n---\nnot-a-resource\n']) {
+    for (const content of ['', 'hello', 'apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: 123\n', 'apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: good\n---\nnot-a-resource\n']) {
       writeFileSync(path, content);
       for (const noun of ['config','app']) {
         const result = run(noun, 'check', path);
