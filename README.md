@@ -209,3 +209,21 @@ Maintenance rule: `receipts/` and `renders/` are copies of that public evidence.
 When a chart re-renders or a bundle republishes upstream, refresh the copy and its
 digest here in the same change — the resolver hash-verifies every bundle against
 these receipts, so a stale copy fails loudly rather than drifting silently.
+
+### Inspect target prerequisites before delivery
+
+`cub stack certify <stack> --json` includes a scoped `prerequisites` inventory.
+It reports explicit namespaces, Certificate issuer references, ExternalSecret
+store references and named Ingress classes. Each requirement identifies its
+consuming component and field, whether its object is `bundled` or its target
+availability is `unknown`, and the next action. Bundled means the object is
+present in the materialized stack; it does not mean the controller is ready.
+
+For `kubara-shop-platform`, the five namespaces, `ClusterIssuer/letsencrypt`
+and `ClusterSecretStore/platform-store` need target verification. The Traefik
+IngressClass is bundled. The human output warns about the unknown prerequisites;
+static certification can still pass. No cluster is contacted. The inventory is
+not exhaustive: credentials, storage, DNS, workload scheduling, implicit/default
+namespaces, arbitrary resource references and application responses are outside
+this check. Neither people nor assistants should use `certified: true` as a
+permission or readiness signal for deployment.

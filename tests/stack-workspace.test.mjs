@@ -20,6 +20,12 @@ test('save, move, edit one field, and resume with only a clean plugin runtime', 
     assert.equal(saved.status, 0, saved.stderr);
     const baseline = JSON.parse(readFileSync(join(workspace, 'result.json')));
     assert.equal(baseline.objectCount, 135);
+    assert.equal(baseline.prerequisites.targetChecked, false);
+    const unknown = baseline.prerequisites.requirements.filter(r => r.status === 'unknown');
+    assert.equal(unknown.filter(r => r.kind === 'Namespace').length, 5);
+    assert.ok(unknown.some(r => r.kind === 'ClusterIssuer' && r.name === 'letsencrypt'));
+    assert.ok(unknown.some(r => r.kind === 'ClusterSecretStore' && r.name === 'platform-store'));
+    assert.equal(baseline.prerequisites.requirements.find(r => r.kind === 'IngressClass').status, 'bundled');
     assert.equal(baseline.renderedFile.sha256, hash(readFileSync(join(workspace, 'rendered.yaml'))));
     assert.ok(baseline.components.some(c => c.source.startsWith('oci://')));
     for (const file of baseline.workspaceFiles) assert.equal(hash(readFileSync(join(workspace, file.path))), file.sha256);
