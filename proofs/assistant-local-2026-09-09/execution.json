@@ -1,0 +1,22 @@
+{
+  "sourceCommit": "59a19a2a7fcfa8b3346693418a1f43ba340ef885",
+  "pluginVersion": "0.6.14",
+  "cliVersion": "0.4.4",
+  "taskScope": "local-save-edit-refuse",
+  "setup": "Prepared isolated plugin copy from source; setup excluded from elapsed time. No independent human trial.",
+  "agents": {
+    "claude": {
+      "agent": "claude",
+      "exitCode": 0,
+      "elapsedSeconds": 110.66,
+      "cliVersion": "2.1.227"
+    },
+    "codex": {
+      "agent": "codex",
+      "exitCode": 0,
+      "elapsedSeconds": 102.78,
+      "cliVersion": "0.153.4"
+    }
+  },
+  "taskSha256": "ca98bb2a793a63d9b5f30f3b16acfec065c387ac65808ef3ab3df5510548cca4"
+}

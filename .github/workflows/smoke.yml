@@ -60,6 +60,8 @@ jobs:
         run: node --test tests/fleet-lookup-errors.test.mjs
       - name: Kubara app HTTP evidence
         run: node --test tests/shop-http-evidence.test.mjs
+      - name: retained assistant identity agreement
+        run: node --test tests/assistant-local-evidence.test.mjs
       - name: structured certification results
         run: node --test tests/stack-certify-json.test.mjs
       - name: fleet lists and plans the shipped manifest

@@ -1,0 +1,80 @@
+{
+  "apiVersion": "evidence.confighub.com/v1alpha1",
+  "kind": "StackCertificationResult",
+  "name": "kubara-shop-platform",
+  "certified": true,
+  "objectCount": 135,
+  "producer": {
+    "name": "cub-workshop",
+    "version": "0.6.14",
+    "repository": "https://github.com/confighub/cub-workshop"
+  },
+  "scope": {
+    "mode": "static-composition",
+    "targetAvailability": "not-checked",
+    "applicationHealth": "not-checked"
+  },
+  "checks": [
+    {
+      "result": "PASS",
+      "text": "no resource conflicts across components (135 objects)"
+    },
+    {
+      "result": "PASS",
+      "text": "CRD ordering: 56 CRDs are delivered before the 2 custom resources that need them"
+    },
+    {
+      "result": "PASS",
+      "text": "served API versions: 2 custom resource(s) match their bundled CRD; target availability is not checked"
+    },
+    {
+      "result": "PASS",
+      "text": "app needs met: shop-web needs an ingress controller, cert-manager, external-secrets, all carried by this stack"
+    },
+    {
+      "result": "WARN",
+      "text": "4 admission webhook(s) need a caBundle — cert-manager is in the stack and can issue it"
+    },
+    {
+      "result": "PASS",
+      "text": "namespaces: 0 created, 5 must already exist (cert-manager, external-secrets, kube-system, shop, traefik)"
+    }
+  ],
+  "renderedFile": {
+    "path": "kubara-shop-platform.yaml",
+    "sha256": "82b2c60892442f86dcd6cb843beaec4cce23d713aa20de8ae928c74fcdbacf54",
+    "bytes": 3634443
+  },
+  "components": [
+    {
+      "name": "cert-manager",
+      "plane": "mgmt",
+      "source": "components/01-cert-manager.yaml",
+      "objects": 46
+    },
+    {
+      "name": "traefik",
+      "plane": "mgmt",
+      "source": "components/02-traefik.yaml",
+      "objects": 31
+    },
+    {
+      "name": "metrics-server",
+      "plane": "mgmt",
+      "source": "components/03-metrics-server.yaml",
+      "objects": 9
+    },
+    {
+      "name": "external-secrets",
+      "plane": "mgmt",
+      "source": "components/04-external-secrets.yaml",
+      "objects": 44
+    },
+    {
+      "name": "shop-web",
+      "plane": "workload",
+      "source": "components/05-shop-web.yaml",
+      "objects": 5
+    }
+  ]
+}
