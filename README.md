@@ -12,6 +12,14 @@ cub plugin install confighub/cub-workshop
 Requires `node`, `oras`, and `cub` on the PATH. [DEMO.md](./DEMO.md) walks the whole
 ladder in ten minutes, copy-paste.
 
+## Compare a GPU workload with target facts
+
+`cub app match model.yaml --target nodes.yaml --json --out match-result.json`
+compares a KServe workload's declared selectors and GPU count against a supplied
+Node snapshot. It saves candidate, mismatch or unknown findings without contacting
+a cluster. A candidate is not scheduling or inference proof.
+[Try the bounded example and refusal case](./examples/match/README.md).
+
 ## The design center: every result is an OCI image
 
 Every verb can hand its result on as a certified bundle: an OCI artifact of the
