@@ -1,0 +1,12 @@
+{
+  "candidate-a": {
+    "withinRequestedEdit": true,
+    "unexpectedPaths": []
+  },
+  "candidate-b": {
+    "withinRequestedEdit": false,
+    "unexpectedPaths": [
+      "/spec/revisionHistoryLimit"
+    ]
+  }
+}

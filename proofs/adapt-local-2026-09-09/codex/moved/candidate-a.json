@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "scope": "local-configuration-diff",
+  "before": {
+    "sha256": "sha256:556cbf4cc1e0412d5bc0b10591b7db522e994287063cb79cd45fd375a9944ea8",
+    "objectCount": 1
+  },
+  "after": {
+    "sha256": "sha256:d6a536a143d74657625854851a427b6f3042c08fcc040ff1b3f9506665cf3d03",
+    "objectCount": 1
+  },
+  "equal": false,
+  "summary": {
+    "added": 0,
+    "removed": 0,
+    "changed": 1,
+    "unchanged": 0
+  },
+  "changes": [
+    {
+      "object": {
+        "apiVersion": "apps/v1",
+        "kind": "Deployment",
+        "namespace": "monitoring",
+        "name": "prometheus-server"
+      },
+      "change": "changed",
+      "fields": [
+        {
+          "path": "/spec/replicas",
+          "operation": "replace",
+          "before": 1,
+          "after": 2
+        }
+      ]
+    }
+  ],
+  "comparison": "Object identity includes API version and explicit namespace; mapping and document order ignored, arrays compared as whole values, missing and null distinct. No Kubernetes defaulting or schema interpretation.",
+  "notChecked": [
+    "Kubernetes schema or admission validity",
+    "upstream merge and protected-field preservation",
+    "target readiness or live drift",
+    "application availability"
+  ]
+}

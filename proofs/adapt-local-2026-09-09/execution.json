@@ -1,0 +1,40 @@
+{
+  "sourceCommit": "1816d573b832efd78fc53790e8a53f5bcb8a4006",
+  "pluginVersion": "0.6.20",
+  "cubClientVersion": "0.4.4",
+  "taskSha256": "a56b32b117faa8042fb7ddf840b1b506904c3f398007c1ac5ff72dafa98fe810",
+  "scope": "prepared-local-adapt-review",
+  "models": "CLI defaults, not pinned",
+  "setup": "Prepared isolated plugin installations; setup excluded from elapsed times. One observation per assistant; not a benchmark or human handoff.",
+  "agents": {
+    "claude": {
+      "agent": "claude",
+      "exitCode": 0,
+      "elapsedSeconds": 63.73,
+      "cliVersion": "2.1.227 (Claude Code)"
+    },
+    "codex": {
+      "agent": "codex",
+      "exitCode": 0,
+      "elapsedSeconds": 68.97,
+      "cliVersion": "codex-cli 0.153.4"
+    }
+  },
+  "finalInputHashes": {
+    "direct": {
+      "before.yaml": "556cbf4cc1e0412d5bc0b10591b7db522e994287063cb79cd45fd375a9944ea8",
+      "candidate-a.yaml": "d6a536a143d74657625854851a427b6f3042c08fcc040ff1b3f9506665cf3d03",
+      "candidate-b.yaml": "cf640e562124d7b523cdf898489d7605f3c01bd8f7ebbc3abebc59aa71b31af8"
+    },
+    "claude": {
+      "before.yaml": "556cbf4cc1e0412d5bc0b10591b7db522e994287063cb79cd45fd375a9944ea8",
+      "candidate-a.yaml": "d6a536a143d74657625854851a427b6f3042c08fcc040ff1b3f9506665cf3d03",
+      "candidate-b.yaml": "cf640e562124d7b523cdf898489d7605f3c01bd8f7ebbc3abebc59aa71b31af8"
+    },
+    "codex": {
+      "before.yaml": "556cbf4cc1e0412d5bc0b10591b7db522e994287063cb79cd45fd375a9944ea8",
+      "candidate-a.yaml": "d6a536a143d74657625854851a427b6f3042c08fcc040ff1b3f9506665cf3d03",
+      "candidate-b.yaml": "cf640e562124d7b523cdf898489d7605f3c01bd8f7ebbc3abebc59aa71b31af8"
+    }
+  }
+}

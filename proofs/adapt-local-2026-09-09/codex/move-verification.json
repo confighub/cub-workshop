@@ -1,0 +1,16 @@
+{
+  "inputHashesUnchanged": true,
+  "diffResultsIdentical": {
+    "candidate-a": true,
+    "candidate-b": true
+  },
+  "diffFilesByteIdentical": {
+    "candidate-a": true,
+    "candidate-b": true
+  },
+  "diffHashesMatchInputs": {
+    "candidate-a": true,
+    "candidate-b": true
+  },
+  "exitCodesUnchanged": true
+}
