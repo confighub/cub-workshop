@@ -13,6 +13,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: stack served API regression tests
+        run: node --test tests/stack-api-compatibility.test.mjs
       - name: config lists and checks a shipped render
         run: |
           node bin/cub-config list
@@ -101,3 +103,5 @@ jobs:
         run: |
           node bin/cub-stack sandbox eks-inference
           node bin/cub-stack sandbox kubara-platform
+          node bin/cub-stack sandbox kubara-shop-platform
+          if node bin/cub-stack certify kubara-shop-first-try; then exit 1; fi
