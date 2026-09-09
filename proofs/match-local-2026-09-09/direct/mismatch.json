@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "scope": "supplied-node-snapshot",
+  "status": "mismatch",
+  "workload": {
+    "apiVersion": "serving.kserve.io/v1beta1",
+    "kind": "InferenceService",
+    "name": "llama3-8b-instruct-2xh100",
+    "namespace": null,
+    "sha256": "sha256:a87b0aec9b6d8b3d34bb645fa6bd3ef1957160aa5cd3104e9004b050b2f984e6"
+  },
+  "target": {
+    "sha256": "sha256:e7fc2f27e9925bbe4d5847dd478ff09a1a1969d78b7a7c9e760eec26d37ccadf",
+    "nodeCount": 1,
+    "liveChecked": false
+  },
+  "requirement": {
+    "gpuPerReplica": 2,
+    "nodeSelector": {
+      "nvidia.com/gpu.product": "NVIDIA-H100-SXM4-80GB"
+    },
+    "runtime": "nvidia-nim-llama3-8b-instruct-1.0.0"
+  },
+  "nodes": [
+    {
+      "node": "illustrative-h100",
+      "status": "mismatch",
+      "checks": [
+        {
+          "field": "metadata.labels[nvidia.com/gpu.product]",
+          "required": "NVIDIA-H100-SXM4-80GB",
+          "supplied": "NVIDIA-H100-SXM4-80GB",
+          "status": "pass"
+        },
+        {
+          "field": "status.allocatable[nvidia.com/gpu]",
+          "required": 2,
+          "supplied": 1,
+          "status": "mismatch"
+        }
+      ]
+    }
+  ],
+  "execution": "not-run",
+  "notChecked": [
+    "snapshot authenticity or freshness",
+    "free GPUs and concurrent workloads",
+    "GPU memory, partitioning and runtime compatibility",
+    "CPU, memory, storage and network",
+    "affinity, taints, readiness, quotas and scheduling",
+    "replica placement and autoscaling",
+    "serving runtime, controllers and API availability",
+    "registry credentials and model entitlement",
+    "application or inference response"
+  ],
+  "nextAction": "Choose a node with the requested labels and sufficient per-node GPU count, or select another retained workload configuration."
+}

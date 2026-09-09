@@ -1,0 +1,25 @@
+{
+  "sourceCommit": "31202099f41dbd8db51c2f9bd9d87a2be714091d",
+  "pluginVersion": "0.6.19",
+  "cliVersion": "0.4.4",
+  "scope": "offline-supplied-node-snapshot",
+  "setup": "Prepared isolated plugin installations; setup time excluded. One trial per assistant, not a human trial or performance benchmark.",
+  "models": "CLI defaults; model selection not pinned",
+  "agents": {
+    "claude": {
+      "agent": "claude",
+      "exitCode": 0,
+      "elapsedSeconds": 56.58,
+      "cliVersion": "2.1.227 (Claude Code)"
+    },
+    "codex": {
+      "agent": "codex",
+      "exitCode": 0,
+      "elapsedSeconds": 59.22,
+      "cliVersion": "codex-cli 0.153.4"
+    }
+  },
+  "taskSha256": "a3dea643d24f077d5aa6c0cbdf04be9191b4fdca164087126d94fccc78649da0",
+  "modelSha256": "a87b0aec9b6d8b3d34bb645fa6bd3ef1957160aa5cd3104e9004b050b2f984e6",
+  "targetSha256": "8c5540977b4d9f0492f24493aef521e82a78d9425a10ad36737d6c073124eae5"
+}

@@ -19,6 +19,8 @@ jobs:
         run: node --test tests/config-diff.test.mjs
       - name: GPU matching against supplied Node snapshots
         run: node --test tests/app-match.test.mjs
+      - name: retained direct and assistant Match trials
+        run: node --test tests/match-local-evidence.test.mjs
       - name: stack served API regression tests
         run: node --test tests/stack-api-compatibility.test.mjs
       - name: config lists and checks a shipped render
