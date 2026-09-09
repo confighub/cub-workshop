@@ -26,17 +26,17 @@ test('namespaced references require the exact namespace, kind and API group', ()
   assert.equal(right.targetChecked, false);
 });
 
-test('cluster references, default namespace and hub exclusions retain their scope', () => {
+test('cluster references, unspecified namespaces and hub exclusions retain their scope', () => {
   const certificate = cert(); certificate.spec.issuerRef.kind = 'ClusterIssuer';
   const local = cert(); delete local.metadata.namespace;
   const components = [
     { name: 'app', objects: [certificate, local] },
-    { name: 'cluster', objects: [obj('cert-manager.io/v1', 'ClusterIssuer', 'issuer')] },
+    { name: 'cluster', objects: [obj('cert-manager.io/v1', 'ClusterIssuer', 'issuer'), obj('cert-manager.io/v1', 'Issuer', 'issuer')] },
     { name: 'hub', plane: 'hub', objects: [obj('cert-manager.io/v1', 'Issuer', 'issuer', 'default'), obj('v1', 'Namespace', 'shop')] },
   ];
   const result = stackPrerequisites({ components });
   assert.equal(result.requirements.find(r => r.kind === 'ClusterIssuer').status, 'bundled');
   const issuer = result.requirements.find(r => r.kind === 'Issuer');
-  assert.equal(issuer.namespace, 'default'); assert.equal(issuer.status, 'unknown');
+  assert.equal(issuer.namespace, null); assert.equal(issuer.status, 'unknown');
   assert.equal(result.requirements.find(r => r.kind === 'Namespace').status, 'unknown');
 });
