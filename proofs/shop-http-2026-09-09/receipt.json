@@ -1,0 +1,32 @@
+{
+  "scope": "single-local-container-not-kubernetes",
+  "image": "registry.k8s.io/e2e-test-images/agnhost:2.47@sha256:cc249acbd34692826b2b335335615e060fdb3c0bca4954507aa3a1d1194de253",
+  "imageId": "sha256:cc249acbd34692826b2b335335615e060fdb3c0bca4954507aa3a1d1194de253",
+  "os": "linux",
+  "architecture": "arm64",
+  "entrypoint": [
+    "/agnhost"
+  ],
+  "defaultCmd": [
+    "pause"
+  ],
+  "runs": [
+    {
+      "args": [],
+      "httpStatus": null,
+      "response": null,
+      "cleanup": true
+    },
+    {
+      "args": [
+        "serve-hostname",
+        "--http=true",
+        "--port=8080"
+      ],
+      "httpStatus": 200,
+      "response": "41ecdb493a9d",
+      "cleanup": true
+    }
+  ],
+  "appSha256": "52398e1d2a8aeecad560f5dcfbf71a561166eb5fdc8e2e61c8f06edc7c56f38d"
+}

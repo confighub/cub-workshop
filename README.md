@@ -244,3 +244,7 @@ Fleet creation stops on authentication, permission or other lookup failures;
 only the CLI's explicit missing-Space response permits creating that Space.
 Errors keep the useful message instead of a trailing punctuation line. Inspect
 any earlier completed steps before retrying a partially completed fleet operation.
+The Kubara shop fixture explicitly starts a digest-pinned HTTP hostname server
+on port 8080 and has an HTTP readiness probe. Its [local container receipt](proofs/shop-http-2026-09-09/README.md)
+proves a response from that image and command only; Kubernetes, ingress, issuer,
+secret-store and release observations still need the named target.
