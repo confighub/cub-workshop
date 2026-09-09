@@ -13,6 +13,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: retained direct and assistant Adapt trials
+        run: node --test tests/adapt-local-evidence.test.mjs
       - name: local configuration diff
         run: node --test tests/config-diff.test.mjs
       - name: stack served API regression tests

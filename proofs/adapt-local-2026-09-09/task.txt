@@ -1,0 +1,9 @@
+Complete this local-only Adapt review by running cub commands. Read WORKFLOW.md first. Workshop is already installed under this directory's isolated CUB_CONFIG. Do not install or upgrade, read credentials, contact a target or registry, upload, deploy, change configuration inputs, or change anything outside this directory. Do not delegate.
+
+The requested edit is only Deployment monitoring/prometheus-server /spec/replicas from 1 to 2. Review both supplied candidate-a.yaml and candidate-b.yaml against before.yaml using cub config diff with --json, --exit-code and --out. Save candidate-a.json and candidate-b.json and retain the actual command exit codes in exit-codes.json with keys candidate-a and candidate-b. Do not interpret a differences exit code as an approval or policy refusal.
+
+Write review.json with keys candidate-a and candidate-b. Each value must contain withinRequestedEdit (boolean) and unexpectedPaths (an array of JSON Pointer paths). Base that judgment on the actual diff, including every extra change. Preserve any unexpected change and report it; do not repair it, hide it or overwrite the baseline.
+
+Create a moved directory, move all three input YAML files into it, and rerun both comparisons with --json --exit-code --out, saving moved/candidate-a.json and moved/candidate-b.json. Record the rerun exit codes as moved/exit-codes.json. Verify that moving the files does not change the diff results or input hashes.
+
+Write REPORT.md explaining the actual changed fields and values, which candidate is within the requested edit, why the other is not, what exit 1 means here, and which guarantees are absent. State whether this performed an upstream merge, protected a field, changed ConfigHub, or observed a running application. Keep the final answer short. Complete the operations rather than only describing commands.

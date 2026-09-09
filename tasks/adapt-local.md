@@ -72,5 +72,14 @@ node scripts/run-prometheus-upgrade-preservation-proof.mjs --verify
 ```
 
 The runner's `--run` mode changes ConfigHub records. It is not part of this local
-demo. A fresh managed upgrade, assistant execution trial and independent human
-handoff remain separate acceptance work.
+demo. A fresh managed upgrade and independent human handoff remain separate
+acceptance work.
+
+## Retained local assistant trial
+
+[The direct, Claude Code and Codex trial](../proofs/adapt-local-2026-09-09/README.md)
+uses this merged command on two prepared candidates: the requested replica edit
+and a candidate with an additional history-limit edit. Both assistants retained
+the diff and flagged the extra change without repairing it. All routes preserved
+results after moving the input files. This validates a bounded local review task;
+it is not a fresh managed upgrade or an independent human handoff.
