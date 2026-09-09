@@ -12,6 +12,13 @@ cub plugin install confighub/cub-workshop
 Requires `node`, `oras`, and `cub` on the PATH. [DEMO.md](./DEMO.md) walks the whole
 ladder in ten minutes, copy-paste.
 
+## Inspect a local configuration edit
+
+`cub config diff before.yaml after.yaml --json --out diff.json` reports changed
+objects and fields and retains both input hashes. It performs no merge, upload or
+deployment. [Try the Adapt task](./tasks/adapt-local.md), then follow the existing
+Catalog evidence for preserving a protected edit through an upstream upgrade.
+
 ## The design center: every result is an OCI image
 
 Every verb can hand its result on as a certified bundle: an OCI artifact of the
