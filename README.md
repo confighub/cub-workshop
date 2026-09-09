@@ -248,3 +248,21 @@ The Kubara shop fixture explicitly starts a digest-pinned HTTP hostname server
 on port 8080 and has an HTTP readiness probe. Its [local container receipt](proofs/shop-http-2026-09-09/README.md)
 proves a response from that image and command only; Kubernetes, ingress, issuer,
 secret-store and release observations still need the named target.
+
+### Select Kubara with an Argo CD controller
+
+```sh
+cub stack sandbox kubara-gitops-shop --workspace ./gitops-platform
+```
+
+This named selection adds the retained, digest-pinned Argo CD bundle to all five
+components of `kubara-shop-platform`. It preserves the existing app and its
+requirements. Static composition contains 184 objects, including the Argo CD
+application controller and Application CRD. It does not create an Application,
+bind a repository or release, or establish a working GitOps loop.
+
+Before delivery, verify the six namespaces (`argocd`, `cert-manager`,
+`external-secrets`, `kube-system`, `shop`, `traefik`), issuer, secret store,
+controller access and app prerequisites on the named target. Select and review
+the GitOps source and destination separately. A controller render is not a
+controller observation or an application response.
