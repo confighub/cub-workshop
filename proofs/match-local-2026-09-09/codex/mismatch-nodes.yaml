@@ -1,0 +1,13 @@
+# Illustrative input, NOT an observation from a real cluster.
+apiVersion: v1
+kind: NodeList
+items:
+  - apiVersion: v1
+    kind: Node
+    metadata:
+      name: illustrative-h100
+      labels:
+        nvidia.com/gpu.product: NVIDIA-H100-SXM4-80GB
+    status:
+      allocatable:
+        nvidia.com/gpu: "1"

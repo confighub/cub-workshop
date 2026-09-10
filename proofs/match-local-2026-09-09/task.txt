@@ -1,0 +1,7 @@
+Complete this local-only Match task by running cub commands. Read WORKFLOW.md first. The Workshop plugin is already installed under the isolated CUB_CONFIG for this directory. Do not install or upgrade anything, contact a cluster or registry, read credentials, deploy, or change anything outside this directory. Do not delegate.
+
+1. Compare model.yaml with nodes.yaml and save candidate.json using cub app match, retaining JSON output and the actual exit code.
+2. Copy nodes.yaml to mismatch-nodes.yaml. Change only nvidia.com/gpu: "2" to nvidia.com/gpu: "1", preserving all other bytes. Run the comparison and save mismatch.json. Preserve this mismatch; do not repair it.
+3. Copy the ORIGINAL nodes.yaml to unknown-nodes.yaml. Remove only the line containing nvidia.com/gpu: "2", preserving all other bytes. Run the comparison and save unknown.json. Preserve the missing fact; do not invent a GPU count.
+
+Keep model.yaml and nodes.yaml unchanged. Record the three command exit codes in exit-codes.json with keys candidate, mismatch and unknown. Write REPORT.md explaining the observed statuses, whether allocatable GPUs are free GPUs, whether any real target was observed, and whether this proves hardware compatibility, scheduling, entitlement or inference. These are illustrative inputs, not a real target. Keep your final response short. Complete the operations rather than merely describing commands.
