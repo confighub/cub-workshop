@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import(new URL("../lib/fleet.mjs", import.meta.url).href).catch((error) => {
   // A failure reads as one line, never a stack trace.
-  const text = String(error.stderr ?? error.message).trim().split("\n").filter(Boolean).pop() ?? "unknown error";
+  const lines = String(error.stderr || error.message).trim().split("\n").map(line => line.trim()).filter(line => /[A-Za-z0-9]/.test(line));
+  const text = lines.find(line => line.startsWith("Failed:")) ?? lines.at(-1) ?? "unknown error";
   console.error(text.startsWith("Failed") ? text : `Failed: ${text}`);
   process.exit(1);
 });

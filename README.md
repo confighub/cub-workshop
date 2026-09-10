@@ -240,3 +240,7 @@ named Kubernetes objects and refuses empty or partly invalid documents. A local
 and recognized dependencies; they do not prove target compatibility or that a
 workload runs. Keep the source version and your authored values or edits when
 bringing a new upstream render; this command does not merge upstream changes.
+Fleet creation stops on authentication, permission or other lookup failures;
+only the CLI's explicit missing-Space response permits creating that Space.
+Errors keep the useful message instead of a trailing punctuation line. Inspect
+any earlier completed steps before retrying a partially completed fleet operation.

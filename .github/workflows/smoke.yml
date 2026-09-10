@@ -54,6 +54,8 @@ jobs:
         run: node --test tests/stack-prerequisites.test.mjs
       - name: local config and app inputs
         run: node --test tests/local-input.test.mjs
+      - name: fleet lookup failures never become creation attempts
+        run: node --test tests/fleet-lookup-errors.test.mjs
       - name: structured certification results
         run: node --test tests/stack-certify-json.test.mjs
       - name: fleet lists and plans the shipped manifest
