@@ -52,6 +52,8 @@ jobs:
           done
       - name: target prerequisite inventory
         run: node --test tests/stack-prerequisites.test.mjs
+      - name: local config and app inputs
+        run: node --test tests/local-input.test.mjs
       - name: structured certification results
         run: node --test tests/stack-certify-json.test.mjs
       - name: fleet lists and plans the shipped manifest
