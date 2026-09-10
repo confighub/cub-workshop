@@ -274,3 +274,6 @@ Before delivery, verify the six namespaces (`argocd`, `cert-manager`,
 controller access and app prerequisites on the named target. Select and review
 the GitOps source and destination separately. A controller render is not a
 controller observation or an application response.
+The [local CLI and assistant task](tasks/compose-local.md) gives the same save,
+change and refusal exercise to a person, Claude Code or Codex. It is a bounded
+local workflow, with live delivery and independent human trials still separate.
