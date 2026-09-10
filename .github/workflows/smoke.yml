@@ -122,3 +122,5 @@ jobs:
 
       - name: saved workspace survives handoff and a local edit
         run: node --test tests/stack-workspace.test.mjs
+      - name: Kubara GitOps selection retains the existing app
+        run: node --test tests/kubara-gitops.test.mjs
