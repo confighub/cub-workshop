@@ -50,6 +50,8 @@ jobs:
               echo "$broken refused as designed"
             fi
           done
+      - name: target prerequisite inventory
+        run: node --test tests/stack-prerequisites.test.mjs
       - name: structured certification results
         run: node --test tests/stack-certify-json.test.mjs
       - name: fleet lists and plans the shipped manifest
