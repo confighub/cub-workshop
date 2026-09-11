@@ -51,3 +51,27 @@ The [retained trial](../proofs/match-local-2026-09-09/README.md) records one exe
 per assistant, not an independent human handoff or evidence of repeatable speed.
 This slice does not choose a model automatically, validate a full inference stack,
 or complete the real GPU execution requirement.
+
+## Review a new trial's saved files
+
+From a checkout containing `scripts/verify-match-trial.mjs`, run:
+
+```sh
+node scripts/verify-match-trial.mjs /path/to/trial-directory
+```
+
+The directory must contain the original `model.yaml` and `nodes.yaml`, both
+modified Node files, all three result JSON files, and `exit-codes.json` containing
+`{"candidate":0,"mismatch":1,"unknown":3}`. Record the actual command exits;
+the assistant process exiting zero is a different observation.
+
+The checker reads only those local files. It pins the teaching inputs, restricts
+the two edits, recomputes all findings and hashes, and rejects missing, linked,
+oversized or contradictory artifacts. It prints structured JSON and exits zero
+only when those artifacts agree. A report alone is rejected.
+
+This is an artifact consistency check, not evidence that a particular assistant
+executed the commands. A copied complete trial can pass. Preserve the launcher,
+actual working directory, tool transcript and per-command exits separately to
+assess execution and freshness. A denied tool call stays incomplete; never
+simulate results or disable an assistant's safety controls to complete a trial.
