@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { diagnose, elsewhere, generatedFields, leafPaths, lookup, nearest, presetPaths, without } from '../lib/config-values.mjs';
+import { pullReference } from '../lib/common.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const chart = join(root, 'tests/fixtures/values-chart');
@@ -134,6 +135,33 @@ test('check names images tagged latest or not tagged, and passes a digest or a f
     writeFileSync(file, JSON.stringify(pod('d', 'nginx:1.27.0')).replace('"busybox"', '"busybox:1.36"'));
     const pinned = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file], { encoding: 'utf8' });
     assert.match(pinned.stdout, /\[PASS\] images tagged latest or not tagged: 0/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('an image name becomes the reference its own registry answers to', () => {
+  const cases = [
+    ['redis:8', 'docker.io/library/redis:8'],
+    ['docker.io/redis:8', 'docker.io/library/redis:8'],
+    ['bitnami/redis:latest', 'docker.io/bitnami/redis:latest'],
+    ['registry-1.docker.io/bitnami/mysql:9.4.0-debian-12-r1', 'registry-1.docker.io/bitnami/mysql:9.4.0-debian-12-r1'],
+    ['ghcr.io/team/app:1.2.3', 'ghcr.io/team/app:1.2.3'],
+    ['localhost:5000/team/app:1', 'localhost:5000/team/app:1'],
+    ['quay.io/jetstack/cert-manager-controller:v1.20.2', 'quay.io/jetstack/cert-manager-controller:v1.20.2'],
+  ];
+  for (const [image, reference] of cases) assert.equal(pullReference(image), reference, image);
+});
+
+test('check without --images makes no network call, and --images is refused nowhere', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'check-flag-'));
+  try {
+    const file = join(dir, 'app.yaml');
+    writeFileSync(file, JSON.stringify({ apiVersion: 'v1', kind: 'Pod', metadata: { name: 'p', namespace: 'shop' }, spec: { containers: [{ name: 'c', image: 'ghcr.io/team/app:1.2.3' }] } }));
+    const quiet = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file], { encoding: 'utf8' });
+    assert.equal(quiet.status, 0, quiet.stderr);
+    assert.doesNotMatch(quiet.stdout, /images that pull anonymously/);
+    assert.match(spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', '--help'], { encoding: 'utf8' }).stdout, /\[--images\]/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

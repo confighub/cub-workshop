@@ -38,7 +38,10 @@ on every render, such as a generated password, is named too, because Argo CD, Fl
 `helm template` render without your cluster and get a new value every time.
 
 `cub config check` names every image tagged `latest` or not tagged at all, since the
-same name can pull different bytes later.
+same name can pull different bytes later. With `--images` it also asks each image's own
+registry, anonymously, whether that image can be pulled at all. A tag that has been
+withdrawn, such as a versioned Bitnami image, reports `NOT FOUND` before you install
+the chart and watch the pods fail. This is the one part of `check` that needs a network.
 
 ## Inspect a local configuration edit
 
