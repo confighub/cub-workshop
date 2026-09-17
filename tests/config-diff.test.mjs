@@ -42,6 +42,10 @@ test('a list of uniquely named items is compared item by item, by name',()=>{
  const twins=[{name:'a',v:1},{name:'a',v:2}];
  assert.deepEqual(diffConfigs(doc({items:twins}),doc({items:[{name:'a',v:1},{name:'a',v:3}]})).changes[0].fields[0].path,'/spec/items');
  assert.deepEqual(diffConfigs(doc({items:[{v:1}]}),doc({items:[{v:2}]})).changes[0].fields[0].path,'/spec/items');
+ // An embedded object, such as a volume claim template, is named by metadata.name.
+ const claim=(size)=>({metadata:{name:'data'},spec:{resources:{requests:{storage:size}}}});
+ assert.deepEqual(diffConfigs(doc({volumeClaimTemplates:[claim('8Gi')]}),doc({volumeClaimTemplates:[claim('1Gi')]})).changes[0].fields,
+  [{path:'/spec/volumeClaimTemplates/data/spec/resources/requests/storage',operation:'replace',before:'8Gi',after:'1Gi'}]);
  assert.match(r.comparison,/lists of uniquely named items compared item by item by name/);
 });
 test('null, absent, false, zero and empty strings are not silently erased',()=>{
