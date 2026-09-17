@@ -19,6 +19,12 @@ cub config check redis
 Fourteen objects, the namespaces that must already exist, and the lifecycle work:
 CRDs, hooks, setup Jobs, webhook certificates.
 
+Writing values for a chart of your own? Find the ones that did nothing:
+
+```bash
+cub config values oci://registry-1.docker.io/cloudpirates/redis --version 0.34.11 --values my-values.yaml
+```
+
 ## 2. app — does this workload need a platform? (free)
 
 ```bash

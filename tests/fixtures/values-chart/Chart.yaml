@@ -1,0 +1,4 @@
+apiVersion: v2
+name: values-chart
+description: A tiny chart for testing the values diagnosis.
+version: 0.1.0

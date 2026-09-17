@@ -9,8 +9,27 @@ cub plugin install confighub/cub-workshop
 # tracking main instead: add --source-repo; from a local clone: cub plugin install /path/to/cub-workshop
 ```
 
-Requires `node`, `oras`, and `cub` on the PATH. [DEMO.md](./DEMO.md) walks the whole
-ladder in ten minutes, copy-paste.
+Requires `node`, `oras`, and `cub` on the PATH, and `helm` for `cub config values`.
+[DEMO.md](./DEMO.md) walks the whole ladder in ten minutes, copy-paste.
+
+## Find the values that did nothing
+
+Helm accepts a values file without checking it against the chart. A key that is
+misspelled, out of date, or written from memory for a different chart is ignored, and
+the install succeeds.
+
+```bash
+cub config values oci://registry-1.docker.io/cloudpirates/redis --version 0.34.11 --values my-values.yaml
+```
+
+Each value you set gets one verdict. `APPLIED` names the objects it changed. `IGNORED`
+means the chart has no such key, and says which key you may have meant or where the
+chart does declare that setting. `NO EFFECT` is a real key that another setting
+switches off. `DEFAULT` is what the chart already uses. The chart is rendered with your
+values, then once more for each value with that one value taken out, so the verdict
+follows the rendered objects and not a guess. Generated passwords and checksums are
+found first and left out of every comparison. `--json` gives the report as data,
+`--exit-code` fails when a value did nothing, and no value is ever printed.
 
 ## Inspect a local configuration edit
 
@@ -72,6 +91,7 @@ Free, no account, no cluster:
 ```bash
 cub config list
 cub config check redis                # render a chart, see what it installs and its lifecycle work
+cub config values <chart> --values my-values.yaml   # which of the values you set did anything
 
 cub app list
 cub app check shop-web                # render a workload, learn which platform services it needs
@@ -102,8 +122,9 @@ so it can name the nine shipped renders (`renders/argo-cd.yaml`, `cert-manager`,
 an assistant pointed at the ConfigHub Workshop site; the recorded run is in
 `proofs/assistant-composition-2026-09-02/`.
 
-Bringing your own chart? The config catalog here is fixed to the nine shipped
-renders, so render yours first and check the result: `helm template <chart> >
+Bringing your own chart? `cub config values <chart> --values my-values.yaml` checks
+your values against any chart Helm can pull. The config catalog here is fixed to the
+nine shipped renders, so to check what your chart installs, render it first: `helm template <chart> >
 my-app.yaml`, then run `cub config check ./my-app.yaml` or `cub app check
 ./my-app.yaml`, or use the browser check on the ConfigHub Workshop site, which accepts any
 rendered YAML without an account. Coming from Flux or Argo CD, nothing changes on

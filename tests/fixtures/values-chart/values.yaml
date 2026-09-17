@@ -1,0 +1,8 @@
+replicaCount: 1
+auth:
+  enabled: true
+  password: ""
+metrics:
+  enabled: false
+  port: 9121
+podAnnotations: {}
