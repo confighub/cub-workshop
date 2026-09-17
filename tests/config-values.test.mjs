@@ -82,3 +82,18 @@ test('a missing values file or chart is a usage error', () => {
   assert.equal(run.status, 2);
   assert.match(run.stderr, /usage: cub config values/);
 });
+
+test('a setting under a map the chart declares empty is pointed at that map', () => {
+  const open = { resources: {}, sentinel: { resources: {} }, persistence: { size: '8Gi' } };
+  assert.deepEqual(elsewhere(open, ['master', 'resources', 'limits', 'memory']), ['resources.limits.memory', 'sentinel.resources.limits.memory']);
+  assert.deepEqual(elsewhere(open, ['master', 'resources']), ['resources', 'sentinel.resources']);
+});
+
+test('--help is never read as a name, and exits 0', () => {
+  for (const [bin, verb] of [['cub-config', 'check'], ['cub-config', 'values'], ['cub-config', 'diff'], ['cub-app', 'check'], ['cub-app', 'match'], ['cub-stack', 'certify'], ['cub-stack', 'sandbox'], ['cub-fleet', 'plan']]) {
+    const run = spawnSync(process.execPath, [join(root, 'bin', bin), verb, '--help'], { encoding: 'utf8' });
+    assert.equal(run.status, 0, `${bin} ${verb} --help`);
+    assert.match(run.stdout, /cub (config|app|stack|fleet)/, `${bin} ${verb} --help prints usage`);
+    assert.doesNotMatch(run.stdout + run.stderr, /no such/, `${bin} ${verb} --help`);
+  }
+});

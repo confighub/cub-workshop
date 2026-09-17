@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+const OWN_HELP = ["diff", "values"];
+// --help is never a name: it prints the usage and exits 0.
+if (process.argv.slice(3).some((arg) => arg === "--help" || arg === "-h") && !OWN_HELP.includes(process.argv[2])) process.argv.length = 2;
 const verb = process.argv[2];
 const lib = (file) => import(new URL(`../lib/${file}`, import.meta.url).href);
 (verb === "diff"
