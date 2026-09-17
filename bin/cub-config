@@ -1,9 +1,13 @@
 #!/usr/bin/env node
-(process.argv[2] === "diff"
-  ? import(new URL("../lib/config-diff.mjs", import.meta.url).href).then(({ runDiff }) => { process.exitCode = runDiff(process.argv.slice(3)); })
-  : import(new URL("../lib/config.mjs", import.meta.url).href)).catch((error) => {
+const verb = process.argv[2];
+const lib = (file) => import(new URL(`../lib/${file}`, import.meta.url).href);
+(verb === "diff"
+  ? lib("config-diff.mjs").then(({ runDiff }) => { process.exitCode = runDiff(process.argv.slice(3)); })
+  : verb === "values"
+    ? lib("config-values.mjs").then(({ runValues }) => { process.exitCode = runValues(process.argv.slice(3)); })
+    : lib("config.mjs")).catch((error) => {
   // A failure reads as one line, never a stack trace.
   const text = String(error.stderr ?? error.message).trim().split("\n").filter(Boolean).pop() ?? "unknown error";
   console.error(text.startsWith("Failed") ? text : `Failed: ${text}`);
-  process.exit(process.argv[2] === "diff" ? 2 : 1);
+  process.exit(verb === "diff" || verb === "values" ? 2 : 1);
 });
