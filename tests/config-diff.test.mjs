@@ -106,3 +106,23 @@ test('retained Prometheus excerpt produces only the demonstrated replica edit',a
  assert.deepEqual(result.changes[0].object,{apiVersion:'apps/v1',kind:'Deployment',namespace:'monitoring',name:'prometheus-server'});
  assert.deepEqual(result.changes[0].fields,[{path:'/spec/replicas',operation:'replace',before:1,after:2}]);
 });
+
+test('a Secret value never appears in the diff, only a short hash of it', () => {
+  const secret = (data, extra = {}) => encode({ apiVersion: 'v1', kind: 'Secret', metadata: { name: 'db', namespace: 'shop' }, data, ...extra });
+  const changed = diffConfigs(secret({ password: 'b2xkLXNlY3JldA==' }), secret({ password: 'bmV3LXNlY3JldA==' }));
+  const text = JSON.stringify(changed);
+  assert.doesNotMatch(text, /b2xkLXNlY3JldA==|bmV3LXNlY3JldA==/);
+  const [field] = changed.changes[0].fields;
+  assert.equal(field.path, '/data/password');
+  assert.match(field.before, /^<redacted sha256:[0-9a-f]{12}>$/);
+  assert.notEqual(field.before, field.after);
+
+  const added = diffConfigs(secret({ a: 'MQ==' }), secret({ a: 'MQ==' }, { stringData: { token: 'plain-token' } }));
+  assert.doesNotMatch(JSON.stringify(added), /plain-token/);
+
+  const whole = diffConfigs(encode({ apiVersion: 'v1', kind: 'ConfigMap', metadata: { name: 'x', namespace: 'shop' }, data: { a: '1' } }), secret({ key: 'c2VjcmV0' }));
+  assert.doesNotMatch(JSON.stringify(whole), /c2VjcmV0/);
+
+  const config = diffConfigs(encode({ apiVersion: 'v1', kind: 'ConfigMap', metadata: { name: 'c', namespace: 'shop' }, data: { mode: 'a' } }), encode({ apiVersion: 'v1', kind: 'ConfigMap', metadata: { name: 'c', namespace: 'shop' }, data: { mode: 'b' } }));
+  assert.equal(config.changes[0].fields[0].after, 'b');
+});
