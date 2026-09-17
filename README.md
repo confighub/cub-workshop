@@ -31,6 +31,15 @@ follows the rendered objects and not a guess. Generated passwords and checksums 
 found first and left out of every comparison. `--json` gives the report as data,
 `--exit-code` fails when a value did nothing, and no value is ever printed.
 
+It also says what the chart does that you did not write. A resource preset in force,
+such as Bitnami's `resourcesPreset: nano`, is named with the objects it sets CPU and
+memory for. Setting your own resources replaces the whole preset. A field that changes
+on every render, such as a generated password, is named too, because Argo CD, Flux and
+`helm template` render without your cluster and get a new value every time.
+
+`cub config check` names every image tagged `latest` or not tagged at all, since the
+same name can pull different bytes later.
+
 ## Inspect a local configuration edit
 
 `cub config diff before.yaml after.yaml --json --out diff.json` reports changed
