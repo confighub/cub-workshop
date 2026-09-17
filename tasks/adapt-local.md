@@ -32,8 +32,9 @@ Normal exit 0 means comparison succeeded, even when differences exist. Add
 `--exit-code` to return 1 when differences exist; malformed inputs and other
 errors return 2. Both inputs must contain at least one named Kubernetes object.
 Duplicate identities refuse. Differences in mapping order or YAML document order
-do not count as edits; array order, null and missing values do. Array changes
-are reported as whole values. No Kubernetes defaulting or schema interpretation
+do not count as edits; array order, null and missing values do. A list whose
+items each carry their own name, such as containers, env or volumes, is compared
+item by item by that name; any other list is reported as a whole value. No Kubernetes defaulting or schema interpretation
 is performed.
 
 ## Assistant route
