@@ -26,6 +26,28 @@ test('mapping and document order are irrelevant; array order remains a change',(
  const r=diffConfigs(yamlA,yamlB);assert.equal(r.equal,true);assert.equal(r.summary.unchanged,2);assert.notEqual(r.before.sha256,r.after.sha256);
  assert.deepEqual(diffConfigs(doc({args:['a','b']}),doc({args:['b','a']})).changes[0].fields,[{path:'/spec/args',operation:'replace',before:['a','b'],after:['b','a']}]);
 });
+test('a list of uniquely named items is compared item by item, by name',()=>{
+ const pod=(containers)=>doc({template:{spec:{containers}}});
+ const app={name:'shop-web',image:'example/shop:1',resources:{limits:{memory:'512Mi'}},env:[{name:'DATABASE_HOST',value:'db.internal'},{name:'LOG_LEVEL',value:'info'}]};
+ const sidecar={name:'proxy',image:'example/proxy:2'};
+ const clobbered={...app,resources:{limits:{memory:'128Mi'}},env:[{name:'LOG_LEVEL',value:'info'},{name:'DATABASE_HOST',value:'localhost'}]};
+ const r=diffConfigs(pod([app,sidecar]),pod([sidecar,clobbered]));
+ assert.deepEqual(r.changes[0].fields,[
+  {path:'/spec/template/spec/containers/shop-web/env/DATABASE_HOST/value',operation:'replace',before:'db.internal',after:'localhost'},
+  {path:'/spec/template/spec/containers/shop-web/resources/limits/memory',operation:'replace',before:'512Mi',after:'128Mi'},
+ ]);
+ const added=diffConfigs(pod([app]),pod([app,sidecar])).changes[0].fields;
+ assert.deepEqual(added,[{path:'/spec/template/spec/containers/proxy',operation:'add',after:sidecar}]);
+ // Two items with one name, or an item with no name, leave the list one value.
+ const twins=[{name:'a',v:1},{name:'a',v:2}];
+ assert.deepEqual(diffConfigs(doc({items:twins}),doc({items:[{name:'a',v:1},{name:'a',v:3}]})).changes[0].fields[0].path,'/spec/items');
+ assert.deepEqual(diffConfigs(doc({items:[{v:1}]}),doc({items:[{v:2}]})).changes[0].fields[0].path,'/spec/items');
+ // An embedded object, such as a volume claim template, is named by metadata.name.
+ const claim=(size)=>({metadata:{name:'data'},spec:{resources:{requests:{storage:size}}}});
+ assert.deepEqual(diffConfigs(doc({volumeClaimTemplates:[claim('8Gi')]}),doc({volumeClaimTemplates:[claim('1Gi')]})).changes[0].fields,
+  [{path:'/spec/volumeClaimTemplates/data/spec/resources/requests/storage',operation:'replace',before:'8Gi',after:'1Gi'}]);
+ assert.match(r.comparison,/lists of uniquely named items compared item by item by name/);
+});
 test('null, absent, false, zero and empty strings are not silently erased',()=>{
  for (const value of [null,false,0,'']) {
   assert.deepEqual(diffConfigs(doc({}),doc({value})).changes[0].fields,[{path:'/spec/value',operation:'add',after:value}]);
