@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { diagnose, elsewhere, leafPaths, lookup, nearest, without } from '../lib/config-values.mjs';
+import { diagnose, elsewhere, generatedFields, leafPaths, lookup, nearest, presetPaths, without } from '../lib/config-values.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const chart = join(root, 'tests/fixtures/values-chart');
@@ -95,5 +95,46 @@ test('--help is never read as a name, and exits 0', () => {
     assert.equal(run.status, 0, `${bin} ${verb} --help`);
     assert.match(run.stdout, /cub (config|app|stack|fleet)/, `${bin} ${verb} --help prints usage`);
     assert.doesNotMatch(run.stdout + run.stderr, /no such/, `${bin} ${verb} --help`);
+  }
+});
+
+test('a preset in force and a field that changes on every render are both reported', () => {
+  const presetDefaults = { architecture: 'standalone', master: { resourcesPreset: 'nano', resources: {} }, replica: { resourcesPreset: 'nano', resources: {} } };
+  assert.deepEqual(presetPaths(presetDefaults).map((entry) => entry.path.join('.')), ['master.resourcesPreset', 'replica.resourcesPreset']);
+  let seed = 0;
+  // The replica preset is for pods that standalone never renders, so only the master's is in force.
+  const render = (values) => {
+    const merged = { ...presetDefaults, ...values, master: { ...presetDefaults.master, ...(values.master ?? {}) } };
+    const limits = merged.master.resourcesPreset === 'none' ? {} : { memory: '192Mi' };
+    return Buffer.from([
+      JSON.stringify({ apiVersion: 'apps/v1', kind: 'StatefulSet', metadata: { name: 'db-master', namespace: 'shop' }, spec: { template: { spec: { containers: [{ name: 'db', image: 'db:1', resources: { limits } }] } } } }),
+      JSON.stringify({ apiVersion: 'v1', kind: 'Secret', metadata: { name: 'db', namespace: 'shop' }, data: { password: Buffer.from(`generated-${seed += 1}`).toString('base64') } }),
+    ].join('\n---\n'));
+  };
+  const report = diagnose({ values: { architecture: 'standalone' }, defaults: presetDefaults, render });
+  assert.deepEqual(report.presets.map((preset) => [preset.path, preset.preset, preset.resources]), [['master.resourcesPreset', 'nano', 'master.resources']]);
+  assert.deepEqual(report.presets[0].objects, [{ apiVersion: 'apps/v1', kind: 'StatefulSet', namespace: 'shop', name: 'db-master' }]);
+  assert.deepEqual(report.generated, [{ object: { kind: 'Secret', name: 'db' }, path: '/data/password' }]);
+  assert.doesNotMatch(JSON.stringify(report), /generated-\d/);
+
+  const own = diagnose({ values: { master: { resources: { limits: { memory: '512Mi' } } } }, defaults: presetDefaults, render });
+  assert.deepEqual(own.presets, [], 'a preset the user replaced with their own resources is not reported');
+  assert.deepEqual(generatedFields(Buffer.from('{"apiVersion":"v1","kind":"ConfigMap","metadata":{"name":"c"},"data":{"a":"1"}}'), Buffer.from('{"apiVersion":"v1","kind":"ConfigMap","metadata":{"name":"c"},"data":{"a":"1"}}')), []);
+});
+
+test('check names images tagged latest or not tagged, and passes a digest or a fixed tag', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'check-images-'));
+  try {
+    const pod = (name, image) => ({ apiVersion: 'apps/v1', kind: 'Deployment', metadata: { name, namespace: 'shop' }, spec: { template: { spec: { initContainers: [{ name: 'init', image: 'busybox' }], containers: [{ name: 'app', image }] } } } });
+    const file = join(dir, 'app.yaml');
+    writeFileSync(file, [pod('a', 'registry-1.docker.io/bitnami/redis:latest'), pod('b', 'localhost:5000/team/app:1.2.3'), pod('c', 'ghcr.io/x/y@sha256:' + '0'.repeat(64))].map((doc) => JSON.stringify(doc)).join('\n---\n'));
+    const run = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file], { encoding: 'utf8' });
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(run.stdout, /\[NOTE\] images tagged latest or not tagged: 2 \(busybox, registry-1\.docker\.io\/bitnami\/redis:latest\)/);
+    writeFileSync(file, JSON.stringify(pod('d', 'nginx:1.27.0')).replace('"busybox"', '"busybox:1.36"'));
+    const pinned = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file], { encoding: 'utf8' });
+    assert.match(pinned.stdout, /\[PASS\] images tagged latest or not tagged: 0/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
