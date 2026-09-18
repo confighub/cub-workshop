@@ -43,6 +43,10 @@ registry, anonymously, whether that image can be pulled at all. A tag that has b
 withdrawn, such as a versioned Bitnami image, reports `NOT FOUND` before you install
 the chart and watch the pods fail. This is the one part of `check` that needs a network.
 
+It also names the bytes. An image already pinned by digest reads `pinned`, and one named
+by a tag reads `resolves … -> sha256:…`, which is the digest that name answers to right
+now. Pin with `name@digest` and you keep the bytes you checked.
+
 ## Inspect a local configuration edit
 
 `cub config diff before.yaml after.yaml --json --out diff.json` reports changed

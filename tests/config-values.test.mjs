@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -162,6 +162,33 @@ test('check without --images makes no network call, and --images is refused nowh
     assert.equal(quiet.status, 0, quiet.stderr);
     assert.doesNotMatch(quiet.stdout, /images that pull anonymously/);
     assert.match(spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', '--help'], { encoding: 'utf8' }).stdout, /\[--images\]/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('the images check names what a tag resolves to, and says which images are pinned', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'check-digests-'));
+  try {
+    const pinned = 'ghcr.io/team/app@sha256:' + '1'.repeat(64);
+    const file = join(dir, 'app.yaml');
+    writeFileSync(file, JSON.stringify({ apiVersion: 'v1', kind: 'Pod', metadata: { name: 'p', namespace: 'shop' }, spec: { containers: [{ name: 'c', image: pinned }] } }));
+    // A fake oras on PATH answers like the real one, so the test needs no registry.
+    const bin = join(dir, 'bin');
+    writeFileSync(join(dir, 'oras'), '', { flag: 'w' });
+    rmSync(join(dir, 'oras'));
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(bin, 'oras'), `#!/bin/sh\necho '{"mediaType":"application/vnd.oci.image.index.v1+json","digest":"sha256:${'1'.repeat(64)}","size":42}'\n`, { mode: 0o755 });
+    const run = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file, '--images'], { encoding: 'utf8', env: { ...process.env, PATH: `${bin}:${process.env.PATH}` } });
+    assert.equal(run.status, 0, run.stderr);
+    assert.match(run.stdout, /images that pull anonymously: 1 of 1/);
+    assert.match(run.stdout, /pinned\s+ghcr\.io\/team\/app@sha256:1{64}/);
+    assert.doesNotMatch(run.stdout, /named by tag/, 'a pinned image is not reported as loose');
+
+    writeFileSync(file, JSON.stringify({ apiVersion: 'v1', kind: 'Pod', metadata: { name: 'p', namespace: 'shop' }, spec: { containers: [{ name: 'c', image: 'ghcr.io/team/app:1.2.3' }] } }));
+    const loose = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file, '--images'], { encoding: 'utf8', env: { ...process.env, PATH: `${bin}:${process.env.PATH}` } });
+    assert.match(loose.stdout, /resolves ghcr\.io\/team\/app:1\.2\.3 -> sha256:1{64}/);
+    assert.match(loose.stdout, /1 image is named by tag\. Pin with name@digest/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
