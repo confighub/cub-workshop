@@ -137,3 +137,25 @@ test('all shipped configurations remain inspectable within the parser bounds', (
 test('a large flat collection stops at the parser event budget', () => {
   assert.throws(() => parseBoundedDocuments(Buffer.from(JSON.stringify({items:Array(300000).fill(1)})), 'config'), /bounded YAML or JSON/);
 });
+
+test('a Helm values file handed to check is pointed at the values verb', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'values-by-mistake-'));
+  try {
+    const values = join(dir, 'values.yaml');
+    writeFileSync(values, 'architecture: standalone\nauth:\n  enabled: true\n');
+    for (const noun of ['config', 'app']) {
+      const said = run(noun, 'check', values).stderr;
+      assert.match(said, /must contain named Kubernetes objects/);
+      assert.match(said, /for a Helm values file, use cub config values <chart> --values/, noun);
+      assert.ok(said.includes(values), `${noun}: the hint names the file you passed`);
+    }
+    // Anything else keeps the plain message: the hint is for the one likely mistake.
+    const list = join(dir, 'list.yaml');
+    writeFileSync(list, '- a\n- b\n');
+    const other = run('config', 'check', list).stderr;
+    assert.match(other, /must contain named Kubernetes objects/);
+    assert.doesNotMatch(other, /Helm values file/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
