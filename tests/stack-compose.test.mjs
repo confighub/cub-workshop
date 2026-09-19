@@ -25,7 +25,7 @@ function fixture(entries, options = {}) {
       identity: { id: entry.id, url: `${entry.id}.json` },
       flattened: { verdict: entry.verdict ?? 'safe-to-flatten', objectCount: entry.count ?? 1,
         ...(entry.flattened ?? {}),
-        retainedObjects: { path: entry.path ?? objectFile, url: entry.url ?? objectFile, sha256: entry.sha256 ?? digest(bytes) } },
+        ...(entry.noRetained ? {} : { retainedObjects: { path: entry.path ?? objectFile, url: entry.url ?? objectFile, sha256: entry.sha256 ?? digest(bytes) } }) },
       evidence: { links: [] },
     };
     writeFileSync(join(dir, `${entry.id}.json`), JSON.stringify(listing));
@@ -189,4 +189,38 @@ test('JSON error codes distinguish lifecycle, integrity, network, and output fai
     rmSync(unsafe.dir, { recursive: true, force: true }); rmSync(badHash.dir, { recursive: true, force: true });
     rmSync(network.dir, { recursive: true, force: true }); rmSync(existing.dir, { recursive: true, force: true });
   }
+});
+
+test('JSON reports missing retained objects and write failures without leaking credentials', () => {
+  const missing = fixture([{ id: 'missing-retained', yaml: yaml('missing-retained'), noRetained: true }]);
+  const network = fixture([{ id: 'credentialed', yaml: yaml('credentialed'), url: 'https://user:secret@catalog.test/objects.yaml' }]);
+  const preload = join(network.dir, 'fetch.mjs');
+  writeFileSync(preload, `globalThis.fetch = async () => { throw new Error('https://user:secret@catalog.test/objects.yaml'); };\n`);
+  try {
+    const missingResult = runJson('--entry', 'missing-retained', '--name', 'demo', '--out', missing.out, '--catalog-index', missing.index);
+    assert.equal(JSON.parse(missingResult.stdout).code, 'missing_retained_objects');
+    assert.equal(missingResult.stderr, '');
+    const writeFixture = fixture([{ id: 'write-failure', yaml: yaml('write-failure') }]);
+    const writeResult = runJson('--entry', 'write-failure', '--name', 'demo', '--out', '/dev/null/compose', '--catalog-index', writeFixture.index);
+    const writeError = JSON.parse(writeResult.stdout);
+    assert.equal(writeError.code, 'output_write_failed');
+    assert.equal(writeResult.stderr, '');
+    rmSync(writeFixture.dir, { recursive: true, force: true });
+    const networkResult = runWithEnv({ NODE_OPTIONS: `--import ${preload}` }, '--entry', 'credentialed', '--name', 'demo', '--out', network.out, '--catalog-index', network.index, '--json');
+    const networkError = JSON.parse(networkResult.stdout);
+    assert.equal(networkError.code, 'network_failed');
+    assert.doesNotMatch(networkError.message, /secret|catalog\.test/);
+    assert.equal(networkResult.stderr, '');
+  } finally { rmSync(missing.dir, { recursive: true, force: true }); rmSync(network.dir, { recursive: true, force: true }); }
+});
+
+test('a stack check subprocess failure has a structured code', () => {
+  const f = fixture([{ id: 'check-failure', yaml: yaml('check-failure') }]);
+  const preload = join(f.dir, 'spawn-failure.mjs');
+  writeFileSync(preload, `import childProcess from 'node:child_process'; childProcess.spawnSync = () => ({ error: new Error('private failure'), status: null, stdout: '', stderr: '' });\n`);
+  try {
+    const result = runWithEnv({ NODE_OPTIONS: `--import ${preload}` }, '--entry', 'check-failure', '--name', 'demo', '--out', f.out, '--catalog-index', f.index, '--json');
+    assert.equal(JSON.parse(result.stdout).code, 'check_failed', result.stdout);
+    assert.equal(result.stderr, '');
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });

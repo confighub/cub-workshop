@@ -25,3 +25,21 @@ inspection.
 
 Use `--catalog-index` with a local index for deterministic offline fixtures.
 Network requests use HTTPS and a bounded timeout.
+
+With `--json`, a compose error is one JSON document with this stable shape:
+
+```json
+{
+  "kind": "CatalogRetainedCompositionError",
+  "code": "source_integrity_failed",
+  "message": "retained object hash mismatch for example",
+  "actions": ["inspect", "repair"]
+}
+```
+
+Error codes are `invalid_arguments`, `entry_not_found`,
+`missing_retained_objects`, `lifecycle_route_required`,
+`source_integrity_failed`, `source_invalid`, `network_failed`,
+`output_exists`, `output_write_failed`, `check_failed`, and
+`internal_error`. Actions are limited to `inspect`, `select`, and `repair`;
+the command never selects or applies a remedy automatically.

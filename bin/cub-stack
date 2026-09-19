@@ -5,7 +5,8 @@ if (process.argv.slice(3).some((arg) => arg === "--help" || arg === "-h") && !OW
 const implementation = process.argv[2] === "compose" ? "stack-compose.mjs" : "stack.mjs";
 import(new URL(`../lib/${implementation}`, import.meta.url).href).catch((error) => {
   if (process.argv[2] === "compose" && process.argv.slice(3).includes("--json")) {
-    console.log(JSON.stringify({ kind: "CatalogRetainedCompositionError", code: error.code ?? "invalid_arguments", message: error.message ?? "compose failed", actions: error.actions ?? ["inspect", "repair"] }));
+    const typed = error?.name === "ComposeError" && typeof error.code === "string" && Array.isArray(error.actions);
+    console.log(JSON.stringify({ kind: "CatalogRetainedCompositionError", code: typed ? error.code : "internal_error", message: typed ? error.message : "compose failed due to an internal error", actions: typed ? error.actions : ["inspect", "repair"] }));
     process.exit(error.exitCode ?? 1);
     return;
   }
