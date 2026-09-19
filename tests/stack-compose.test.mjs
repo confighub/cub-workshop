@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const bin = join(root, 'bin/cub-stack');
 const run = (...args) => spawnSync(process.execPath, [bin, 'compose', ...args], { cwd: root, encoding: 'utf8', timeout: 30000 });
+const runWithEnv = (env, ...args) => spawnSync(process.execPath, [bin, 'compose', ...args], { cwd: root, encoding: 'utf8', timeout: 30000, env: { ...process.env, ...env } });
 const digest = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 
 function fixture(entries, options = {}) {
@@ -47,6 +48,7 @@ test('composes two explicit safe retained objects deterministically and saves th
     const provenanceEntry = JSON.parse(readFileSync(join(f.out, 'provenance.json'))).entries[0];
     assert.equal(provenanceEntry.listingSnapshot.flattened.action, undefined);
     assert.equal(provenanceEntry.listingSnapshot.identity.id, 'a-part');
+    assert.equal(digest(Buffer.from(provenanceEntry.listingBytesBase64, 'base64')), provenanceEntry.listingSha256);
   } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });
 
@@ -86,6 +88,34 @@ test('rejects HTTP retained references before path joining', () => {
   } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });
 
+test('accepts an HTTPS retained URL and verifies its fetched bytes', () => {
+  const f = fixture([{ id: 'https-ref', yaml: yaml('https-ref'), url: 'https://catalog.test/objects.yaml' }]);
+  const preload = join(f.dir, 'fetch.mjs');
+  const bytes = readFileSync(join(f.dir, 'https-ref.yaml'));
+  writeFileSync(preload, `globalThis.fetch = async () => new Response(Buffer.from(${JSON.stringify(bytes.toString('base64'))}, 'base64'), { status: 200 });\n`);
+  try {
+    const result = runWithEnv({ NODE_OPTIONS: `--import ${preload}` }, '--entry', 'https-ref', '--name', 'demo', '--out', f.out, '--catalog-index', f.index);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(readFileSync(join(f.out, 'result.json'))).checked, true);
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});
+
+test('rejects a remote listing that points at a local retained path', () => {
+  const f = fixture([{ id: 'remote-listing', yaml: yaml('remote-listing') }]);
+  const listing = JSON.parse(readFileSync(join(f.dir, 'remote-listing.json')));
+  listing.flattened.retainedObjects.url = 'objects.yaml';
+  const preload = join(f.dir, 'fetch.mjs');
+  writeFileSync(preload, `globalThis.fetch = async () => new Response(${JSON.stringify(JSON.stringify(listing))}, { status: 200 });\n`);
+  const remoteIndex = join(f.dir, 'remote-index.json');
+  writeFileSync(remoteIndex, JSON.stringify({ listings: [{ id: 'remote-listing', url: 'https://catalog.test/listing.json' }] }));
+  try {
+    const result = runWithEnv({ NODE_OPTIONS: `--import ${preload}` }, '--entry', 'remote-listing', '--name', 'demo', '--out', f.out, '--catalog-index', remoteIndex);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /retainedObjects.url must be https when the listing is remote/);
+    assert.equal(existsSync(f.out), false);
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});
+
 test('retains refused stack check output and evidence', () => {
   const f = fixture([{ id: 'one', yaml: yaml('same', 'one') }, { id: 'two', yaml: yaml('same', 'two') }]);
   try {
@@ -115,6 +145,9 @@ test('rejects bad hashes, duplicate IDs, path IDs, and existing output without w
   const traversal = fixture([{ id: 'safe', yaml: yaml('safe') }], { indexListings: [{ id: '../escape', url: 'safe.json' }] });
   try { const result = run('--entry', '../escape', '--name', 'demo', '--out', traversal.out, '--catalog-index', traversal.index); assert.equal(result.status, 2); assert.match(result.stderr, /catalog IDs/); }
   finally { rmSync(traversal.dir, { recursive: true, force: true }); }
+  const retainedTraversal = fixture([{ id: 'retained-traversal', yaml: yaml('retained-traversal'), path: '../outside.yaml' }]);
+  try { const result = run('--entry', 'retained-traversal', '--name', 'demo', '--out', retainedTraversal.out, '--catalog-index', retainedTraversal.index); assert.equal(result.status, 1); assert.match(result.stderr, /path traversal/); assert.equal(existsSync(retainedTraversal.out), false); }
+  finally { rmSync(retainedTraversal.dir, { recursive: true, force: true }); }
   const existing = fixture([{ id: 'safe', yaml: yaml('safe') }]); mkdirSync(existing.out); writeFileSync(join(existing.out, 'keep'), 'keep');
   try { const result = run('--entry', 'safe', '--name', 'demo', '--out', existing.out, '--catalog-index', existing.index); assert.equal(result.status, 2); assert.match(result.stderr, /already exists/); assert.equal(readFileSync(join(existing.out, 'keep'), 'utf8'), 'keep'); }
   finally { rmSync(existing.dir, { recursive: true, force: true }); }
