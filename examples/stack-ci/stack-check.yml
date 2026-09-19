@@ -1,0 +1,33 @@
+name: Check platform changes
+on:
+  pull_request:
+    paths:
+      - 'platform/**'
+      - '.github/workflows/stack-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Get the pinned Workshop checker
+        uses: actions/checkout@v4
+        with:
+          repository: confighub/cub-workshop
+          # Workshop v0.6.34: the same engine invoked by cub stack check.
+          ref: 29e6438b2a7fc8eaefb31cc176992c03d0243697
+          path: .workshop-checker
+      - name: Check the proposed local composition
+        run: node .workshop-checker/bin/cub-stack check platform/stack.yaml --json > platform-check.json
+      - name: Retain the result, including refusals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform-check
+          path: platform-check.json
+          if-no-files-found: error

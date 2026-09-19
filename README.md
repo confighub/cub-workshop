@@ -11,6 +11,8 @@ cub plugin install confighub/cub-workshop
 
 Requires `node`, `oras`, and `cub` on the PATH, and `helm` for `cub config values`.
 [DEMO.md](./DEMO.md) walks the whole ladder in ten minutes, copy-paste.
+[Check proposed platform edits in CI](./examples/stack-ci/README.md) with the
+same static checker a person or agent runs locally.
 
 ## Find the values that did nothing
 
