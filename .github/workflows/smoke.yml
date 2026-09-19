@@ -27,6 +27,8 @@ jobs:
         run: node --test tests/match-trial.test.mjs
       - name: mounted Promtail connection checks
         run: node --test tests/stack-connections.test.mjs
+      - name: OCI bundle cache race checks
+        run: node --test tests/oci-cache-race.test.mjs
       - name: stack served API regression tests
         run: node --test tests/stack-api-compatibility.test.mjs
       - name: catalog role discovery
