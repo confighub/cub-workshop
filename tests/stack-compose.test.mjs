@@ -11,6 +11,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const bin = join(root, 'bin/cub-stack');
 const run = (...args) => spawnSync(process.execPath, [bin, 'compose', ...args], { cwd: root, encoding: 'utf8', timeout: 30000 });
 const runWithEnv = (env, ...args) => spawnSync(process.execPath, [bin, 'compose', ...args], { cwd: root, encoding: 'utf8', timeout: 30000, env: { ...process.env, ...env } });
+const runJson = (...args) => run(...args, '--json');
 const digest = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 
 function fixture(entries, options = {}) {
@@ -24,7 +25,7 @@ function fixture(entries, options = {}) {
       identity: { id: entry.id, url: `${entry.id}.json` },
       flattened: { verdict: entry.verdict ?? 'safe-to-flatten', objectCount: entry.count ?? 1,
         ...(entry.flattened ?? {}),
-        retainedObjects: { path: entry.path ?? objectFile, url: entry.url ?? objectFile, sha256: entry.sha256 ?? digest(bytes) } },
+        ...(entry.noRetained ? {} : { retainedObjects: { path: entry.path ?? objectFile, url: entry.url ?? objectFile, sha256: entry.sha256 ?? digest(bytes) } }) },
       evidence: { links: [] },
     };
     writeFileSync(join(dir, `${entry.id}.json`), JSON.stringify(listing));
@@ -151,4 +152,75 @@ test('rejects bad hashes, duplicate IDs, path IDs, and existing output without w
   const existing = fixture([{ id: 'safe', yaml: yaml('safe') }]); mkdirSync(existing.out); writeFileSync(join(existing.out, 'keep'), 'keep');
   try { const result = run('--entry', 'safe', '--name', 'demo', '--out', existing.out, '--catalog-index', existing.index); assert.equal(result.status, 2); assert.match(result.stderr, /already exists/); assert.equal(readFileSync(join(existing.out, 'keep'), 'utf8'), 'keep'); }
   finally { rmSync(existing.dir, { recursive: true, force: true }); }
+});
+
+test('JSON errors use stable codes and actions without human stderr', () => {
+  const cases = [
+    { args: ['--entry', 'missing', '--name', 'demo', '--out'], code: 'invalid_arguments' },
+  ];
+  const missing = fixture([{ id: 'known', yaml: yaml('known') }]);
+  cases.push({ args: ['--entry', 'missing', '--name', 'demo', '--out', missing.out, '--catalog-index', missing.index], code: 'entry_not_found' });
+  try {
+    for (const item of cases) {
+      const result = runJson(...item.args);
+      assert.notEqual(result.status, 0);
+      assert.equal(result.stderr, '');
+      const error = JSON.parse(result.stdout);
+      assert.equal(error.kind, 'CatalogRetainedCompositionError');
+      assert.equal(error.code, item.code);
+      assert.ok(Array.isArray(error.actions));
+      assert.ok(error.actions.every((action) => ['inspect', 'select', 'repair'].includes(action)));
+    }
+  } finally { rmSync(missing.dir, { recursive: true, force: true }); }
+});
+
+test('JSON error codes distinguish lifecycle, integrity, network, and output failures', () => {
+  const unsafe = fixture([{ id: 'unsafe', yaml: yaml('unsafe'), verdict: 'flatten-with-routes' }]);
+  const badHash = fixture([{ id: 'bad', yaml: yaml('bad'), sha256: `sha256:${'0'.repeat(64)}` }]);
+  const network = fixture([{ id: 'network', yaml: yaml('network'), url: 'http://127.0.0.1:9/object.yaml' }]);
+  const existing = fixture([{ id: 'existing', yaml: yaml('existing') }]); mkdirSync(existing.out);
+  try {
+    for (const [f, id, code] of [[unsafe, 'unsafe', 'lifecycle_route_required'], [badHash, 'bad', 'source_integrity_failed'], [network, 'network', 'network_failed'], [existing, 'existing', 'output_exists']]) {
+      const result = runJson('--entry', id, '--name', 'demo', '--out', f.out, '--catalog-index', f.index);
+      assert.equal(JSON.parse(result.stdout).code, code, result.stdout);
+      assert.equal(result.stderr, '');
+    }
+  } finally {
+    rmSync(unsafe.dir, { recursive: true, force: true }); rmSync(badHash.dir, { recursive: true, force: true });
+    rmSync(network.dir, { recursive: true, force: true }); rmSync(existing.dir, { recursive: true, force: true });
+  }
+});
+
+test('JSON reports missing retained objects and write failures without leaking credentials', () => {
+  const missing = fixture([{ id: 'missing-retained', yaml: yaml('missing-retained'), noRetained: true }]);
+  const network = fixture([{ id: 'credentialed', yaml: yaml('credentialed'), url: 'https://user:secret@catalog.test/objects.yaml' }]);
+  const preload = join(network.dir, 'fetch.mjs');
+  writeFileSync(preload, `globalThis.fetch = async () => { throw new Error('https://user:secret@catalog.test/objects.yaml'); };\n`);
+  try {
+    const missingResult = runJson('--entry', 'missing-retained', '--name', 'demo', '--out', missing.out, '--catalog-index', missing.index);
+    assert.equal(JSON.parse(missingResult.stdout).code, 'missing_retained_objects');
+    assert.equal(missingResult.stderr, '');
+    const writeFixture = fixture([{ id: 'write-failure', yaml: yaml('write-failure') }]);
+    const writeResult = runJson('--entry', 'write-failure', '--name', 'demo', '--out', '/dev/null/compose', '--catalog-index', writeFixture.index);
+    const writeError = JSON.parse(writeResult.stdout);
+    assert.equal(writeError.code, 'output_write_failed');
+    assert.equal(writeResult.stderr, '');
+    rmSync(writeFixture.dir, { recursive: true, force: true });
+    const networkResult = runWithEnv({ NODE_OPTIONS: `--import ${preload}` }, '--entry', 'credentialed', '--name', 'demo', '--out', network.out, '--catalog-index', network.index, '--json');
+    const networkError = JSON.parse(networkResult.stdout);
+    assert.equal(networkError.code, 'network_failed');
+    assert.doesNotMatch(networkError.message, /secret|catalog\.test/);
+    assert.equal(networkResult.stderr, '');
+  } finally { rmSync(missing.dir, { recursive: true, force: true }); rmSync(network.dir, { recursive: true, force: true }); }
+});
+
+test('a stack check subprocess failure has a structured code', () => {
+  const f = fixture([{ id: 'check-failure', yaml: yaml('check-failure') }]);
+  const preload = join(f.dir, 'spawn-failure.mjs');
+  writeFileSync(preload, `import childProcess from 'node:child_process'; childProcess.spawnSync = () => ({ error: new Error('private failure'), status: null, stdout: '', stderr: '' });\n`);
+  try {
+    const result = runWithEnv({ NODE_OPTIONS: `--import ${preload}` }, '--entry', 'check-failure', '--name', 'demo', '--out', f.out, '--catalog-index', f.index, '--json');
+    assert.equal(JSON.parse(result.stdout).code, 'check_failed', result.stdout);
+    assert.equal(result.stderr, '');
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });
