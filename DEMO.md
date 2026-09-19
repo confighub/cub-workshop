@@ -37,15 +37,15 @@ The first is standalone and delivers straight from OCI. The second needs an ingr
 controller, cert-manager, and a Prometheus operator, which the `web-platform` stack
 carries exactly. `score` exports the workloads to Score (score.dev).
 
-## 3. stack — certify a whole platform, and watch a refusal (free)
+## 3. stack — check a whole platform, and watch a refusal (free)
 
 ```bash
 cub stack sandbox eks-inference
-cub stack certify metrics-double
+cub stack check metrics-double
 ```
 
-The first certifies and renders a real inference platform: 130 objects from eight
-digest-pinned certified bundles, pulled and hash-verified against shipped receipts.
+The first checks and renders a real inference platform: 130 objects from eight
+digest-pinned bundles with receipts, pulled and hash-verified against shipped receipts.
 The second exits non-zero because two components claim the same objects — the gate
 refuses rather than reports.
 
@@ -56,7 +56,7 @@ the app's own objects, and refuses a stack that does not carry it:
 
 ```
 cub app check shop-web                      # needs an ingress controller, cert-manager, a Prometheus operator
-cub stack certify kubara-shop-first-try     # REJECTED: the Ingress asks for class nginx and the platform's controller is Traefik; nothing provides the operator
+cub stack check kubara-shop-first-try     # REJECTED: the Ingress asks for class nginx and the platform's controller is Traefik; nothing provides the operator
 cub app check shop-web-kubara               # the app adapted: Traefik's class, a secret through external-secrets
 cub stack sandbox kubara-shop-platform      # CERTIFIED: the platform grew by external-secrets, every need carried
 ```
@@ -64,13 +64,13 @@ cub stack sandbox kubara-shop-platform      # CERTIFIED: the platform grew by ex
 ### A platform Kubara generated
 
 If a Kubara platform already exists, its own output becomes a stack, rendered
-with the values Kubara generated, so certify judges the platform you actually
+with the values Kubara generated, so the check reads the platform you actually
 have rather than the catalog's copy of its parts:
 
 ```
 kubara --work-dir . --config-file config.yaml --env-file .env generate --helm
 cub stack from-kubara . --app shop-web-kubara        # renders each umbrella chart with its values; one owner per object
-cub stack certify ./confighub/stack.yaml
+cub stack check ./confighub/stack.yaml
 cub stack upload  ./confighub/stack.yaml --run
 ```
 
@@ -86,7 +86,7 @@ cub config verify oci://localhost:5001/demo/redis@sha256:<the digest it printed>
 cub stack publish shop-platform --out oci://localhost:5001/demo/shop-platform:v1
 ```
 
-The first command pushes the render as a certified bundle with its receipt
+The first command pushes the render as a bundle with its receipt with its receipt
 attached and pulls it back to verify it. The second re-hashes every file against
 that receipt from nothing but the digest. The third publishes the stack as an
 index of five images with the manifest and verdict attached: the form a catalog
@@ -107,7 +107,7 @@ cub fleet status meridian
 
 What `cub fleet up` puts into ConfigHub, exactly: for each cluster, a Space with
 a server-hosted worker and an OCI target; for each component and app, the
-certified image or the authored YAML uploaded as a base variant, one Unit per
+published bundle or the authored YAML uploaded as a base variant, one Unit per
 file or resource; for each placement, a deployment variant cloned from its base,
 bound to its cluster's target, with a release published for it, an OCI image in
 ConfigHub's registry pinned to its digest. Everything after that, the aging, a
@@ -134,6 +134,6 @@ cub fleet down meridian
 ## What to take away
 
 One plugin install gave four nouns that speak the same verbs at every size: check
-one chart, check one workload, certify one platform, generate one fleet. The
+one chart, check one workload, check one platform, generate one fleet. The
 governed rungs underneath are ConfigHub's own released verbs — the plugin proposes
 the surface, the engine decides.

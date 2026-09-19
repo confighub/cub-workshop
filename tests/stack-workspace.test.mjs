@@ -41,7 +41,7 @@ test('save, move, edit one field, and resume with only a clean plugin runtime', 
     mkdirSync(runtime);
     for (const entry of ['lib', 'bin', 'cub-plugin.yaml']) cpSync(join(root, entry), join(runtime, entry), { recursive: true });
     const resume = (...args) => run(join(runtime, 'bin/cub-stack'), ...args);
-    const unchanged = resume('certify', join(moved, 'stack.yaml'), '--json');
+    const unchanged = resume('check', join(moved, 'stack.yaml'), '--json');
     assert.equal(unchanged.status, 0, unchanged.stderr);
     assert.equal(JSON.parse(unchanged.stdout).renderedFile.sha256, baseline.renderedFile.sha256);
 
@@ -51,7 +51,7 @@ test('save, move, edit one field, and resume with only a clean plugin runtime', 
     assert.equal(deployment.spec.replicas, 3);
     deployment.spec.replicas = 2;
     writeFileSync(appPath, app.map(toYaml).join('---\n'));
-    const changed = resume('certify', join(moved, 'stack.yaml'), '--json');
+    const changed = resume('check', join(moved, 'stack.yaml'), '--json');
     assert.equal(changed.status, 0, changed.stderr);
     const result = JSON.parse(changed.stdout);
     assert.notEqual(result.renderedFile.sha256, baseline.renderedFile.sha256);
@@ -73,7 +73,7 @@ test('refusals, existing paths and bad flags leave no new workspace', () => {
     const target = join(dir, 'new');
     assert.equal(run(bin, 'sandbox', 'conflict-demo', '--workspace', target).status, 1);
     assert.equal(existsSync(target), false);
-    for (const args of [['sandbox', 'web-tiny', '--workspace'], ['certify', 'web-tiny', '--workspace', target],
+    for (const args of [['sandbox', 'web-tiny', '--workspace'], ['check', 'web-tiny', '--workspace', target],
       ['sandbox', 'web-tiny', '--workspace', target, '--out', join(dir, 'output')]]) {
       assert.equal(run(bin, ...args).status, 2);
       assert.equal(existsSync(target), false);

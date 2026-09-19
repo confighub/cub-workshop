@@ -12,7 +12,7 @@ const run = (...args) => spawnSync(process.execPath, [bin, ...args], { encoding:
 test('JSON has no prose prefix, matches the retained sandbox bytes and preserves not-checked scope', () => {
   const dir = mkdtempSync(join(tmpdir(), 'stack-json-'));
   try {
-    const result = run('certify', 'web-tiny', '--json');
+    const result = run('check', 'web-tiny', '--json');
     assert.equal(result.status, 0, result.stderr);
     const body = JSON.parse(result.stdout);
     assert.equal(body.kind, 'StackCertificationResult');
@@ -26,12 +26,12 @@ test('JSON has no prose prefix, matches the retained sandbox bytes and preserves
     assert.equal(body.renderedFile.sha256, createHash('sha256').update(bytes).digest('hex'));
     assert.equal(body.renderedFile.bytes, bytes.length);
     assert.equal(body.objectCount, body.components.reduce((sum, component) => sum + component.objects, 0));
-    assert.equal(result.stdout, run('certify', '--json', 'web-tiny').stdout);
+    assert.equal(result.stdout, run('check', '--json', 'web-tiny').stdout);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
 test('a refused composition is valid JSON with nonzero exit and the actual findings', () => {
-  const result = run('certify', 'conflict-demo', '--json');
+  const result = run('check', 'conflict-demo', '--json');
   assert.equal(result.status, 1);
   const body = JSON.parse(result.stdout);
   assert.equal(body.certified, false);
@@ -40,7 +40,7 @@ test('a refused composition is valid JSON with nonzero exit and the actual findi
 });
 
 test('unsupported JSON invocations fail without pretending to return a verdict', () => {
-  for (const args of [['list', '--json'], ['certify', '--json'], ['certify', 'web-tiny', '--json', '--bogus']]) {
+  for (const args of [['list', '--json'], ['check', '--json'], ['check', 'web-tiny', '--json', '--bogus']]) {
     const result = run(...args);
     assert.equal(result.status, 2);
     assert.equal(result.stdout, '');
@@ -49,8 +49,18 @@ test('unsupported JSON invocations fail without pretending to return a verdict',
 });
 
 test('ordinary human output is preserved', () => {
-  const result = run('certify', 'web-tiny');
+  const result = run('check', 'web-tiny');
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /Certify/);
-  assert.match(result.stdout, /=> CERTIFIED/);
+  assert.match(result.stdout, /^Check$/m);
+  assert.match(result.stdout, /=> CHECKED/);
+});
+
+test('certify is still the old name for check, and says the same thing', () => {
+  const asked = run('check', 'web-tiny', '--json');
+  const old = run('certify', 'web-tiny', '--json');
+  assert.equal(old.status, asked.status);
+  assert.equal(old.stdout, asked.stdout, 'the old name answers identically');
+  const result = JSON.parse(asked.stdout);
+  assert.equal(result.checked, true);
+  assert.equal(result.certified, result.checked, 'certified is kept beside checked for one release');
 });
