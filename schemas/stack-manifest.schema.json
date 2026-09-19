@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://confighub.github.io/helm-expt/site/stack-manifest.schema.json",
+  "title": "ConfigHub Stack manifest",
+  "description": "The source manifest consumed by cub stack. fullVerdict is retained for historical manifests and is metadata only; the runtime does not read it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "helm-expt.confighub.com/v1alpha1" },
+    "kind": { "const": "Stack" },
+    "metadata": {
+      "type": "object", "additionalProperties": false, "required": ["name"],
+      "properties": { "name": { "type": "string", "minLength": 1 } }
+    },
+    "spec": {
+      "type": "object", "additionalProperties": false, "required": ["components"],
+      "properties": {
+        "description": { "type": "string" },
+        "fullVerdict": { "type": "string", "minLength": 1, "description": "Historical optional path; cub stack does not read it." },
+        "components": { "type": "array", "items": { "$ref": "#/$defs/component" } },
+        "source": {
+          "type": "object", "additionalProperties": false, "required": ["kubara", "cluster"],
+          "properties": { "kubara": { "type": "string", "minLength": 1 }, "cluster": { "type": "string", "minLength": 1 } }
+        },
+        "bindings": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "pathBindings": { "type": "array", "items": { "$ref": "#/$defs/pathBinding" } },
+            "envBindings": { "type": "array", "items": { "$ref": "#/$defs/envBinding" } }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "component": {
+      "type": "object", "additionalProperties": false, "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "plane": { "enum": ["hub", "mgmt", "workload"] },
+        "order": { "type": "integer", "minimum": 0 },
+        "bundle": { "type": "string", "pattern": "^oci://[^\\s@]+@sha256:[0-9a-f]{64}$" },
+        "receipt": { "type": "string", "minLength": 1 },
+        "render": { "type": "string", "minLength": 1 },
+        "authored": { "type": "string", "minLength": 1 }
+      },
+      "oneOf": [
+        { "required": ["bundle"], "not": { "anyOf": [{ "required": ["render"] }, { "required": ["authored"] }] } },
+        { "required": ["render"], "not": { "anyOf": [{ "required": ["bundle"] }, { "required": ["authored"] }, { "required": ["receipt"] }] } },
+        { "required": ["authored"], "not": { "anyOf": [{ "required": ["bundle"] }, { "required": ["render"] }, { "required": ["receipt"] }] } }
+      ]
+    },
+    "pathBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["component", "unit", "field", "resourceType", "resourceName", "path", "pathEscaped", "upstream"],
+      "properties": { "component": { "type": "string", "minLength": 1 }, "unit": { "type": "string", "minLength": 1 }, "field": { "type": "string", "minLength": 1 }, "resourceType": { "type": "string", "minLength": 1 }, "resourceName": { "type": "string", "minLength": 1 }, "path": { "type": "string", "minLength": 1 }, "pathEscaped": { "type": "string", "minLength": 1 }, "upstream": { "type": "string", "minLength": 1 } }
+    },
+    "envBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["component", "unit", "field", "container", "envVar"],
+      "properties": { "component": { "type": "string", "minLength": 1 }, "unit": { "type": "string", "minLength": 1 }, "field": { "type": "string", "minLength": 1 }, "container": { "type": "string", "minLength": 1 }, "envVar": { "type": "string", "minLength": 1 } }
+    }
+  }
+}

@@ -29,6 +29,8 @@ jobs:
         run: node --test tests/stack-api-compatibility.test.mjs
       - name: catalog role discovery
         run: node --test tests/config-list-role.test.mjs
+      - name: stack manifest schema and runtime contract tests
+        run: node --test tests/stack-manifest-schema.test.mjs
       - name: config lists and checks a shipped render
         run: |
           node bin/cub-config list
