@@ -62,6 +62,18 @@ Node snapshot. It saves candidate, mismatch or unknown findings without contacti
 a cluster. A candidate is not scheduling or inference proof.
 [Try the bounded example and refusal case](./examples/match/README.md).
 
+## Check mounted Promtail destinations
+
+`cub stack check` follows only configuration mounted by an identified Promtail
+container. It reads mounted Secret and ConfigMap keys, including Secret
+`stringData` and base64 `data`, then checks `clients[].url` service DNS against
+Services carried by the same static composition. A short service name must resolve
+in the Promtail namespace; an explicit `service.namespace` or `.svc` name must
+match that namespace. Two-label names are ambiguous unless their target Namespace
+is explicitly included. Missing Services, external endpoints, malformed URLs and
+target readiness remain unknown. This is a static composition check and never
+queries a cluster or prints URL paths or credentials.
+
 ## The design center: every result is an OCI image
 
 Every verb can hand its result on as a bundle with its receipt: an OCI artifact of the

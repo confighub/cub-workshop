@@ -25,6 +25,8 @@ jobs:
         run: node --test tests/match-local-evidence.test.mjs
       - name: reject incomplete or substituted Match trial artifacts
         run: node --test tests/match-trial.test.mjs
+      - name: mounted Promtail connection checks
+        run: node --test tests/stack-connections.test.mjs
       - name: stack served API regression tests
         run: node --test tests/stack-api-compatibility.test.mjs
       - name: catalog role discovery
