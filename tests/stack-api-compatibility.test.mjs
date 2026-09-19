@@ -48,10 +48,10 @@ test('CLI refuses bad API versions before writing a sandbox and accepts the repa
   try {
     writeFileSync(stack, JSON.stringify(manifest));
     writeFileSync(objects, [crd, cr].map(x => JSON.stringify(x)).join('\n---\n'));
-    const bad = run('certify', stack);
+    const bad = run('check', stack);
     assert.equal(bad.status, 1, bad.stderr);
     assert.match(bad.stdout, /version-not-served/);
-    assert.match(bad.stdout, /=> REJECTED/);
+    assert.match(bad.stdout, /=> REFUSED/);
     const sandbox = run('sandbox', stack, '--out', output);
     assert.equal(sandbox.status, 1, sandbox.stderr);
     assert.equal(existsSync(output), false);

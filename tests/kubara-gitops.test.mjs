@@ -19,7 +19,7 @@ test('GitOps selection retains the full existing app stack and adds pinned Argo 
   const argo = candidate.spec.components.find(c => c.name === 'argo-cd');
   const receipt = JSON.parse(readFileSync(join(root, argo.receipt)));
   assert.equal(argo.bundle, receipt.spec.bundle.reference);
-  const checked = run('certify', 'kubara-gitops-shop', '--json');
+  const checked = run('check', 'kubara-gitops-shop', '--json');
   assert.equal(checked.status, 0, checked.stderr);
   const result = JSON.parse(checked.stdout);
   assert.equal(result.certified, true);

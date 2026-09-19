@@ -64,7 +64,7 @@ a cluster. A candidate is not scheduling or inference proof.
 
 ## The design center: every result is an OCI image
 
-Every verb can hand its result on as a certified bundle: an OCI artifact of the
+Every verb can hand its result on as a bundle with its receipt: an OCI artifact of the
 same type the ConfigHub Workshop catalog publishes, with the receipt attached to the
 digest, so anyone can pull it and verify it. A stack publishes as an index of
 those images with its manifest and verdict attached; the flattened stack is the
@@ -80,11 +80,11 @@ cub stack publish shop-platform --out oci://registry.example.com/team/shop-platf
 
 A component named only by `bundle: oci://…@sha256:…` needs no local receipt when
 one is attached in the registry; the resolver discovers it. A published index is a
-stack you can certify or sandbox by digest: `cub stack certify oci://…@sha256:<index>`.
+stack you can check or sandbox by digest: `cub stack check oci://…@sha256:<index>`.
 Add `--sign cosign.key` to any publish and `--key cosign.pub` to verify; without a key,
 verify says plainly that the signature was not checked. The shipped stacks name their
-components as images: the nine renders are published as certified bundles whose bytes
-ship in `cache/` keyed by digest, so certify works offline and still hash-verifies
+components as images: the nine renders are published as bundles with receipts whose bytes
+ship in `cache/` keyed by digest, so the check works offline and still hash-verifies
 every file against the receipt in `receipts/workshop/`. `scripts/seed-cache.mjs`
 rebuilds that from `renders/`, and the same script pushes the same digests to the
 public registry. Registries on
@@ -96,7 +96,7 @@ is enough to try all of this. The design note is
 
 - **config** — one config, one chart. The smallest noun.
 - **app** — a workload. Standalone, or needing a platform for its dependencies.
-- **stack** — a certified composition of components, spoken by name.
+- **stack** — a composition of components, checked before anything runs.
 - **fleet** — placement as data: which stacks and apps land on which clusters.
 - **platform** — a stack put under governance (a role stacks reach, not a command).
 
@@ -114,16 +114,16 @@ cub app check shop-web                # render a workload, learn which platform 
 cub app score shop-web                # export its workloads to Score (score.dev)
 
 cub stack list
-cub stack certify metrics-double      # the composition gate alone; exits non-zero on a conflict
-cub stack sandbox eks-inference       # certify, then render the whole platform with no infrastructure
+cub stack check metrics-double      # the composition alone; exits non-zero on a conflict
+cub stack sandbox eks-inference       # check, then render the whole platform with no infrastructure
 cub stack sandbox shop-platform --out shop-platform.yaml   # and write the rendered objects, in plane order
-cub stack certify ./my-stack.yaml     # your own manifest, anywhere on disk
+cub stack check ./my-stack.yaml     # your own manifest, anywhere on disk
 
 cub fleet list
 cub fleet plan meridian               # the expanded placements, a whole stack per line if you place one
 ```
 
-For custom resources with a bundled CRD, certification checks the exact group,
+For custom resources with a bundled CRD, the check reads the exact group,
 kind and served API version. A declared but unserved version is refused before
 sandbox output or publication. The Kubara shop example uses the served
 `external-secrets.io/v1` API. These checks do not discover APIs on a target or
@@ -150,7 +150,7 @@ With an account (the governed rungs):
 
 ```bash
 cub app upload hello-standalone --run     # one Unit per resource, release gated on review
-cub stack upload eks-inference --run      # base Spaces and profile links for a certified composition
+cub stack upload eks-inference --run      # base Spaces and profile links for a composition that checked out
 cub fleet up meridian                     # scaffold clusters, upload bases, place and release everything
                                           # a placement may name a whole stack: `stack: web-platform`
 cub fleet age meridian                    # replay the declared operations so real attention states exist
@@ -180,24 +180,24 @@ For this example, edit only `spec.replicas` in the `shop-web` Deployment in
 candidate under new names:
 
 ```bash
-cub stack certify ./my-platform/stack.yaml --json > ./my-platform/changed-result.json &&
+cub stack check ./my-platform/stack.yaml --json > ./my-platform/changed-result.json &&
   cub stack sandbox ./my-platform/stack.yaml --out ./my-platform/changed.yaml &&
   git diff --no-index ./my-platform/rendered.yaml ./my-platform/changed.yaml
 ```
 
-Run the render only after certification succeeds. The diff command exits 1 when it
+Run the render only after the check passes. The diff command exits 1 when it
 finds a change; inspect that difference. The saved baseline should remain unchanged.
 The new JSON result's `renderedFile.sha256` identifies the bytes in `changed.yaml`.
-If certification refuses a change, repair its findings before rendering or sharing
+If the check refuses a change, repair its findings before rendering or sharing
 that candidate as checked.
 
 To resume tomorrow or hand over to someone else, keep the entire directory and run
-the same certify command against its `stack.yaml`. The saved component files are
+the same check command against its `stack.yaml`. The saved component files are
 materialized copies, so continuation does not need the original charts, plugin
 sample data or registry. It still needs the plugin runtime. Component names,
 planes, order, app roles and declared bindings are preserved; original source
 references remain in the baseline result. Edits are new local configuration, not
-updates to the original published bundles or their certification.
+updates to the original published bundles or their receipts.
 
 An existing directory is never overwritten, even when empty. If creation is
 interrupted before `stack.yaml` appears, keep the partial directory for inspection
@@ -211,27 +211,27 @@ and this local copy is not a published OCI artifact.
 ## Certification for assistants and automation
 
 ```bash
-cub stack certify web-tiny --json > result.json
-cub stack certify conflict-demo --json > refused.json
+cub stack check web-tiny --json > result.json
+cub stack check conflict-demo --json > refused.json
 ```
 
 A completed check writes one `StackCertificationResult` JSON object to stdout.
 Exit 0 means the composition passed the implemented checks; exit 1 with a JSON
 result means it was refused. Execution or setup errors remain on stderr; an empty
-stdout is not a certification result. JSON mode is supported only for `certify`.
+stdout is not a check result. JSON mode is supported only for `check`.
 
-The result includes `certified`, component counts and sources, the existing receipt
+The result includes `checked`, component counts and sources, the existing receipt
 check fields (`result` and `text`), and `renderedFile` with the SHA-256 and size of
 the exact bytes a sandbox would write. A rejected candidate also has a byte hash;
 that hash does not make it approved or published. `scope` explicitly marks target
 availability and application health as `not-checked`. No account or target is
-contacted by certification; uncached bundle inputs may require registry access.
+contacted by the check; uncached bundle inputs may require registry access.
 
-Claude Code, Codex and other consumers should use `certified` and the scope fields
+Claude Code, Codex and other consumers should use `checked` and the scope fields
 for control flow, preserve warnings and findings for review, and retain the result
 when handing work to another person. Do not infer deployment approval or a healthy
 application from a static result. Run the same command without `--json` for human
-output; both forms use the same certification function.
+output; both forms run the same check.
 
 ## What ships in the plugin
 
@@ -239,8 +239,8 @@ output; both forms use the same certification function.
 - `apps/` — thirteen authored workloads: two teaching apps (`hello-standalone`,
   `shop-web`) and the eleven services the meridian fleet places.
 - `stacks/` — twelve stack manifests: nine composed from the shipped renders, now named as images by digest with the bytes in `cache/`
-  (including `metrics-double`, which certify rightly rejects), plus `eks-inference`
-  and `kubara-platform` built from digest-pinned certified bundles pulled by `oras`
+  (including `metrics-double`, which the check rightly refuses), plus `eks-inference`
+  and `kubara-platform` built from digest-pinned bundles with receipts pulled by `oras`
   and hash-verified against `receipts/`, and `conflict-demo`.
 - `fleets/meridian.yaml` — ten regional clusters, twenty components, 125 placements,
   and the demo-aging operations that give the fleet real attention states.
@@ -257,7 +257,7 @@ these receipts, so a stale copy fails loudly rather than drifting silently.
 
 ### Inspect target prerequisites before delivery
 
-`cub stack certify <stack> --json` includes a scoped `prerequisites` inventory.
+`cub stack check <stack> --json` includes a scoped `prerequisites` inventory.
 It reports explicit namespaces, Certificate issuer references, ExternalSecret
 store references and named Ingress classes. Each requirement identifies its
 consuming component and field, whether its object is `bundled` or its target
@@ -267,10 +267,10 @@ present in the materialized stack; it does not mean the controller is ready.
 For `kubara-shop-platform`, the five namespaces, `ClusterIssuer/letsencrypt`
 and `ClusterSecretStore/platform-store` need target verification. The Traefik
 IngressClass is bundled. The human output warns about the unknown prerequisites;
-static certification can still pass. No cluster is contacted. The inventory is
+the static check can still pass. No cluster is contacted. The inventory is
 not exhaustive: credentials, storage, DNS, workload scheduling, implicit/default
 namespaces, arbitrary resource references and application responses are outside
-this check. Neither people nor assistants should use `certified: true` as a
+this check. Neither people nor assistants should use `checked: true` as a
 permission or readiness signal for deployment.
 ### Check configuration you already have
 
