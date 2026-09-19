@@ -93,3 +93,20 @@ test('digests sharing the old prefix receive isolated full-digest caches', () =>
     assert.deepEqual(readdirSync(join(f.dir, 'cub-stack-bundles')).sort(), [first, second].sort());
   } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });
+
+test('a seeded prefix without full receipt identity cannot serve silently', () => {
+  const f = fixture();
+  try {
+    const digest = '76314143ef5017951d1351732eb0796707e73797c2a67ace5fb4202a62bbad70';
+    const seededReceipt = JSON.parse(readFileSync(join(root, 'receipts', 'workshop', 'cert-manager.json'), 'utf8'));
+    delete seededReceipt.spec.bundle.digest;
+    delete seededReceipt.spec.bundle.manifestDigest;
+    delete seededReceipt.spec.bundle.reference;
+    seededReceipt.spec.bundle.files = [{ path: 'cert-manager.yaml', sha256: createHash('sha256').update(readFileSync(join(root, 'cache', digest.slice(0, 16), 'cert-manager.yaml'))).digest('hex') }];
+    const receipt = join(f.dir, 'missing-digest-receipt.json');
+    writeFileSync(receipt, JSON.stringify(seededReceipt));
+    const env = { ...process.env, PATH: `${f.fakeBin}:${process.env.PATH}`, TMPDIR: f.dir, FAKE_ORAS_SOURCE: f.dir, FAKE_ORAS_LOG: f.log, FAKE_ORAS_MODE: 'fail' };
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', `import { resolveBundle } from ${JSON.stringify(common)}; resolveBundle(${JSON.stringify(component(digest, receipt))});`], { cwd: root, env, encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});
