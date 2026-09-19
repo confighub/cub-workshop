@@ -5,7 +5,7 @@
 ```bash
 cub stack compose \
   --entry prometheus-community-prometheus-29-9-0-default \
-  --entry traefik-traefik-41-0-2-default \
+  --entry argo-cd-argo-events-2-4-21-no-crds \
   --name platform \
   --out ./platform
 ```

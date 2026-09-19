@@ -22,6 +22,7 @@ function fixture(entries, options = {}) {
     const listing = {
       identity: { id: entry.id, url: `${entry.id}.json` },
       flattened: { verdict: entry.verdict ?? 'safe-to-flatten', objectCount: entry.count ?? 1,
+        ...(entry.flattened ?? {}),
         retainedObjects: { path: entry.path ?? objectFile, url: entry.url ?? objectFile, sha256: entry.sha256 ?? digest(bytes) } },
       evidence: { links: [] },
     };
@@ -43,6 +44,45 @@ test('composes two explicit safe retained objects deterministically and saves th
     assert.deepEqual(body.entries, ['a-part', 'z-part']);
     assert.equal(JSON.parse(readFileSync(join(f.out, 'result.json'))).checked, true);
     assert.deepEqual(JSON.parse(readFileSync(join(f.out, 'provenance.json'))).entries.map((e) => e.id), ['a-part', 'z-part']);
+    const provenanceEntry = JSON.parse(readFileSync(join(f.out, 'provenance.json'))).entries[0];
+    assert.equal(provenanceEntry.listingSnapshot.flattened.action, undefined);
+    assert.equal(provenanceEntry.listingSnapshot.identity.id, 'a-part');
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});
+
+test('rejects duplicate name and out flags and invalid retained object counts or documents', () => {
+  const duplicateFlags = fixture([{ id: 'safe', yaml: yaml('safe') }]);
+  try {
+    assert.equal(run('--entry', 'safe', '--name', 'demo', '--name', 'again', '--out', duplicateFlags.out, '--catalog-index', duplicateFlags.index).status, 2);
+    assert.equal(run('--entry', 'safe', '--name', 'demo', '--out', duplicateFlags.out, '--out', `${duplicateFlags.out}-again`, '--catalog-index', duplicateFlags.index).status, 2);
+  } finally { rmSync(duplicateFlags.dir, { recursive: true, force: true }); }
+
+  for (const entry of [
+    { id: 'zero', yaml: yaml('zero'), count: 0 },
+    { id: 'wrong-count', yaml: yaml('wrong-count'), count: 2 },
+    { id: 'bad-doc', yaml: 'kind: ConfigMap\nmetadata:\n  name: bad\n' },
+  ]) {
+    const f = fixture([entry]);
+    if (entry.id === 'bad-doc') {
+      const listing = JSON.parse(readFileSync(join(f.dir, `${entry.id}.json`)));
+      listing.flattened.objectCount = 1;
+      writeFileSync(join(f.dir, `${entry.id}.json`), JSON.stringify(listing));
+    }
+    try {
+      const result = run('--entry', entry.id, '--name', 'demo', '--out', f.out, '--catalog-index', f.index);
+      assert.equal(result.status, 1);
+      assert.equal(existsSync(f.out), false);
+    } finally { rmSync(f.dir, { recursive: true, force: true }); }
+  }
+});
+
+test('rejects HTTP retained references before path joining', () => {
+  const f = fixture([{ id: 'http-ref', yaml: yaml('http-ref'), url: 'http://127.0.0.1:9/objects.yaml' }]);
+  try {
+    const result = run('--entry', 'http-ref', '--name', 'demo', '--out', f.out, '--catalog-index', f.index);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /must use https/);
+    assert.equal(existsSync(f.out), false);
   } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });
 
@@ -79,4 +119,3 @@ test('rejects bad hashes, duplicate IDs, path IDs, and existing output without w
   try { const result = run('--entry', 'safe', '--name', 'demo', '--out', existing.out, '--catalog-index', existing.index); assert.equal(result.status, 2); assert.match(result.stderr, /already exists/); assert.equal(readFileSync(join(existing.out, 'keep'), 'utf8'), 'keep'); }
   finally { rmSync(existing.dir, { recursive: true, force: true }); }
 });
-
