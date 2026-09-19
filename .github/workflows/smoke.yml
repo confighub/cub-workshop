@@ -48,11 +48,11 @@ jobs:
       - name: a manifest anywhere on disk resolves the shipped sources
         run: |
           cp stacks/web-tiny.yaml /tmp/my-stack.yaml
-          node bin/cub-stack certify /tmp/my-stack.yaml
-      - name: certify refuses both known conflicts
+          node bin/cub-stack check /tmp/my-stack.yaml
+      - name: check refuses both known conflicts
         run: |
           for broken in metrics-double conflict-demo; do
-            if node bin/cub-stack certify "$broken"; then
+            if node bin/cub-stack check "$broken"; then
               echo "$broken certified but must be refused" && exit 1
             else
               echo "$broken refused as designed"
@@ -68,8 +68,8 @@ jobs:
         run: node --test tests/shop-http-evidence.test.mjs
       - name: retained assistant identity agreement
         run: node --test tests/assistant-local-evidence.test.mjs
-      - name: structured certification results
-        run: node --test tests/stack-certify-json.test.mjs
+      - name: structured check results
+        run: node --test tests/stack-check-json.test.mjs
       - name: fleet lists and plans the shipped manifest
         run: |
           node bin/cub-fleet list
@@ -96,7 +96,7 @@ jobs:
           digest=$(echo "$out" | grep -oE 'oci://[^ ]+@sha256:[0-9a-f]{64}' | head -1)
           node bin/cub-config verify "$digest"
           printf 'apiVersion: helm-expt.confighub.com/v1alpha1\nkind: Stack\nmetadata:\n  name: from-registry\nspec:\n  description: "a bundle whose receipt lives in the registry"\n  components:\n    - name: redis\n      bundle: "%s"\n' "$digest" > /tmp/from-registry.yaml
-          node bin/cub-stack certify /tmp/from-registry.yaml
+          node bin/cub-stack check /tmp/from-registry.yaml
       - name: publish a stack as a flattened release and as an index
         run: |
           node bin/cub-stack sandbox shop-platform --out oci://localhost:5001/workshop/shop-platform:release
@@ -104,7 +104,7 @@ jobs:
       - name: an index is consumable by digest, and a key signs and verifies
         run: |
           index=$(node bin/cub-stack publish web-tiny --out oci://localhost:5001/workshop/web-tiny:idx | grep -oE 'oci://[^ ]+@sha256:[0-9a-f]{64}' | tail -1)
-          node bin/cub-stack certify "$index"
+          node bin/cub-stack check "$index"
           mkdir -p /tmp/keys && (cd /tmp/keys && COSIGN_PASSWORD="" cosign generate-key-pair)
           signed=$(node bin/cub-config check redis --out oci://localhost:5001/workshop/signed:ci --sign /tmp/keys/cosign.key | grep -oE 'oci://[^ ]+@sha256:[0-9a-f]{64}' | head -1)
           node bin/cub-config verify "$signed" --key /tmp/keys/cosign.pub
@@ -128,7 +128,7 @@ jobs:
           node bin/cub-stack sandbox eks-inference
           node bin/cub-stack sandbox kubara-platform
           node bin/cub-stack sandbox kubara-shop-platform
-          if node bin/cub-stack certify kubara-shop-first-try; then exit 1; fi
+          if node bin/cub-stack check kubara-shop-first-try; then exit 1; fi
 
       - name: saved workspace survives handoff and a local edit
         run: node --test tests/stack-workspace.test.mjs
