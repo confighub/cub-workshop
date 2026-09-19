@@ -62,7 +62,30 @@ test('malformed index and unknown role are rejected clearly', () => {
   assert.equal(malformed.status, 1);
   assert.match(malformed.stderr, /unknown discovery status/);
   const unknown = run('list', '--role', 'not-a-role', '--catalog-index', 'unused.json');
-  assert.equal(unknown.status, 1);
+  assert.equal(unknown.status, 2);
   assert.match(unknown.stderr, /unknown role/);
 });
 
+test('discovery invariants reject empty classified roles, populated not-classified roles, duplicates, and duplicate default overrides', () => {
+  const cases = [
+    { listings: [listing('empty', [], 'classified')], message: /classified but has no discovery roles/ },
+    { listings: [listing('unclassified', [{ role: 'cache', componentType: 'service' }], 'not-classified')], message: /not-classified but has discovery roles/ },
+    { listings: [listing('same', [{ role: 'cache', componentType: 'service' }]), listing('same', [{ role: 'database', componentType: 'service' }])], message: /duplicate listing id/ },
+    { listings: [listing('duplicate-role', [{ role: 'cache', componentType: 'service' }, { role: 'cache', componentType: 'operator' }])], message: /duplicate discovery role/ },
+  ];
+  for (const fixture of cases) withIndex(fixture, (index) => {
+    const result = run('list', '--role', 'cache', '--catalog-index', index);
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, fixture.message);
+  });
+  const duplicateOverride = run('list', '--role', 'cache', '--catalog-index', 'https://confighub.github.io/helm-expt/site/listings/index.json', '--catalog-index', 'https://confighub.github.io/helm-expt/site/listings/index.json');
+  assert.equal(duplicateOverride.status, 2);
+  assert.match(duplicateOverride.stderr, /may be specified only once/);
+});
+
+test('help documents role discovery without fetching the catalog', () => {
+  const result = run('list', '--help');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /--catalog-index FILE_OR_HTTPS_URL/);
+  assert.match(result.stdout, /Roles: cache, database/);
+});
