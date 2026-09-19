@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import assert from 'node:assert/strict';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -90,4 +91,8 @@ test('CLI validates mixed source fields before touching a missing source or netw
     assert.match(result.stderr, /exactly one allowed form|exactly one/);
     assert.doesNotMatch(result.stderr, /missing-local-source|oras|pull/);
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('schema command returns the installed runtime contract without a network', () => {
+  assert.equal(execFileSync(process.execPath, ['bin/cub-stack', 'schema'], { encoding: 'utf8' }), readFileSync('schemas/stack-manifest.schema.json', 'utf8'));
 });
