@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, existsSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -98,6 +98,25 @@ test('accepts an HTTPS retained URL and verifies its fetched bytes', () => {
     const result = runWithEnv({ NODE_OPTIONS: `--import ${preload}` }, '--entry', 'https-ref', '--name', 'demo', '--out', f.out, '--catalog-index', f.index);
     assert.equal(result.status, 0, result.stderr);
     assert.equal(JSON.parse(readFileSync(join(f.out, 'result.json'))).checked, true);
+    const provenance = JSON.parse(readFileSync(join(f.out, 'provenance.json'))).entries[0];
+    assert.equal(provenance.objects, 'https://catalog.test/objects.yaml');
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});
+
+test('provenance records actual local reads while preserving claimed listing URLs', () => {
+  const f = fixture([{ id: 'alternate', yaml: yaml('alternate') }]);
+  const listingPath = join(f.dir, 'alternate.json');
+  const listing = JSON.parse(readFileSync(listingPath));
+  listing.identity.url = 'https://official.example/catalog/alternate.json';
+  writeFileSync(listingPath, JSON.stringify(listing));
+  writeFileSync(f.index, JSON.stringify({ listings: [{ id: 'alternate', url: listingPath }] }));
+  try {
+    const result = run('--entry', 'alternate', '--name', 'demo', '--out', f.out, '--catalog-index', f.index, '--json');
+    assert.equal(result.status, 0, result.stderr);
+    const provenance = JSON.parse(readFileSync(join(f.out, 'provenance.json'))).entries[0];
+    assert.equal(provenance.listing, resolve(listingPath));
+    assert.equal(provenance.objects, resolve(join(f.dir, 'alternate.yaml')));
+    assert.equal(provenance.listingSnapshot.identity.url, 'https://official.example/catalog/alternate.json');
   } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });
 
