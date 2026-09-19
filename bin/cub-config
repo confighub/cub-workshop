@@ -1,7 +1,23 @@
 #!/usr/bin/env node
 const OWN_HELP = ["diff", "values"];
+const HELP = `cub config — one config, one chart
+
+Usage:
+  cub config list
+  cub config list --role ROLE [--json] [--catalog-index FILE_OR_HTTPS_URL]
+  cub config check <name | local.yaml> [--images]
+  cub config values <chart> --values my-values.yaml [--version X] [--repo URL] [--json] [--exit-code]
+
+Roles: cache, database, ingress, certificates, metrics, logs, secrets, queue, gpu
+Role discovery returns candidates for inspection; it does not select one or make runtime claims.`;
+const requestedVerb = process.argv[2];
+const helpRequested = process.argv.slice(2).some((arg) => arg === "--help" || arg === "-h");
+if (helpRequested && (requestedVerb === undefined || requestedVerb === "list")) {
+  console.log(HELP);
+  process.exit(0);
+}
 // --help is never a name: it prints the usage and exits 0.
-if (process.argv.slice(3).some((arg) => arg === "--help" || arg === "-h") && !OWN_HELP.includes(process.argv[2])) process.argv.length = 2;
+if (helpRequested && !OWN_HELP.includes(requestedVerb)) process.argv.length = 2;
 const verb = process.argv[2];
 const lib = (file) => import(new URL(`../lib/${file}`, import.meta.url).href);
 (verb === "diff"
@@ -12,5 +28,5 @@ const lib = (file) => import(new URL(`../lib/${file}`, import.meta.url).href);
   // A failure reads as one line, never a stack trace.
   const text = String(error.stderr ?? error.message).trim().split("\n").filter(Boolean).pop() ?? "unknown error";
   console.error(text.startsWith("Failed") ? text : `Failed: ${text}`);
-  process.exit(verb === "diff" || verb === "values" ? 2 : 1);
+  process.exit(error.exitCode ?? (verb === "diff" || verb === "values" ? 2 : 1));
 });

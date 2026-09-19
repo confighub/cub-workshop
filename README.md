@@ -106,6 +106,8 @@ Free, no account, no cluster:
 
 ```bash
 cub config list
+cub config list --role cache                  # discover catalog candidates for a platform role
+cub config list --role metrics --json         # return stable candidate objects as JSON
 cub config check redis                # render a chart, see what it installs and its lifecycle work
 cub config values <chart> --values my-values.yaml   # which of the values you set did anything
 
@@ -122,6 +124,14 @@ cub stack check ./my-stack.yaml     # your own manifest, anywhere on disk
 cub fleet list
 cub fleet plan meridian               # the expanded placements, a whole stack per line if you place one
 ```
+
+`cub config list --role ROLE` reads the public catalog listing index and returns
+every classified candidate for one of `cache`, `database`, `ingress`,
+`certificates`, `metrics`, `logs`, `secrets`, `queue`, or `gpu`. Use
+`--catalog-index FILE_OR_HTTPS_URL` to test against a local index. Discovery
+labels describe a service, operator, or agent; they are candidates for review,
+not runtime claims or an automatic selection. Inspect each full listing and its
+evidence before choosing one.
 
 For custom resources with a bundled CRD, the check reads the exact group,
 kind and served API version. A declared but unserved version is refused before
