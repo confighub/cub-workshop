@@ -1,5 +1,5 @@
 name: workshop
-version: 0.6.31
+version: 0.6.32
 commands:
     - name: config
       summary: 'One config, one chart: render it for free and see what it installs'
@@ -8,7 +8,7 @@ commands:
       summary: 'A workload: check what it needs, upload it under governance, export it to Score'
       entrypoint: bin/cub-app
     - name: stack
-      summary: 'A certified composition of components, spoken by name: certify, sandbox, and upload'
+      summary: 'A composition of components: check, sandbox, and upload'
       entrypoint: bin/cub-stack
     - name: fleet
       summary: 'Placement as data: build, age, and read a whole governed fleet from a fleet manifest'

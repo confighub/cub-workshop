@@ -39,7 +39,7 @@ test('save, move, edit one field, and resume with only a clean plugin runtime', 
     // manifests in this runtime copy. Continued work must use the saved files.
     const runtime = join(dir, 'runtime');
     mkdirSync(runtime);
-    for (const entry of ['lib', 'bin', 'cub-plugin.yaml']) cpSync(join(root, entry), join(runtime, entry), { recursive: true });
+    for (const entry of ['lib', 'bin', 'schemas', 'cub-plugin.yaml']) cpSync(join(root, entry), join(runtime, entry), { recursive: true });
     const resume = (...args) => run(join(runtime, 'bin/cub-stack'), ...args);
     const unchanged = resume('check', join(moved, 'stack.yaml'), '--json');
     assert.equal(unchanged.status, 0, unchanged.stderr);
