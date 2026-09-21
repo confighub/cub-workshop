@@ -31,7 +31,18 @@ switches off. `DEFAULT` is what the chart already uses. The chart is rendered wi
 values, then once more for each value with that one value taken out, so the verdict
 follows the rendered objects and not a guess. Generated passwords and checksums are
 found first and left out of every comparison. `--json` gives the report as data,
-`--exit-code` fails when a value did nothing, and no value is ever printed.
+`--exit-code` fails when a value did nothing, and no value is ever printed. To keep a
+redacted diagnosis for review, save each attempt under a fresh name:
+
+```bash
+cub config values ./chart --values before.yaml --out before-diagnosis.json --exit-code
+cub config values ./chart --values repaired.yaml --out repaired-diagnosis.json --exit-code
+```
+
+Each result records hashes of the supplied values bytes and its rendered candidate,
+plus the requested chart reference, version, repository, release and namespace. It
+does not store rendered Kubernetes YAML; retain that separately when you need to
+review the explicit configuration.
 
 It also says what the chart does that you did not write. A resource preset in force,
 such as Bitnami's `resourcesPreset: nano`, is named with the objects it sets CPU and
