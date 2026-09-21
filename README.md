@@ -90,6 +90,12 @@ To map an existing Argo application, choose a child when the selected app is an
 app-of-apps, export Argo's desired manifests at two revisions, and save the
 object-level review without changing Argo. [Try the Argo review task](./tasks/adopt-existing-argo-app.md).
 
+## Review an app Flux already reconciles
+
+Trace an existing Flux-owned workload, build a Kustomization from two pinned
+local checkouts, and retain an object-level review while Flux stays in control.
+[Try the Flux review task](./tasks/adopt-existing-flux-app.md).
+
 ## Compare a GPU workload with target facts
 
 `cub app match model.yaml --target nodes.yaml --json --out match-result.json`
