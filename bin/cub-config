@@ -6,7 +6,7 @@ Usage:
   cub config list
   cub config list --role ROLE [--json] [--catalog-index FILE_OR_HTTPS_URL]
   cub config check <name | local.yaml> [--images]
-  cub config values <chart> --values my-values.yaml [--version X] [--repo URL] [--json] [--out result.json] [--exit-code]
+  cub config values <chart> --values my-values.yaml [--version X] [--repo URL] [--json] [--out result.json] [--render-out candidate.yaml] [--exit-code]
 
 Roles: cache, database, ingress, certificates, metrics, logs, secrets, queue, gpu
 Role discovery returns candidates for inspection; it does not select one or make runtime claims.`;

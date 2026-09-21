@@ -14,6 +14,9 @@ Requires `node`, `oras`, and `cub` on the PATH, and `helm` for `cub config value
 [Check proposed platform edits in CI](./examples/stack-ci/README.md) with the
 same static checker a person or agent runs locally.
 
+Saving diagnoses and candidates requires a build containing these options (0.6.38).
+Use `--source-repo` or a local checkout while no release provides them.
+
 ## Find the values that did nothing
 
 Helm accepts a values file without checking it against the chart. A key that is
@@ -35,14 +38,28 @@ found first and left out of every comparison. `--json` gives the report as data,
 redacted diagnosis for review, save each attempt under a fresh name:
 
 ```bash
-cub config values ./chart --values before.yaml --out before-diagnosis.json --exit-code
-cub config values ./chart --values repaired.yaml --out repaired-diagnosis.json --exit-code
+cub config values ./chart --values before.yaml --out before-diagnosis.json --render-out before-candidate.yaml --exit-code
+cub config values ./chart --values repaired.yaml --out repaired-diagnosis.json --render-out repaired-candidate.yaml --exit-code
 ```
 
 Each result records hashes of the supplied values bytes and its rendered candidate,
-plus the requested chart reference, version, repository, release and namespace. It
-does not store rendered Kubernetes YAML; retain that separately when you need to
-review the explicit configuration.
+plus the requested chart reference, version, repository, release and namespace. The
+chart reference is what you requested, not a resolved chart digest. `--render-out`
+saves the exact first candidate render named by that hash; it is useful with `--out`
+when handing work to the next session. A render can contain Secrets, so the file is
+created with local-only permissions and must stay private. The diagnosis does not
+store rendered Kubernetes YAML or values contents.
+
+For a static next-session review, retain the original values file privately elsewhere,
+then check and compare the saved candidates:
+
+```bash
+cub config check ./repaired-candidate.yaml
+cub config diff ./before-candidate.yaml ./repaired-candidate.yaml --out candidate-diff.json
+```
+
+These commands inspect only the saved manifests. They do not resolve a chart digest,
+contact a cluster, or prove that either candidate will be accepted.
 
 It also says what the chart does that you did not write. A resource preset in force,
 such as Bitnami's `resourcesPreset: nano`, is named with the objects it sets CPU and
