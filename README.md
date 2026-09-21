@@ -14,6 +14,9 @@ Requires `node`, `oras`, and `cub` on the PATH, and `helm` for `cub config value
 [Check proposed platform edits in CI](./examples/stack-ci/README.md) with the
 same static checker a person or agent runs locally.
 
+Saving diagnoses and candidates requires a build containing these options (0.6.38).
+Use `--source-repo` or a local checkout while no release provides them.
+
 ## Find the values that did nothing
 
 Helm accepts a values file without checking it against the chart. A key that is
