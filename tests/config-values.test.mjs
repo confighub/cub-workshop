@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync, rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -75,7 +76,7 @@ test('against a real chart: a typo, a switched-off setting, a default, a free-fo
     assert.equal(refused.status, 1, 'a refused diagnosis is still retained');
     assert.equal(refused.stdout, readFileSync(refusedOut, 'utf8'), '--json remains a single parseable result');
     const refusedReport = JSON.parse(refused.stdout);
-    assert.match(refusedReport.valuesFile.sha256, /^sha256:[a-f0-9]{64}$/);
+    assert.equal(refusedReport.valuesFile.sha256, `sha256:${createHash('sha256').update(readFileSync(file)).digest('hex')}`, 'the diagnosis is bound to the bytes it read');
     assert.match(refusedReport.rendered.sha256, /^sha256:[a-f0-9]{64}$/);
     assert.deepEqual(refusedReport.chart, { reference: chart, version: null, repository: null, release: 'shop-redis', namespace: 'shop' });
     assert.equal(JSON.stringify(refusedReport).includes('hunter2'), false, 'the retained result excludes values');
@@ -93,6 +94,20 @@ test('against a real chart: a typo, a switched-off setting, a default, a free-fo
     assert.equal(existing.status, 2, 'an existing result path is refused before the chart is resolved');
     assert.match(existing.stderr, /EEXIST/);
     assert.equal(readFileSync(refusedOut, 'utf8'), refused.stdout, 'an earlier diagnosis is never overwritten');
+
+    const missingOut = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', file, '--out'], { encoding: 'utf8' });
+    assert.equal(missingOut.status, 2);
+    assert.match(missingOut.stderr, /--out requires a file path/);
+
+    const malformed = join(work, 'malformed.yaml');
+    const retryOut = join(work, 'retry-diagnosis.json');
+    writeFileSync(malformed, 'metrics: not-a-map\n');
+    const failedRender = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', malformed, '--out', retryOut], { encoding: 'utf8' });
+    assert.equal(failedRender.status, 2, 'a Helm template error is an execution failure');
+    assert.equal(existsSync(retryOut), false, 'a failed render leaves no empty result reservation');
+    const retry = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', repaired, '--out', retryOut], { encoding: 'utf8' });
+    assert.equal(retry.status, 0, retry.stderr);
+    assert.ok(existsSync(retryOut), 'the same path is available for a repaired retry');
 
     const human = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', file], { encoding: 'utf8' });
     assert.equal(human.status, 0, 'without --exit-code the report is advice');
