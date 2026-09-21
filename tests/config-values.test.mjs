@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -69,6 +69,30 @@ test('against a real chart: a typo, a switched-off setting, a default, a free-fo
     assert.deepEqual(report.summary, { set: 5, applied: 2, ignored: 1, noEffect: 1, sameAsDefault: 1, notChecked: 0 });
     assert.ok(report.unstableFields >= 1, 'the generated password is recognised as moving');
     assert.equal(run.stdout.includes('hunter2'), false, 'the secret value is never printed');
+
+    const refusedOut = join(work, 'refused-diagnosis.json');
+    const refused = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', file, '--release', 'shop-redis', '--namespace', 'shop', '--json', '--out', refusedOut, '--exit-code'], { encoding: 'utf8' });
+    assert.equal(refused.status, 1, 'a refused diagnosis is still retained');
+    assert.equal(refused.stdout, readFileSync(refusedOut, 'utf8'), '--json remains a single parseable result');
+    const refusedReport = JSON.parse(refused.stdout);
+    assert.match(refusedReport.valuesFile.sha256, /^sha256:[a-f0-9]{64}$/);
+    assert.match(refusedReport.rendered.sha256, /^sha256:[a-f0-9]{64}$/);
+    assert.deepEqual(refusedReport.chart, { reference: chart, version: null, repository: null, release: 'shop-redis', namespace: 'shop' });
+    assert.equal(JSON.stringify(refusedReport).includes('hunter2'), false, 'the retained result excludes values');
+    assert.equal(statSync(refusedOut).mode & 0o777, 0o600, 'the local result is private by default');
+
+    const repaired = join(work, 'repaired.yaml');
+    writeFileSync(repaired, 'replicaCount: 3\n');
+    const acceptedOut = join(work, 'accepted-diagnosis.json');
+    const accepted = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', repaired, '--out', acceptedOut, '--exit-code'], { encoding: 'utf8' });
+    assert.equal(accepted.status, 0, accepted.stderr);
+    assert.match(accepted.stdout, /Saved .*accepted-diagnosis\.json/);
+    assert.equal(JSON.parse(readFileSync(acceptedOut, 'utf8')).summary.ignored, 0);
+
+    const existing = spawnSync(join(root, 'bin/cub-config'), ['values', 'not-a-chart', '--values', file, '--out', refusedOut], { encoding: 'utf8' });
+    assert.equal(existing.status, 2, 'an existing result path is refused before the chart is resolved');
+    assert.match(existing.stderr, /EEXIST/);
+    assert.equal(readFileSync(refusedOut, 'utf8'), refused.stdout, 'an earlier diagnosis is never overwritten');
 
     const human = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', file], { encoding: 'utf8' });
     assert.equal(human.status, 0, 'without --exit-code the report is advice');
