@@ -72,15 +72,19 @@ test('against a real chart: a typo, a switched-off setting, a default, a free-fo
     assert.equal(run.stdout.includes('hunter2'), false, 'the secret value is never printed');
 
     const refusedOut = join(work, 'refused-diagnosis.json');
-    const refused = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', file, '--release', 'shop-redis', '--namespace', 'shop', '--json', '--out', refusedOut, '--exit-code'], { encoding: 'utf8' });
+    const refusedRender = join(work, 'refused-candidate.yaml');
+    const refused = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', file, '--release', 'shop-redis', '--namespace', 'shop', '--json', '--out', refusedOut, '--render-out', refusedRender, '--exit-code'], { encoding: 'utf8' });
     assert.equal(refused.status, 1, 'a refused diagnosis is still retained');
     assert.equal(refused.stdout, readFileSync(refusedOut, 'utf8'), '--json remains a single parseable result');
     const refusedReport = JSON.parse(refused.stdout);
+    assert.deepEqual(Object.keys(refusedReport).sort(), Object.keys(report).sort(), 'saving a candidate does not change the diagnosis shape');
     assert.equal(refusedReport.valuesFile.sha256, `sha256:${createHash('sha256').update(readFileSync(file)).digest('hex')}`, 'the diagnosis is bound to the bytes it read');
     assert.match(refusedReport.rendered.sha256, /^sha256:[a-f0-9]{64}$/);
+    assert.equal(`sha256:${createHash('sha256').update(readFileSync(refusedRender)).digest('hex')}`, refusedReport.rendered.sha256, 'the retained first render has the hash named by the report, even when the chart generates a Secret');
     assert.deepEqual(refusedReport.chart, { reference: chart, version: null, repository: null, release: 'shop-redis', namespace: 'shop' });
     assert.equal(JSON.stringify(refusedReport).includes('hunter2'), false, 'the retained result excludes values');
     assert.equal(statSync(refusedOut).mode & 0o777, 0o600, 'the local result is private by default');
+    assert.equal(statSync(refusedRender).mode & 0o777, 0o600, 'the candidate can contain Secrets and is private by default');
 
     const repaired = join(work, 'repaired.yaml');
     writeFileSync(repaired, 'replicaCount: 3\n');
@@ -90,21 +94,45 @@ test('against a real chart: a typo, a switched-off setting, a default, a free-fo
     assert.match(accepted.stdout, /Saved .*accepted-diagnosis\.json/);
     assert.equal(JSON.parse(readFileSync(acceptedOut, 'utf8')).summary.ignored, 0);
 
+    const renderOnly = join(work, 'render-only.yaml');
+    const rendered = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', repaired, '--render-out', renderOnly], { encoding: 'utf8' });
+    assert.equal(rendered.status, 0, rendered.stderr);
+    assert.ok(existsSync(renderOnly), '--render-out works without a retained diagnosis');
+
     const existing = spawnSync(join(root, 'bin/cub-config'), ['values', 'not-a-chart', '--values', file, '--out', refusedOut], { encoding: 'utf8' });
     assert.equal(existing.status, 2, 'an existing result path is refused before the chart is resolved');
     assert.match(existing.stderr, /EEXIST/);
     assert.equal(readFileSync(refusedOut, 'utf8'), refused.stdout, 'an earlier diagnosis is never overwritten');
 
+    const existingRender = join(work, 'existing-candidate.yaml');
+    writeFileSync(existingRender, 'keep\n');
+    const existingCandidate = spawnSync(join(root, 'bin/cub-config'), ['values', 'not-a-chart', '--values', file, '--render-out', existingRender], { encoding: 'utf8' });
+    assert.equal(existingCandidate.status, 2, 'an existing candidate path is refused before the chart is resolved');
+    assert.match(existingCandidate.stderr, /EEXIST/);
+    assert.equal(readFileSync(existingRender, 'utf8'), 'keep\n', 'an earlier candidate is never overwritten');
+
+    const samePath = join(work, 'same-output');
+    const same = spawnSync(join(root, 'bin/cub-config'), ['values', 'not-a-chart', '--values', file, '--out', samePath, '--render-out', samePath], { encoding: 'utf8' });
+    assert.equal(same.status, 2);
+    assert.match(same.stderr, /must name different files/);
+    assert.equal(existsSync(samePath), false, 'matching output paths leave no reservation behind');
+
     const missingOut = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', file, '--out'], { encoding: 'utf8' });
     assert.equal(missingOut.status, 2);
     assert.match(missingOut.stderr, /--out requires a file path/);
 
+    const missingRenderOut = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', file, '--render-out'], { encoding: 'utf8' });
+    assert.equal(missingRenderOut.status, 2);
+    assert.match(missingRenderOut.stderr, /--render-out requires a file path/);
+
     const malformed = join(work, 'malformed.yaml');
     const retryOut = join(work, 'retry-diagnosis.json');
+    const retryRender = join(work, 'retry-candidate.yaml');
     writeFileSync(malformed, 'metrics: not-a-map\n');
-    const failedRender = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', malformed, '--out', retryOut], { encoding: 'utf8' });
+    const failedRender = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', malformed, '--out', retryOut, '--render-out', retryRender], { encoding: 'utf8' });
     assert.equal(failedRender.status, 2, 'a Helm template error is an execution failure');
     assert.equal(existsSync(retryOut), false, 'a failed render leaves no empty result reservation');
+    assert.equal(existsSync(retryRender), false, 'a failed render leaves no empty candidate reservation');
     const retry = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', repaired, '--out', retryOut], { encoding: 'utf8' });
     assert.equal(retry.status, 0, retry.stderr);
     assert.ok(existsSync(retryOut), 'the same path is available for a repaired retry');
