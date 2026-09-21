@@ -84,6 +84,12 @@ objects and fields and retains both input hashes. It performs no merge, upload o
 deployment. [Try the Adapt task](./tasks/adapt-local.md), then follow the existing
 Catalog evidence for preserving a protected edit through an upstream upgrade.
 
+## Review an app Argo CD already reconciles
+
+To map an existing Argo application, choose a child when the selected app is an
+app-of-apps, export Argo's desired manifests at two revisions, and save the
+object-level review without changing Argo. [Try the Argo review task](./tasks/adopt-existing-argo-app.md).
+
 ## Compare a GPU workload with target facts
 
 `cub app match model.yaml --target nodes.yaml --json --out match-result.json`
