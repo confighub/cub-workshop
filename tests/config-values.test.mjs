@@ -220,7 +220,7 @@ test('an image name becomes the reference its own registry answers to', () => {
   for (const [image, reference] of cases) assert.equal(pullReference(image), reference, image);
 });
 
-test('check without --images makes no network call, and --images is refused nowhere', () => {
+test('check without --images makes no network call, and check rejects unknown options', () => {
   const dir = mkdtempSync(join(tmpdir(), 'check-flag-'));
   try {
     const file = join(dir, 'app.yaml');
@@ -228,7 +228,65 @@ test('check without --images makes no network call, and --images is refused nowh
     const quiet = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file], { encoding: 'utf8' });
     assert.equal(quiet.status, 0, quiet.stderr);
     assert.doesNotMatch(quiet.stdout, /images that pull anonymously/);
-    assert.match(spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', '--help'], { encoding: 'utf8' }).stdout, /\[--images\]/);
+    assert.match(spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', '--help'], { encoding: 'utf8' }).stdout, /\[--images\] \[--exit-code\]/);
+    const unknown = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file, '--imagess'], { encoding: 'utf8' });
+    assert.equal(unknown.status, 2);
+    assert.match(unknown.stderr, /unknown check option: --imagess/);
+    const shortUnknown = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file, '-i'], { encoding: 'utf8' });
+    assert.equal(shortUnknown.status, 2);
+    assert.match(shortUnknown.stderr, /unknown check option: -i/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('strict image checks fail only for confirmed missing images and refuse output when incomplete', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'check-images-exit-'));
+  try {
+    const file = join(dir, 'app.yaml');
+    const bin = join(dir, 'bin');
+    const output = join(dir, 'candidate.yaml');
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(file, JSON.stringify({ apiVersion: 'v1', kind: 'Pod', metadata: { name: 'p', namespace: 'shop' }, spec: { containers: [{ name: 'c', image: 'registry.example/team/app:1.2.3' }] } }));
+    writeFileSync(join(bin, 'oras'), `#!/bin/sh
+case "$CUB_TEST_ORAS_RESULT" in
+  present) echo '{"digest":"sha256:${'2'.repeat(64)}"}' ;;
+  missing) echo 'Error: manifest unknown' >&2; exit 1 ;;
+  auth) echo 'Error: authentication required' >&2; exit 1 ;;
+  mixed) case "$*" in *missing*) echo 'Error: manifest unknown' >&2 ;; *) echo 'Error: authentication required' >&2 ;; esac; exit 1 ;;
+  *) echo 'Error: dial tcp: network unreachable' >&2; exit 1 ;;
+esac
+`, { mode: 0o755 });
+    const run = (result, extra = []) => spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file, '--images', ...extra], {
+      encoding: 'utf8',
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, CUB_TEST_ORAS_RESULT: result },
+    });
+
+    assert.equal(run('present', ['--exit-code']).status, 0);
+    const missing = run('missing', ['--exit-code', '--out', output]);
+    assert.equal(missing.status, 1, missing.stderr);
+    assert.match(missing.stdout, /\[FAIL\].*confirmed missing/);
+    assert.equal(existsSync(output), false, 'a failed strict check must not write its render');
+
+    const auth = run('auth', ['--exit-code']);
+    assert.equal(auth.status, 2, auth.stderr);
+    assert.match(auth.stdout, /\[INCOMPLETE\].*could not verify every image/);
+    assert.doesNotMatch(auth.stdout, /confirmed missing/);
+
+    const network = run('network', ['--exit-code']);
+    assert.equal(network.status, 2, network.stderr);
+    assert.match(network.stdout, /could not be checked: registry\.example\/team\/app:1\.2\.3/);
+
+    assert.equal(run('missing').status, 0, 'without --exit-code the report remains advice');
+
+    writeFileSync(file, [
+      { apiVersion: 'v1', kind: 'Pod', metadata: { name: 'missing', namespace: 'shop' }, spec: { containers: [{ name: 'c', image: 'registry.example/team/missing:1' }] } },
+      { apiVersion: 'v1', kind: 'Pod', metadata: { name: 'auth', namespace: 'shop' }, spec: { containers: [{ name: 'c', image: 'registry.example/team/auth:1' }] } },
+    ].map(JSON.stringify).join('\n---\n'));
+    const mixed = run('mixed', ['--exit-code']);
+    assert.equal(mixed.status, 1, mixed.stderr);
+    assert.match(mixed.stdout, /NOT FOUND: registry\.example\/team\/missing:1/);
+    assert.match(mixed.stdout, /needs credentials: registry\.example\/team\/auth:1/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
