@@ -194,6 +194,7 @@ cub stack check metrics-double      # the composition alone; exits non-zero on a
 cub stack sandbox eks-inference       # check, then render the whole platform with no infrastructure
 cub stack sandbox shop-platform --out shop-platform.yaml   # and write the rendered objects, in plane order
 cub stack check ./my-stack.yaml     # your own manifest, anywhere on disk
+cub stack compose --entry ID --name platform --out ./platform  # explicitly save a catalog selection
 
 cub fleet list
 cub fleet plan meridian               # the expanded placements, a whole stack per line if you place one
