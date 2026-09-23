@@ -93,6 +93,68 @@ test('CLI saves JSON outside installation, never overwrites, and distinguishes d
  }finally{rmSync(d,{recursive:true,force:true});}
 });
 
+test('summary counts API version and kind deterministically without replacing the full JSON diff',()=>{
+ const d=mkdtempSync(join(tmpdir(),'workshop-diff-summary-'));
+ const run=(...args)=>spawnSync(process.execPath,[join(root,'bin/cub-config'),'diff',...args],{cwd:d,encoding:'utf8'});
+ const object=(apiVersion,kind,name,extra={})=>({apiVersion,kind,metadata:{name,namespace:'shop'},...extra});
+ try {
+  const before=[
+   object('apps/v1','Deployment','old-web',{spec:{replicas:1}}),
+   object('extensions/v1beta1','Deployment','legacy-web'),
+   object('rbac.authorization.k8s.io/v1','Role','worker'),
+   object('rbac.authorization.k8s.io/v1','RoleBinding','worker'),
+   object('policy/v1','PodDisruptionBudget','worker'),
+   object('v1','Secret','db',{data:{password:'b2xkLXNlY3JldA=='}}),
+  ];
+  const after=[
+   object('apps/v1','Deployment','new-web',{spec:{replicas:1}}),
+   object('v1','ConfigMap','settings'),
+  ];
+  writeFileSync(join(d,'before.yaml'),Buffer.from(before.map(JSON.stringify).join('\n---\n')));
+  writeFileSync(join(d,'after.yaml'),Buffer.from(after.map(JSON.stringify).join('\n---\n')));
+  const text=run('before.yaml','after.yaml','--summary');
+  assert.equal(text.status,0,text.stderr);
+  assert.match(text.stdout,/Kind summary \(inventory only\):/);
+  assert.match(text.stdout,/apps\/v1 Deployment: 1 -> 1 \(\+0\)/);
+  assert.match(text.stdout,/rbac\.authorization\.k8s\.io\/v1 Role: 1 -> 0 \(-1\)/);
+  assert.match(text.stdout,/rbac\.authorization\.k8s\.io\/v1 RoleBinding: 1 -> 0 \(-1\)/);
+  assert.match(text.stdout,/policy\/v1 PodDisruptionBudget: 1 -> 0 \(-1\)/);
+  assert.match(text.stdout,/extensions\/v1beta1 Deployment: 1 -> 0 \(-1\)/);
+  assert.doesNotMatch(text.stdout,/old-web|new-web|b2xkLXNlY3JldA==/);
+  const json=run('before.yaml','after.yaml','--summary','--json','--out','report.json','--exit-code');
+  assert.equal(json.status,1,json.stderr);
+  const report=JSON.parse(json.stdout);
+  assert.deepEqual(report.kindSummary,[
+   {apiVersion:'apps/v1',kind:'Deployment',before:1,after:1,delta:0},
+   {apiVersion:'extensions/v1beta1',kind:'Deployment',before:1,after:0,delta:-1},
+   {apiVersion:'policy/v1',kind:'PodDisruptionBudget',before:1,after:0,delta:-1},
+   {apiVersion:'rbac.authorization.k8s.io/v1',kind:'Role',before:1,after:0,delta:-1},
+   {apiVersion:'rbac.authorization.k8s.io/v1',kind:'RoleBinding',before:1,after:0,delta:-1},
+   {apiVersion:'v1',kind:'ConfigMap',before:0,after:1,delta:1},
+   {apiVersion:'v1',kind:'Secret',before:1,after:0,delta:-1},
+  ]);
+  assert.equal(report.changes.length,8);
+  assert.doesNotMatch(JSON.stringify(report),/b2xkLXNlY3JldA==/);
+  assert.deepEqual(report,JSON.parse(readFileSync(join(d,'report.json'))));
+  const defaultText=run('before.yaml','after.yaml');
+  assert.equal(defaultText.status,0,defaultText.stderr);
+  assert.doesNotMatch(defaultText.stdout,/Kind summary/);
+ }finally{rmSync(d,{recursive:true,force:true});}
+});
+
+test('summary preserves field-difference exit status when inventory counts match',()=>{
+ const d=mkdtempSync(join(tmpdir(),'workshop-diff-summary-exit-'));
+ const run=(...args)=>spawnSync(process.execPath,[join(root,'bin/cub-config'),'diff',...args],{cwd:d,encoding:'utf8'});
+ try {
+  writeFileSync(join(d,'before.yaml'),doc({replicas:1}));
+  writeFileSync(join(d,'after.yaml'),doc({replicas:2}));
+  const result=run('before.yaml','after.yaml','--summary','--exit-code');
+  assert.equal(result.status,1,result.stderr);
+  assert.match(result.stdout,/apps\/v1 Deployment: 1 -> 1 \(\+0\)/);
+  assert.equal(run('before.yaml','after.yaml','--summary','--summary').status,2);
+ }finally{rmSync(d,{recursive:true,force:true});}
+});
+
 test('retained Prometheus excerpt produces only the demonstrated replica edit',async()=>{
  const { createHash }=await import('node:crypto');
  const before=readFileSync(join(root,'examples/adapt/prometheus-before.yaml'));
