@@ -1,0 +1,73 @@
+name: release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  package:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: azure/setup-helm@v4
+      - uses: oras-project/setup-oras@v1
+      - name: run the full Node test suite
+        run: node --test tests/*.test.mjs
+      - name: package the committed tree
+        run: node scripts/package-release.mjs --out release
+      - name: validate the extracted plugin
+        run: |
+          mkdir extracted
+          tar -xzf release/*linux-amd64.tar.gz -C extracted
+          root=$(find extracted -mindepth 1 -maxdepth 1 -type d -print -quit)
+          node "$root/bin/cub-config" list
+          node "$root/bin/cub-stack" check web-tiny
+      - name: upload release package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cub-workshop-release
+          path: |
+            release/*.tar.gz
+            release/SHA256SUMS
+            release/metadata.json
+      - name: refuse an existing release or mismatched tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("release/metadata.json", "utf8")).version)')
+          tag="v${version}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "release $tag already exists; refusing overwrite" >&2
+            exit 1
+          fi
+          tag_sha=$(git ls-remote origin "refs/tags/$tag" "refs/tags/$tag^{}" | awk 'END {print $1}')
+          if [ -n "$tag_sha" ] && [ "$tag_sha" != "$GITHUB_SHA" ]; then
+            echo "tag $tag points to $tag_sha, expected $GITHUB_SHA" >&2
+            exit 1
+          fi
+      - name: create a draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("release/metadata.json", "utf8")).version)')
+          node <<'JS'
+          const fs = require("fs");
+          const m = JSON.parse(fs.readFileSync("release/metadata.json", "utf8"));
+          const notes = [
+            "Source commit: " + m.sourceCommit,
+            "Version: " + m.version,
+            "",
+            "Install from this release after publishing with:",
+            "cub plugin install confighub/cub-workshop@v" + m.version,
+            "",
+          ].join("\n");
+          fs.writeFileSync(process.env.RUNNER_TEMP + "/release-notes.md", notes);
+          JS
+          gh release create "v${version}" release/*.tar.gz release/SHA256SUMS release/metadata.json --target "$GITHUB_SHA" --draft --title "v${version}" --notes-file "$RUNNER_TEMP/release-notes.md"

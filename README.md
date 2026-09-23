@@ -9,13 +9,24 @@ cub plugin install confighub/cub-workshop
 # tracking main instead: add --source-repo; from a local clone: cub plugin install /path/to/cub-workshop
 ```
 
+While releases are being published, pin the committed source tree with
+`cub plugin install confighub/cub-workshop@d361e344c779b1c109994d01e40cbf6a93600f30 --source-repo`.
+That exact example installs the source at the commit carrying version 0.6.39;
+replace the commit with the one you have reviewed.
+
 Requires `node`, `oras`, and `cub` on the PATH, and `helm` for `cub config values`.
 [DEMO.md](./DEMO.md) walks the whole ladder in ten minutes, copy-paste.
 [Check proposed platform edits in CI](./examples/stack-ci/README.md) with the
 same static checker a person or agent runs locally.
 
 Saving diagnoses and candidates requires a build containing these options (0.6.38).
-Use `--source-repo` or a local checkout while no release provides them.
+Use `--source-repo` or a local checkout while no published release provides them.
+
+Maintainers can manually dispatch `.github/workflows/release.yml` on `main`.
+It runs the full checks, packages the committed tree, uploads the artifacts, and
+creates a draft GitHub release; publishing the draft remains a separate review step.
+The installed plugin still requires `node`, `oras`, `cub`, and Helm where the
+selected command needs them.
 
 ## Find the values that did nothing
 
