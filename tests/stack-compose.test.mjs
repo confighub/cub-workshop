@@ -243,3 +243,100 @@ test('a stack check subprocess failure has a structured code', () => {
     assert.equal(result.stderr, '');
   } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });
+
+let routeFixtureSerial = 0;
+function routeFixture({ corruptReceipt = false, omitRoute = false, wrongManifest = false, extraConfig = false, wrongBase = false } = {}) {
+  const f = fixture([{ id: 'traefik-route', yaml: yaml('traefik-route'), verdict: 'flatten-with-routes' }]);
+  const objects = readFileSync(join(f.dir, 'traefik-route.yaml'));
+  const routeBytes = Buffer.from('apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: declared-route\n');
+  const manifest = digest(Buffer.from(JSON.stringify({ corruptReceipt, omitRoute, wrongManifest, extraConfig, wrongBase, serial: routeFixtureSerial++ })));
+  const sourcePath = `packages/traefik/traefik/41.0.2/bases/${wrongBase ? 'other' : 'default'}/upstream.yaml`;
+  const receipt = [
+    'apiVersion: confighub.com/v1', 'kind: CertifiedBundleReceipt', 'spec:',
+    '  source:', '    charts:', '      - name: traefik', '        version: 41.0.2',
+    '  bundle:', `    reference: registry.test/catalog-traefik:latest`, `    manifestDigest: ${wrongManifest ? `sha256:${'b'.repeat(64)}` : manifest}`,
+    '    objectCount: 1', '    files:', `      - path: ${sourcePath}`, `        sha256: ${digest(objects).slice(7)}`, '        role: rendered object set',
+    ...(extraConfig ? ['      - path: another.yaml', `        sha256: ${digest(objects).slice(7)}`] : []),
+    ...(omitRoute ? [] : ['      - path: routes/route.yaml', `        sha256: ${digest(routeBytes).slice(7)}`, '        role: "route: apply-ordering"']),
+    '  verdict:', '    lane: flatten-with-routes', '    status: certified', '',
+  ].join('\n');
+  const receiptBytes = Buffer.from(corruptReceipt ? `${receipt}changed\n` : receipt);
+  writeFileSync(join(f.dir, 'receipt.yaml'), receiptBytes);
+  const listingPath = join(f.dir, 'traefik-route.json');
+  const listing = JSON.parse(readFileSync(listingPath));
+  listing.identity.name = 'traefik/traefik'; listing.identity.version = '41.0.2'; listing.identity.base = 'default';
+  listing.oci = { bundles: [{ role: 'literal-config', state: 'published', referenceState: 'published',
+    reference: `oci://registry.test/catalog-traefik:latest@${manifest}`, receipt: 'receipt.yaml', receiptUrl: 'receipt.yaml',
+    digests: [{ field: 'manifestDigest', value: manifest }, { field: 'objectSetSha256', value: digest(objects) }, { field: 'receiptSha256', value: digest(Buffer.from(receipt)) }] }] };
+  writeFileSync(listingPath, JSON.stringify(listing));
+  const bundle = join(f.dir, 'bundle'); mkdirSync(join(bundle, 'routes'), { recursive: true });
+  writeFileSync(join(bundle, 'upstream.yaml'), objects); writeFileSync(join(bundle, 'routes', 'route.yaml'), routeBytes);
+  const tarball = join(f.dir, 'bundle.tar');
+  assert.equal(spawnSync('tar', ['-cf', tarball, '-C', bundle, '.']).status, 0);
+  const tools = join(f.dir, 'tools'); mkdirSync(tools);
+  const oras = join(tools, 'oras'); writeFileSync(oras, '#!/bin/sh\ncp "$CUB_TEST_TARBALL" "$4/bundle.tar"\n');
+  spawnSync('chmod', ['+x', oras]);
+  return { ...f, env: { PATH: `${tools}:${process.env.PATH}`, CUB_TEST_TARBALL: tarball } };
+}
+
+test('composes an explicitly selected published route bundle as a resumable declared-unexecuted workspace', () => {
+  const f = routeFixture();
+  try {
+    const result = runWithEnv(f.env, '--entry', 'traefik-route', '--name', 'route-demo', '--out', f.out, '--catalog-index', f.index, '--json');
+    assert.equal(result.status, 0, `${result.stderr} ${result.stdout}`);
+    const workspace = JSON.parse(readFileSync(join(f.out, 'result.json')));
+    assert.equal(workspace.lifecycleCompanions.state, 'declared-unexecuted');
+    assert.equal(workspace.lifecycleCompanions.entries[0].companions[0].state, 'declared-unexecuted');
+    assert.ok(existsSync(join(f.out, 'evidence', '01-traefik-route', 'receipt.yaml')));
+    const provenance = JSON.parse(readFileSync(join(f.out, 'provenance.json'))).entries[0].publishedBundle;
+    assert.match(provenance.reference, /^oci:\/\/registry\.test\/catalog-traefik:latest@sha256:[a-f0-9]{64}$/);
+    assert.equal(provenance.receipt.source, resolve(join(f.dir, 'receipt.yaml')));
+    assert.equal(provenance.state, 'declared-unexecuted');
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});
+
+test('refuses missing, tampered, or mismatched published route evidence before creating a workspace', () => {
+  for (const options of [{ corruptReceipt: true }, { omitRoute: true }, { wrongManifest: true }, { extraConfig: true }, { wrongBase: true }]) {
+    const f = routeFixture(options);
+    try {
+      const result = runJson('--entry', 'traefik-route', '--name', 'route-demo', '--out', f.out, '--catalog-index', f.index);
+      assert.equal(result.status, 1, result.stdout);
+      assert.equal(JSON.parse(result.stdout).code, 'source_integrity_failed');
+      assert.equal(existsSync(f.out), false);
+    } finally { rmSync(f.dir, { recursive: true, force: true }); }
+  }
+});
+
+test('published route workspaces resume offline from their materialized files', () => {
+  const f = routeFixture();
+  try {
+    const composed = runWithEnv(f.env, '--entry', 'traefik-route', '--name', 'route-demo', '--out', f.out, '--catalog-index', f.index);
+    assert.equal(composed.status, 0, composed.stderr);
+    const resumed = spawnSync(process.execPath, [bin, 'sandbox', join(f.out, 'stack.yaml'), '--workspace', join(f.dir, 'resumed')], { cwd: root, encoding: 'utf8', timeout: 30000, env: { ...process.env, PATH: '/no-network-needed' } });
+    assert.equal(resumed.status, 0, resumed.stderr);
+    assert.equal(JSON.parse(readFileSync(join(f.dir, 'resumed', 'result.json'))).lifecycleCompanions.state, 'declared-unexecuted');
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});
+
+test('refuses a missing published receipt before creating a workspace', () => {
+  const f = routeFixture(); rmSync(join(f.dir, 'receipt.yaml'));
+  try {
+    const result = runJson('--entry', 'traefik-route', '--name', 'route-demo', '--out', f.out, '--catalog-index', f.index);
+    assert.equal(result.status, 1); assert.equal(JSON.parse(result.stdout).code, 'network_failed'); assert.equal(existsSync(f.out), false);
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});
+
+test('published route sandbox refusals retain a bounded diagnostic in the structured error', () => {
+  const f = routeFixture();
+  const empty = join(f.dir, 'empty.tar');
+  try {
+    assert.equal(spawnSync('tar', ['-cf', empty, '-C', f.dir, 'index.json']).status, 0);
+    const result = runWithEnv({ ...f.env, CUB_TEST_TARBALL: empty }, '--entry', 'traefik-route', '--name', 'route-demo', '--out', f.out, '--catalog-index', f.index, '--json');
+    assert.equal(result.status, 1);
+    const body = JSON.parse(result.stdout);
+    assert.equal(body.code, 'check_failed');
+    assert.match(body.message, /pulled files do not match its receipt/);
+    assert.ok(body.message.length < 600);
+    assert.equal(existsSync(f.out), false);
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});
