@@ -100,8 +100,17 @@ now. Pin with `name@digest` and you keep the bytes you checked.
 ## Inspect a local configuration edit
 
 `cub config diff before.yaml after.yaml --json --out diff.json` reports changed
-objects and fields and retains both input hashes. It performs no merge, upload or
-deployment. [Try the Adapt task](./tasks/adapt-local.md), then follow the existing
+objects and fields and retains both input hashes. For a concise inventory view across
+a large rename, add `--summary`:
+
+```bash
+cub config diff before.yaml after.yaml --summary
+```
+
+It groups objects by API version and kind, with before and after counts plus their
+delta. It is an inventory aid only: equal counts do not establish matching objects or
+behavior. `--summary --json` keeps the full object and field changes and adds the
+deterministic `kindSummary` array. It performs no merge, upload or deployment. [Try the Adapt task](./tasks/adapt-local.md), then follow the existing
 Catalog evidence for preserving a protected edit through an upstream upgrade.
 
 ## Review an app Argo CD already reconciles
