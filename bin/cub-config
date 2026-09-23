@@ -5,11 +5,13 @@ const HELP = `cub config — one config, one chart
 Usage:
   cub config list
   cub config list --role ROLE [--json] [--catalog-index FILE_OR_HTTPS_URL]
-  cub config check <name | local.yaml> [--images]
+  cub config check <name | local.yaml> [--images] [--exit-code]
   cub config values <chart> --values my-values.yaml [--version X] [--repo URL] [--json] [--out result.json] [--render-out candidate.yaml] [--exit-code]
 
 Roles: cache, database, ingress, certificates, metrics, logs, secrets, queue, gpu
-Role discovery returns candidates for inspection; it does not select one or make runtime claims.`;
+Role discovery returns candidates for inspection; it does not select one or make runtime claims.
+For check --images --exit-code: 1 means an image was confirmed missing; 2 means an
+anonymous registry check was incomplete (for example, credentials or network access).`;
 const requestedVerb = process.argv[2];
 const helpRequested = process.argv.slice(2).some((arg) => arg === "--help" || arg === "-h");
 if (helpRequested && (requestedVerb === undefined || requestedVerb === "list")) {

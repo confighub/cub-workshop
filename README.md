@@ -72,6 +72,10 @@ same name can pull different bytes later. With `--images` it also asks each imag
 registry, anonymously, whether that image can be pulled at all. A tag that has been
 withdrawn, such as a versioned Bitnami image, reports `NOT FOUND` before you install
 the chart and watch the pods fail. This is the one part of `check` that needs a network.
+Use `--images --exit-code` in CI: exit 1 means at least one registry confirmed an image
+is missing, and exit 2 means an authentication or network failure left an anonymous
+check incomplete. The latter is not reported as missing. A strict check writes no
+`--out` file or OCI bundle unless every image is verified to pull anonymously.
 
 It also names the bytes. An image already pinned by digest reads `pinned`, and one named
 by a tag reads `resolves … -> sha256:…`, which is the digest that name answers to right
