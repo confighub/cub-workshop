@@ -238,6 +238,9 @@ The directory must not already exist, and its parent must exist. The command che
 the composition before creating anything. It writes `stack.yaml`, separate files
 under `components/`, the baseline `rendered.yaml`, and `result.json` with checks,
 original component sources, file hashes and explicit not-checked target status.
+For a receipt-bound bundle, it also preserves required lifecycle route evidence under
+`evidence/`. Those routes are `declared-unexecuted`: keep the whole directory when
+handing it over, and do not read the saved files as a delivery or readiness result.
 
 For this example, edit only `spec.replicas` in the `shop-web` Deployment in
 `my-platform/components/05-shop-web.yaml`, from `3` to `2`. Check and render the

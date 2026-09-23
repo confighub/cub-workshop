@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, cpSync, renameSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, cpSync, renameSync, rmSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +9,7 @@ import { spawnSync } from 'node:child_process';
 import { parseDocs, readYamlFile, toYaml } from '../lib/common.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const run = (bin, ...args) => spawnSync(process.execPath, [bin, ...args], { encoding: 'utf8', timeout: 30000 });
+const runWithEnv = (env, bin, ...args) => spawnSync(process.execPath, [bin, ...args], { encoding: 'utf8', timeout: 30000, env: { ...process.env, ...env } });
 const bin = join(root, 'bin/cub-stack');
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 
@@ -29,6 +30,14 @@ test('save, move, edit one field, and resume with only a clean plugin runtime', 
     assert.equal(baseline.renderedFile.sha256, hash(readFileSync(join(workspace, 'rendered.yaml'))));
     assert.ok(baseline.components.some(c => c.source.startsWith('oci://')));
     for (const file of baseline.workspaceFiles) assert.equal(hash(readFileSync(join(workspace, file.path))), file.sha256);
+    assert.equal(baseline.lifecycleCompanions.state, 'declared-unexecuted');
+    const traefikEvidence = baseline.lifecycleCompanions.entries.find(entry => entry.component === 'traefik');
+    assert.equal(traefikEvidence.state, 'declared-unexecuted');
+    assert.equal(traefikEvidence.companions.length, 1);
+    assert.equal(traefikEvidence.companions[0].role, 'route: crd-ordering');
+    assert.equal(hash(readFileSync(join(workspace, traefikEvidence.receipt.path))), traefikEvidence.receipt.sha256);
+    assert.equal(hash(readFileSync(join(workspace, traefikEvidence.companions[0].path))), traefikEvidence.companions[0].sha256);
+    assert.ok(!parseDocs(readFileSync(join(workspace, 'rendered.yaml'), 'utf8')).some(object => object.kind === 'BundleRoute'));
     const manifest = readYamlFile(join(workspace, 'stack.yaml'));
     assert.equal(manifest.spec.components.filter(c => c.authored).length, 1);
     assert.equal(manifest.spec.components.filter(c => c.render).length, 4);
@@ -64,6 +73,33 @@ test('save, move, edit one field, and resume with only a clean plugin runtime', 
     expected.find(o => o.kind === 'Deployment' && o.metadata.name === 'shop-web').spec.replicas = 2;
     assert.deepEqual(parseDocs(readFileSync(output, 'utf8')), expected);
     assert.equal(hash(readFileSync(join(moved, 'rendered.yaml'))), baseline.renderedFile.sha256);
+
+    // A moved workspace carries its receipt-bound routes forward without
+    // re-resolving a registry bundle. They remain declared evidence, not
+    // rendered Kubernetes objects or a delivery claim.
+    const resaved = join(dir, 'second copy');
+    const savedAgain = resume('sandbox', join(moved, 'stack.yaml'), '--workspace', resaved);
+    assert.equal(savedAgain.status, 0, savedAgain.stderr);
+    const secondBaseline = JSON.parse(readFileSync(join(resaved, 'result.json')));
+    assert.equal(secondBaseline.lifecycleCompanions.entries.find(entry => entry.component === 'traefik').companions[0].sha256, traefikEvidence.companions[0].sha256);
+
+    const originalResult = readFileSync(join(moved, 'result.json'));
+    const missingRoute = JSON.parse(originalResult);
+    missingRoute.lifecycleCompanions.entries.find(entry => entry.component === 'traefik').companions = [];
+    writeFileSync(join(moved, 'result.json'), JSON.stringify(missingRoute, null, 2));
+    const missingRouteWorkspace = join(dir, 'missing route copy');
+    const missingRouteResult = resume('sandbox', join(moved, 'stack.yaml'), '--workspace', missingRouteWorkspace);
+    assert.equal(missingRouteResult.status, 2);
+    assert.match(missingRouteResult.stderr, /missing or changed a required route/);
+    assert.equal(existsSync(missingRouteWorkspace), false);
+
+    writeFileSync(join(moved, 'result.json'), originalResult);
+    writeFileSync(join(moved, traefikEvidence.companions[0].path), 'changed route evidence\n');
+    const refusedWorkspace = join(dir, 'refused copy');
+    const refused = resume('sandbox', join(moved, 'stack.yaml'), '--workspace', refusedWorkspace);
+    assert.equal(refused.status, 2);
+    assert.match(refused.stderr, /lifecycle evidence hash mismatch/);
+    assert.equal(existsSync(refusedWorkspace), false);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -85,5 +121,36 @@ test('refusals, existing paths and bad flags leave no new workspace', () => {
     assert.match(existing.stderr, /workspace already exists/);
     assert.equal(readFileSync(join(target, 'keep.txt'), 'utf8'), 'user work');
     assert.equal(existsSync(join(target, 'stack.yaml')), false);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('legacy bundle routes are required only when saving a workspace', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'workspace-legacy-route-'));
+  try {
+    const digest = createHash('sha256').update(dir).digest('hex');
+    const source = join(dir, 'bundle'); mkdirSync(source);
+    const config = 'apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: legacy\n';
+    writeFileSync(join(source, 'config.yaml'), config);
+    const receipt = { spec: { bundle: { manifestDigest: `sha256:${digest}`, files: [
+      { path: 'config.yaml', sha256: hash(Buffer.from(config)), role: 'rendered object set' },
+      { path: 'routes/required.yaml', sha256: '0'.repeat(64), role: 'route: apply-ordering' },
+    ] } } };
+    writeFileSync(join(dir, 'receipt.json'), JSON.stringify(receipt));
+    const manifest = join(dir, 'stack.yaml');
+    writeFileSync(manifest, `apiVersion: helm-expt.confighub.com/v1alpha1\nkind: Stack\nmetadata:\n  name: legacy\nspec:\n  components:\n    - name: legacy\n      bundle: oci://registry.test/legacy@sha256:${digest}\n      receipt: receipt.json\n`);
+    const fakeBin = join(dir, 'bin'); mkdirSync(fakeBin);
+    const fakeOras = join(fakeBin, 'oras');
+    writeFileSync(fakeOras, '#!/bin/sh\nset -eu\n[ "$1" = pull ]\nout=""\nfor arg in "$@"; do if [ "${previous-}" = -o ]; then out="$arg"; fi; previous="$arg"; done\nmkdir -p "$out"\ntar -cf "$out/bundle.tar" -C "$FAKE_BUNDLE_SOURCE" config.yaml\n');
+    chmodSync(fakeOras, 0o755);
+    const env = { PATH: `${fakeBin}:${process.env.PATH}`, FAKE_BUNDLE_SOURCE: source };
+    const plain = join(dir, 'plain.yaml');
+    const plainResult = runWithEnv(env, bin, 'sandbox', manifest, '--out', plain);
+    assert.equal(plainResult.status, 0, plainResult.stderr);
+    assert.ok(existsSync(plain));
+    const workspace = join(dir, 'workspace');
+    const workspaceResult = runWithEnv(env, bin, 'sandbox', manifest, '--workspace', workspace);
+    assert.equal(workspaceResult.status, 2);
+    assert.match(workspaceResult.stderr, /cache is marked complete but does not match its receipt/);
+    assert.equal(existsSync(workspace), false);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
