@@ -24,6 +24,9 @@ spec:
       containers:
         - name: main
           image: example/app:1.0.0
+          {{- with .Values.resources }}
+          resources: {{ toYaml . | nindent 12 }}
+          {{- end }}
 {{- if .Values.metrics.enabled }}
 ---
 apiVersion: v1
