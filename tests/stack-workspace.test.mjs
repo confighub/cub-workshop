@@ -154,3 +154,58 @@ test('legacy bundle routes are required only when saving a workspace', () => {
     assert.equal(existsSync(workspace), false);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('a snapshot-bound workspace permits only appended authored components', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'workspace-add-app-'));
+  try {
+    const original = join(dir, 'original');
+    const initial = run(bin, 'sandbox', 'kubara-shop-platform', '--workspace', original);
+    assert.equal(initial.status, 0, initial.stderr);
+    const baseline = JSON.parse(readFileSync(join(original, 'result.json')));
+    const snapshot = 'evidence/original-stack.yaml';
+    const snapshotFile = baseline.workspaceFiles.find(file => file.path === snapshot);
+    assert.ok(snapshotFile);
+    assert.equal(hash(readFileSync(join(original, snapshot))), snapshotFile.sha256);
+    assert.equal(hash(readFileSync(join(original, snapshot))), baseline.workspaceFiles.find(file => file.path === 'stack.yaml').sha256);
+
+    const appended = join(dir, 'appended'); cpSync(original, appended, { recursive: true });
+    const appendManifest = readYamlFile(join(appended, 'stack.yaml'));
+    writeFileSync(join(appended, 'components', '99-own-app.yaml'), 'apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: own-app\n');
+    appendManifest.spec.components.push({ name: 'own-app', authored: 'components/99-own-app.yaml' });
+    writeFileSync(join(appended, 'stack.yaml'), toYaml(appendManifest));
+    const saved = join(dir, 'saved');
+    const addResult = run(bin, 'sandbox', join(appended, 'stack.yaml'), '--workspace', saved);
+    assert.equal(addResult.status, 0, addResult.stderr);
+    const savedResult = JSON.parse(readFileSync(join(saved, 'result.json')));
+    assert.equal(savedResult.lifecycleCompanions.entries.length, baseline.lifecycleCompanions.entries.length);
+    assert.equal(savedResult.lifecycleCompanions.entries.flatMap(entry => entry.companions).length, baseline.lifecycleCompanions.entries.flatMap(entry => entry.companions).length);
+    const resumed = run(bin, 'sandbox', join(saved, 'stack.yaml'), '--workspace', join(dir, 'resaved'));
+    assert.equal(resumed.status, 0, resumed.stderr);
+
+    const changed = (name, mutate, expected = /only new authored components may be appended/) => {
+      const target = join(dir, name); cpSync(original, target, { recursive: true });
+      const manifest = readYamlFile(join(target, 'stack.yaml')); mutate(manifest, target);
+      writeFileSync(join(target, 'stack.yaml'), toYaml(manifest));
+      const output = join(dir, `${name}-out`); const result = run(bin, 'sandbox', join(target, 'stack.yaml'), '--workspace', output);
+      assert.equal(result.status, 2, result.stderr); assert.match(result.stderr, expected); assert.equal(existsSync(output), false);
+    };
+    changed('stack-renamed', manifest => { manifest.metadata.name = 'renamed-stack'; }, /does not match this stack name/);
+    changed('changed-source', manifest => { manifest.spec.components[0].render = manifest.spec.components[1].render; });
+    changed('renamed', manifest => { manifest.spec.components[0].name = 'renamed'; });
+    changed('removed', manifest => { manifest.spec.components.pop(); });
+    changed('reordered', manifest => { [manifest.spec.components[0], manifest.spec.components[1]] = [manifest.spec.components[1], manifest.spec.components[0]]; });
+    changed('bindings', manifest => { manifest.spec.bindings = { pathBindings: [] }; });
+
+    const evidenceFailure = (name, mutate, expected) => {
+      const target = join(dir, name); cpSync(original, target, { recursive: true });
+      const manifest = readYamlFile(join(target, 'stack.yaml'));
+      writeFileSync(join(target, 'components', '99-own-app.yaml'), 'apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: own-app\n');
+      manifest.spec.components.push({ name: 'own-app', authored: 'components/99-own-app.yaml' });
+      writeFileSync(join(target, 'stack.yaml'), toYaml(manifest)); mutate(target);
+      const result = run(bin, 'sandbox', join(target, 'stack.yaml'), '--workspace', join(dir, `${name}-out`));
+      assert.equal(result.status, 2, result.stderr); assert.match(result.stderr, expected);
+    };
+    evidenceFailure('missing-snapshot', target => rmSync(join(target, snapshot)), /missing original stack snapshot/);
+    evidenceFailure('tampered-snapshot', target => writeFileSync(join(target, snapshot), 'changed\n'), /hash mismatch: original stack snapshot/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

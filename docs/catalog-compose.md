@@ -26,9 +26,15 @@ materialize an editable workspace. The workspace serializes editable YAML and
 records its materialized file hashes in `result.workspaceFiles`; it also creates
 a local baseline receipt. It preserves the verified source receipt and route
 companions as `declared-unexecuted` evidence; it does not execute a route,
-establish readiness, or make a runtime claim. `unsafe-to-flatten`, unpublished bundles, missing
-receipts, and mismatched receipt or route evidence are refusals before a
-workspace is created.
+establish readiness, or make a runtime claim. `unsafe-to-flatten`, unpublished
+bundles, missing receipts, and mismatched receipt or route evidence are refusals
+before a workspace is created.
+
+A saved route workspace may append new, uniquely named `authored` components,
+then save another workspace. The original materialized manifest is retained as
+hashed evidence; its name, bindings, component order, and original component
+sources must remain identical. The original bundle receipt and companions do
+not prove the appended application or its runtime behavior.
 
 The command creates no OCI reference, readiness claim, or runtime proof. A
 refused static check for retained-only entries preserves the materialized files

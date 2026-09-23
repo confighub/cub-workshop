@@ -263,6 +263,11 @@ For a receipt-bound bundle, it also preserves required lifecycle route evidence 
 `evidence/`. Those routes are `declared-unexecuted`: keep the whole directory when
 handing it over, and do not read the saved files as a delivery or readiness result.
 
+A route workspace may append a new uniquely named `authored` component and save a
+new workspace. Its original materialized manifest remains hashed evidence: do not
+rename, remove, reorder, or alter its existing component sources, name, or bindings.
+The preserved receipt and routes do not prove the added application or its runtime.
+
 For this example, edit only `spec.replicas` in the `shop-web` Deployment in
 `my-platform/components/05-shop-web.yaml`, from `3` to `2`. Check and render the
 candidate under new names:
