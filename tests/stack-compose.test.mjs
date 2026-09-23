@@ -301,7 +301,8 @@ test('refuses missing, tampered, or mismatched published route evidence before c
     try {
       const result = runJson('--entry', 'traefik-route', '--name', 'route-demo', '--out', f.out, '--catalog-index', f.index);
       assert.equal(result.status, 1, result.stdout);
-      assert.equal(JSON.parse(result.stdout).code, 'source_integrity_failed');
+      assert.equal(JSON.parse(result.stdout).code, options.omitRoute ? 'lifecycle_route_required' : 'source_integrity_failed');
+      if (options.omitRoute) assert.match(JSON.parse(result.stdout).message, /declares no route companions/);
       assert.equal(existsSync(f.out), false);
     } finally { rmSync(f.dir, { recursive: true, force: true }); }
   }
