@@ -8,6 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { diagnose, elsewhere, generatedFields, leafPaths, lookup, nearest, presetPaths, without } from '../lib/config-values.mjs';
 import { pullReference } from '../lib/common.mjs';
+import { resourceRequirementsFindings } from '../lib/resource-requirements.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const chart = join(root, 'tests/fixtures/values-chart');
@@ -67,7 +68,7 @@ test('against a real chart: a typo, a switched-off setting, a default, a free-fo
     assert.deepEqual(verdicts, {
       replicaCount: 'APPLIED', 'auth.passwrod': 'IGNORED', 'metrics.enabled': 'DEFAULT', 'metrics.port': 'NO EFFECT', 'podAnnotations.team': 'APPLIED',
     });
-    assert.deepEqual(report.summary, { set: 5, applied: 2, ignored: 1, noEffect: 1, sameAsDefault: 1, notChecked: 0 });
+    assert.deepEqual(report.summary, { set: 5, applied: 2, ignored: 1, noEffect: 1, sameAsDefault: 1, notChecked: 0, invalidResources: 0 });
     assert.ok(report.unstableFields >= 1, 'the generated password is recognised as moving');
     assert.equal(run.stdout.includes('hunter2'), false, 'the secret value is never printed');
 
@@ -85,6 +86,25 @@ test('against a real chart: a typo, a switched-off setting, a default, a free-fo
     assert.equal(JSON.stringify(refusedReport).includes('hunter2'), false, 'the retained result excludes values');
     assert.equal(statSync(refusedOut).mode & 0o777, 0o600, 'the local result is private by default');
     assert.equal(statSync(refusedRender).mode & 0o777, 0o600, 'the candidate can contain Secrets and is private by default');
+
+    const invalidValues = join(work, 'invalid-resources.yaml');
+    const invalidOut = join(work, 'invalid-diagnosis.json');
+    const invalidRender = join(work, 'invalid-candidate.yaml');
+    writeFileSync(invalidValues, 'resources:\n  limit:\n    memory: 512Mi\n');
+    const invalid = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', invalidValues, '--json', '--out', invalidOut, '--render-out', invalidRender, '--exit-code'], { encoding: 'utf8' });
+    assert.equal(invalid.status, 1, 'invalid rendered resource fields fail --exit-code');
+    const invalidReport = JSON.parse(invalid.stdout);
+    assert.equal(invalidReport.values[0].verdict, 'APPLIED', 'values verdicts keep their render semantics');
+    assert.equal(invalidReport.summary.invalidResources, 1);
+    assert.deepEqual(invalidReport.invalidResources[0], {
+      object: { apiVersion: 'apps/v1', kind: 'Deployment', namespace: null, name: 'release' },
+      container: { type: 'containers', name: 'main' },
+      path: '/spec/template/spec/containers/0/resources/limit',
+      reason: 'unknown resource field "limit"',
+      suggestion: 'limits',
+    });
+    assert.equal(readFileSync(invalidOut, 'utf8'), invalid.stdout, 'an invalid report is retained');
+    assert.ok(existsSync(invalidRender), 'an invalid rendered candidate is retained');
 
     const repaired = join(work, 'repaired.yaml');
     writeFileSync(repaired, 'replicaCount: 3\n');
@@ -205,6 +225,34 @@ test('check names images tagged latest or not tagged, and passes a digest or a f
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('resource validation is limited to built-in container ResourceRequirements fields', () => {
+  const pod = (kind, apiVersion, spec) => ({ apiVersion, kind, metadata: { name: kind.toLowerCase() }, ...spec });
+  const findings = resourceRequirementsFindings([
+    pod('Pod', 'v1', { spec: { containers: [{ name: 'ok', resources: { limits: { memory: '1Gi', 'example.com/fpga': '1' }, requests: { cpu: '1' }, claims: [] } }], initContainers: [{ name: 'init', resources: {} }], ephemeralContainers: [{ name: 'debug', resources: { request: { memory: '1Gi' } } }] } }),
+    pod('CronJob', 'batch/v1', { spec: { jobTemplate: { spec: { template: { spec: { initContainers: [{ name: 'bad', resources: { limit: { memory: '1Gi' } } }] } } } } } }),
+    pod('Widget', 'example.com/v1', { spec: { template: { spec: { containers: [{ name: 'custom', resources: { limit: { memory: '1Gi' } } }] } } } }),
+    pod('Deployment', 'apps/v1', { spec: { template: { spec: { containers: [{ name: 'wrong-type', resources: 'small' }] } } } }),
+  ]);
+  assert.deepEqual(findings.map((finding) => [finding.object.kind, finding.container.type, finding.path, finding.reason, finding.suggestion ?? null]), [
+    ['Pod', 'ephemeralContainers', '/spec/ephemeralContainers/0/resources/request', 'unknown resource field "request"', null],
+    ['CronJob', 'initContainers', '/spec/jobTemplate/spec/template/spec/initContainers/0/resources/limit', 'unknown resource field "limit"', 'limits'],
+    ['Deployment', 'containers', '/spec/template/spec/containers/0/resources', 'resources must be an object', null],
+  ]);
+});
+
+test('config check refuses invalid resources before it writes an output', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'check-resources-'));
+  try {
+    const input = join(dir, 'invalid.yaml');
+    const output = join(dir, 'render.yaml');
+    writeFileSync(input, 'apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: grafana\nspec:\n  template:\n    spec:\n      containers:\n        - name: grafana\n          image: grafana:1\n          resources:\n            limit:\n              memory: 512Mi\n');
+    const run = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', input, '--out', output], { encoding: 'utf8' });
+    assert.equal(run.status, 1);
+    assert.match(run.stdout, /\[INVALID\].*\/resources\/limit: unknown resource field "limit"\. Did you mean limits\?/);
+    assert.equal(existsSync(output), false, 'invalid resources are refused before output publication');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
 test('an image name becomes the reference its own registry answers to', () => {

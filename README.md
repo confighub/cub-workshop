@@ -48,6 +48,11 @@ found first and left out of every comparison. `--json` gives the report as data,
 `--exit-code` fails when a value did nothing, and no value is ever printed. To keep a
 redacted diagnosis for review, save each attempt under a fresh name:
 
+An `APPLIED` value can still render an invalid container resource field, such as
+`resources.limit` instead of `resources.limits`; that is reported separately as
+`INVALID`. `--exit-code` also fails for those findings. This check covers container
+resource field names only, not the full Kubernetes schema or cluster admission.
+
 ```bash
 cub config values ./chart --values before.yaml --out before-diagnosis.json --render-out before-candidate.yaml --exit-code
 cub config values ./chart --values repaired.yaml --out repaired-diagnosis.json --render-out repaired-candidate.yaml --exit-code

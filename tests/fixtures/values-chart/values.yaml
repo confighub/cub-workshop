@@ -6,3 +6,4 @@ metrics:
   enabled: false
   port: 9121
 podAnnotations: {}
+resources: {}
