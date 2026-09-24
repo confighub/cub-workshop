@@ -39,8 +39,9 @@ cub config values oci://registry-1.docker.io/cloudpirates/redis --version 0.34.1
 ```
 
 Each value you set gets one verdict. `APPLIED` names the objects it changed. `IGNORED`
-means the chart has no such key, and says which key you may have meant or where the
-chart does declare that setting. `NO EFFECT` is a real key that another setting
+means the chart has no such key. It may list up to three advisory, fully qualified
+keys declared by the chart's source values or schema; review them before changing
+your values, because Cub never applies a replacement. `NO EFFECT` is a real key that another setting
 switches off. `DEFAULT` is what the chart already uses. The chart is rendered with your
 values, then once more for each value with that one value taken out, so the verdict
 follows the rendered objects and not a guess. Generated passwords and checksums are
