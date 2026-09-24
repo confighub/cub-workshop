@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { diagnose, elsewhere, generatedFields, leafPaths, lookup, nearest, presetPaths, without } from '../lib/config-values.mjs';
+import { diagnose, elsewhere, generatedFields, leafPaths, lookup, nearest, presetPaths, suggestions, without } from '../lib/config-values.mjs';
 import { pullReference } from '../lib/common.mjs';
 import { resourceRequirementsFindings } from '../lib/resource-requirements.mjs';
 
@@ -36,6 +36,31 @@ test('a setting put in the wrong place is found where the chart declares it', ()
   assert.deepEqual(elsewhere(chartDefaults, ['replica', 'replicaCount']), ['replicaCount']);
   assert.deepEqual(elsewhere(chartDefaults, ['master', 'resources', 'limits', 'memory']), ['resources.limits.memory', 'metrics.resources.limits.memory']);
   assert.deepEqual(elsewhere(chartDefaults, ['nothing', 'likeThis']), []);
+});
+
+test('renamed-value candidates come only from chart-declared keys and remain advisory', () => {
+  // These keys are from the source values files for the reported trials:
+  // oauth2-proxy/oauth2-proxy 10.7.0, cloudpirates/rabbitmq 0.21.13,
+  // and ingress-nginx/ingress-nginx 4.15.1.
+  const oauth2Proxy1070 = { replicaCount: 1, autoscaling: { maxReplicas: 100, minReplicas: 1 }, service: { type: 'ClusterIP' } };
+  const rabbitmq02113 = { auth: { existingPasswordKey: 'password', existingSecret: '' }, definitions: { existingSecret: '' } };
+  const ingressNginx4151 = { controller: { replicaCount: 1, autoscaling: { maxReplicas: 11 } }, defaultBackend: { replicaCount: 1 } };
+  assert.deepEqual(suggestions(oauth2Proxy1070, null, ['replicas']), ['replicaCount', 'autoscaling.maxReplicas', 'autoscaling.minReplicas']);
+  assert.deepEqual(suggestions(rabbitmq02113, null, ['auth', 'existingPasswordSecret']), ['auth.existingPasswordKey', 'auth.existingSecret', 'definitions.existingSecret']);
+  assert.deepEqual(suggestions(ingressNginx4151, null, ['replicaCount']), ['controller.replicaCount', 'defaultBackend.replicaCount', 'controller.autoscaling.maxReplicas']);
+  assert.deepEqual(suggestions(oauth2Proxy1070, null, ['invented', 'setting']), []);
+
+  const schemaOnly = { properties: { replicaCount: { type: 'integer' } } };
+  assert.deepEqual(suggestions({}, schemaOnly, ['replicas']), ['replicaCount'], 'a declared schema key without a default is eligible');
+  assert.deepEqual(lookup({}, ['replicaCount'], schemaOnly), { status: 'known', schemaDeclared: true }, 'the schema also keeps an explicitly declared setting out of the ignored bucket');
+  const freeFormDefaults = { podAnnotations: {} };
+  const partialSchema = { properties: { podAnnotations: { properties: { team: { type: 'string' } } } } };
+  assert.equal(lookup(freeFormDefaults, ['podAnnotations', 'arbitrary'], partialSchema).status, 'open', 'a partial schema cannot close an empty default map');
+
+  const render = () => Buffer.from(JSON.stringify({ apiVersion: 'v1', kind: 'ConfigMap', metadata: { name: 'trial' } }));
+  const report = diagnose({ values: { replicas: 3 }, defaults: oauth2Proxy1070, render });
+  assert.deepEqual(report.values[0].suggestions, ['replicaCount', 'autoscaling.maxReplicas', 'autoscaling.minReplicas']);
+  assert.equal('exactSemanticReplacement' in report.values[0], false);
 });
 
 test('taking one value out removes the maps it leaves empty', () => {
