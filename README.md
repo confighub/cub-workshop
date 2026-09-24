@@ -217,6 +217,9 @@ cub fleet list
 cub fleet plan meridian               # the expanded placements, a whole stack per line if you place one
 ```
 
+Published catalog profiles may bind a separately published rendered source with
+`flattened.bundleSourcePath`; omitted values keep the chart/version/base path.
+
 `cub config list --role ROLE` reads the public catalog listing index and returns
 every classified candidate for one of `cache`, `database`, `ingress`,
 `certificates`, `metrics`, `logs`, `secrets`, `queue`, or `gpu`. Use

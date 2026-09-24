@@ -245,17 +245,17 @@ test('a stack check subprocess failure has a structured code', () => {
 });
 
 let routeFixtureSerial = 0;
-function routeFixture({ corruptReceipt = false, omitRoute = false, wrongManifest = false, extraConfig = false, wrongBase = false } = {}) {
+function routeFixture({ corruptReceipt = false, omitRoute = false, wrongManifest = false, extraConfig = false, wrongBase = false, bundleSourcePath, receiptSourcePath, sourceHash } = {}) {
   const f = fixture([{ id: 'traefik-route', yaml: yaml('traefik-route'), verdict: 'flatten-with-routes' }]);
   const objects = readFileSync(join(f.dir, 'traefik-route.yaml'));
   const routeBytes = Buffer.from('apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: declared-route\n');
   const manifest = digest(Buffer.from(JSON.stringify({ corruptReceipt, omitRoute, wrongManifest, extraConfig, wrongBase, serial: routeFixtureSerial++ })));
-  const sourcePath = `packages/traefik/traefik/41.0.2/bases/${wrongBase ? 'other' : 'default'}/upstream.yaml`;
+  const sourcePath = receiptSourcePath ?? bundleSourcePath ?? `packages/traefik/traefik/41.0.2/bases/${wrongBase ? 'other' : 'default'}/upstream.yaml`;
   const receipt = [
     'apiVersion: confighub.com/v1', 'kind: CertifiedBundleReceipt', 'spec:',
     '  source:', '    charts:', '      - name: traefik', '        version: 41.0.2',
     '  bundle:', `    reference: registry.test/catalog-traefik:latest`, `    manifestDigest: ${wrongManifest ? `sha256:${'b'.repeat(64)}` : manifest}`,
-    '    objectCount: 1', '    files:', `      - path: ${sourcePath}`, `        sha256: ${digest(objects).slice(7)}`, '        role: rendered object set',
+    '    objectCount: 1', '    files:', `      - path: ${sourcePath}`, `        sha256: ${sourceHash ?? digest(objects).slice(7)}`, '        role: rendered object set',
     ...(extraConfig ? ['      - path: another.yaml', `        sha256: ${digest(objects).slice(7)}`] : []),
     ...(omitRoute ? [] : ['      - path: routes/route.yaml', `        sha256: ${digest(routeBytes).slice(7)}`, '        role: "route: apply-ordering"']),
     '  verdict:', '    lane: flatten-with-routes', '    status: certified', '',
@@ -265,6 +265,7 @@ function routeFixture({ corruptReceipt = false, omitRoute = false, wrongManifest
   const listingPath = join(f.dir, 'traefik-route.json');
   const listing = JSON.parse(readFileSync(listingPath));
   listing.identity.name = 'traefik/traefik'; listing.identity.version = '41.0.2'; listing.identity.base = 'default';
+  if (bundleSourcePath !== undefined) listing.flattened.bundleSourcePath = bundleSourcePath;
   listing.oci = { bundles: [{ role: 'literal-config', state: 'published', referenceState: 'published',
     reference: `oci://registry.test/catalog-traefik:latest@${manifest}`, receipt: 'receipt.yaml', receiptUrl: 'receipt.yaml',
     digests: [{ field: 'manifestDigest', value: manifest }, { field: 'objectSetSha256', value: digest(objects) }, { field: 'receiptSha256', value: digest(Buffer.from(receipt)) }] }] };
@@ -293,6 +294,35 @@ test('composes an explicitly selected published route bundle as a resumable decl
     assert.equal(provenance.receipt.source, resolve(join(f.dir, 'receipt.yaml')));
     assert.equal(provenance.state, 'declared-unexecuted');
   } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});
+
+test('accepts an explicit separately published bundle source path and keeps legacy paths unchanged', () => {
+  const explicit = routeFixture({ bundleSourcePath: 'profiles/cert-manager-v121-default/upstream.yaml' });
+  const legacy = routeFixture();
+  try {
+    const explicitResult = runWithEnv(explicit.env, '--entry', 'traefik-route', '--name', 'route-demo', '--out', explicit.out, '--catalog-index', explicit.index, '--json');
+    assert.equal(explicitResult.status, 0, `${explicitResult.stderr} ${explicitResult.stdout}`);
+    const legacyResult = runWithEnv(legacy.env, '--entry', 'traefik-route', '--name', 'route-demo', '--out', legacy.out, '--catalog-index', legacy.index, '--json');
+    assert.equal(legacyResult.status, 0, `${legacyResult.stderr} ${legacyResult.stdout}`);
+  } finally { rmSync(explicit.dir, { recursive: true, force: true }); rmSync(legacy.dir, { recursive: true, force: true }); }
+});
+
+test('refuses an explicit bundle source path that is wrong, tampered, or unsafe', () => {
+  const wrong = routeFixture({ bundleSourcePath: 'profiles/cert-manager-v121-default/upstream.yaml', receiptSourcePath: 'profiles/other/upstream.yaml' });
+  const hash = routeFixture({ bundleSourcePath: 'profiles/cert-manager-v121-default/upstream.yaml', sourceHash: '0'.repeat(64) });
+  const traversal = routeFixture({ bundleSourcePath: '../outside.yaml' });
+  try {
+    const wrongResult = runJson('--entry', 'traefik-route', '--name', 'route-demo', '--out', wrong.out, '--catalog-index', wrong.index);
+    assert.equal(wrongResult.status, 1);
+    assert.equal(JSON.parse(wrongResult.stdout).code, 'source_integrity_failed');
+    const hashResult = runJson('--entry', 'traefik-route', '--name', 'route-demo', '--out', hash.out, '--catalog-index', hash.index);
+    assert.equal(hashResult.status, 1);
+    assert.equal(JSON.parse(hashResult.stdout).code, 'source_integrity_failed');
+    const traversalResult = runJson('--entry', 'traefik-route', '--name', 'route-demo', '--out', traversal.out, '--catalog-index', traversal.index);
+    assert.equal(traversalResult.status, 1);
+    assert.equal(JSON.parse(traversalResult.stdout).code, 'source_invalid');
+    for (const f of [wrong, hash, traversal]) assert.equal(existsSync(f.out), false);
+  } finally { rmSync(wrong.dir, { recursive: true, force: true }); rmSync(hash.dir, { recursive: true, force: true }); rmSync(traversal.dir, { recursive: true, force: true }); }
 });
 
 test('refuses missing, tampered, or mismatched published route evidence before creating a workspace', () => {
