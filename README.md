@@ -49,6 +49,11 @@ found first and left out of every comparison. `--json` gives the report as data,
 `--exit-code` fails when a value did nothing, and no value is ever printed. To keep a
 redacted diagnosis for review, save each attempt under a fresh name:
 
+The report also inventories literal `lookup` calls in the chart source, including
+packaged dependencies where they can be read within fixed limits. It never evaluates a
+template expression or queries a target cluster, so a listed callsite is not evidence
+that the lookup ran.
+
 An `APPLIED` value can still render an invalid container resource field, such as
 `resources.limit` instead of `resources.limits`; that is reported separately as
 `INVALID`. `--exit-code` also fails for those findings. This check covers container
