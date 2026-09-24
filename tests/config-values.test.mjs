@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, symlinkSync, writeFileSync, rmSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { gzipSync } from 'node:zlib';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { diagnose, elsewhere, generatedFields, leafPaths, lookup, nearest, presetPaths, suggestions, without } from '../lib/config-values.mjs';
+import { diagnose, elsewhere, generatedFields, leafPaths, lookup, nearest, presetPaths, suggestions, templateLookupInventory, without } from '../lib/config-values.mjs';
 import { pullReference } from '../lib/common.mjs';
 import { resourceRequirementsFindings } from '../lib/resource-requirements.mjs';
 
@@ -61,6 +62,88 @@ test('renamed-value candidates come only from chart-declared keys and remain adv
   const report = diagnose({ values: { replicas: 3 }, defaults: oauth2Proxy1070, render });
   assert.deepEqual(report.values[0].suggestions, ['replicaCount', 'autoscaling.maxReplicas', 'autoscaling.minReplicas']);
   assert.equal('exactSemanticReplacement' in report.values[0], false);
+});
+
+function tarMember(name, text) {
+  const header = Buffer.alloc(512);
+  header.write(name);
+  header.write('0000644\0', 100);
+  header.write(`${Buffer.byteLength(text).toString(8).padStart(11, '0')}\0`, 124);
+  header[156] = '0'.charCodeAt(0);
+  const data = Buffer.from(text);
+  return Buffer.concat([header, data, Buffer.alloc((512 - data.length % 512) % 512)]);
+}
+
+test('literal lookup inventory recognizes YAML actions, ignores Go-template strings, and scans packaged charts safely', () => {
+  const chart = mkdtempSync(join(tmpdir(), 'lookup-inventory-'));
+  try {
+    mkdirSync(join(chart, 'templates'));
+    mkdirSync(join(chart, 'charts'));
+    writeFileSync(join(chart, 'templates', 'calls.yaml'), `# {{ lookup "v1" "ConfigMap" "yaml-comment" "comment" }}
+message: '{{ lookup "v1" "ConfigMap" "yaml-quoted" "string" }}'
+{{ printf "lookup" }}
+{{- /* stray " {{ lookup "v1" "Secret" "ignored" "comment" }} */ -}}
+{{ define "example.helper" }}{{ lookup "v1" "Secret" (include "example.namespace" .) $secret }}{{ end }}
+{{ lookup "v1" "ConfigMap" "literal-namespace" "literal-name" }}
+{{ if
+  lookup "v1" "Service" "literal-namespace" "literal-name" }}{{ end }}
+`);
+    const nested = Buffer.concat([tarMember('nested/templates/lookup.yaml', '{{ lookup "apps/v1" "Deployment" "default" "app" }}\n'), Buffer.alloc(1024)]);
+    writeFileSync(join(chart, 'charts', 'nested.tgz'), gzipSync(nested));
+    const inventory = templateLookupInventory(chart);
+    assert.equal(inventory.complete, true);
+    assert.deepEqual(inventory.callsites, [
+      { path: 'charts/nested.tgz!/nested/templates/lookup.yaml', line: 1, scope: 'render-template', staticGvk: { apiVersion: 'apps/v1', kind: 'Deployment' }, unresolvedArguments: [], execution: 'not-evaluated' },
+      { path: 'templates/calls.yaml', line: 1, scope: 'render-template', staticGvk: { apiVersion: 'v1', kind: 'ConfigMap' }, unresolvedArguments: [], execution: 'not-evaluated' },
+      { path: 'templates/calls.yaml', line: 2, scope: 'render-template', staticGvk: { apiVersion: 'v1', kind: 'ConfigMap' }, unresolvedArguments: [], execution: 'not-evaluated' },
+      { path: 'templates/calls.yaml', line: 5, scope: 'named-template-definition', template: 'example.helper', staticGvk: { apiVersion: 'v1', kind: 'Secret' }, unresolvedArguments: ['namespace', 'name'], execution: 'not-evaluated' },
+      { path: 'templates/calls.yaml', line: 6, scope: 'render-template', staticGvk: { apiVersion: 'v1', kind: 'ConfigMap' }, unresolvedArguments: [], execution: 'not-evaluated' },
+      { path: 'templates/calls.yaml', line: 8, scope: 'render-template', staticGvk: { apiVersion: 'v1', kind: 'Service' }, unresolvedArguments: [], execution: 'not-evaluated' },
+    ]);
+    assert.match(inventory.boundary, /Literal source callsites only/);
+
+    writeFileSync(join(chart, 'charts', 'unreadable.tgz'), 'not a gzip archive');
+    const unreadable = templateLookupInventory(chart);
+    assert.equal(unreadable.complete, false);
+    assert.deepEqual(unreadable.notChecked, ['could not read packaged chart dependency']);
+  } finally { rmSync(chart, { recursive: true, force: true }); }
+});
+
+test('literal lookup inventory marks nested archives, eligible symlinks, and malformed actions incomplete', () => {
+  const chart = mkdtempSync(join(tmpdir(), 'lookup-inventory-boundary-'));
+  try {
+    mkdirSync(join(chart, 'templates'));
+    mkdirSync(join(chart, 'charts'));
+    const nestedArchive = Buffer.concat([tarMember('outer/charts/inner.tgz', 'not examined'), Buffer.alloc(1024)]);
+    writeFileSync(join(chart, 'charts', 'outer.tgz'), gzipSync(nestedArchive));
+    const nested = templateLookupInventory(chart);
+    assert.equal(nested.complete, false);
+    assert.deepEqual(nested.notChecked, ['nested packaged chart dependency not scanned']);
+
+    rmSync(join(chart, 'charts', 'outer.tgz'));
+    symlinkSync(join(chart, 'not-present'), join(chart, 'templates', 'linked.yaml'));
+    const linked = templateLookupInventory(chart);
+    assert.equal(linked.complete, false);
+    assert.deepEqual(linked.notChecked, ['symbolic link chart template not scanned']);
+
+    rmSync(join(chart, 'templates', 'linked.yaml'));
+    writeFileSync(join(chart, 'templates', 'broken.yaml'), '{{ lookup "v1" "Secret"');
+    const malformed = templateLookupInventory(chart);
+    assert.equal(malformed.complete, false);
+    assert.deepEqual(malformed.notChecked, ['unterminated Helm template action']);
+  } finally { rmSync(chart, { recursive: true, force: true }); }
+});
+
+test('literal lookup inventory reports a bounded static scan rather than an incomplete claim', () => {
+  const chart = mkdtempSync(join(tmpdir(), 'lookup-inventory-limit-'));
+  try {
+    mkdirSync(join(chart, 'templates'));
+    writeFileSync(join(chart, 'templates', 'large.yaml'), 'x'.repeat(257 * 1024));
+    const inventory = templateLookupInventory(chart);
+    assert.equal(inventory.complete, false);
+    assert.deepEqual(inventory.callsites, []);
+    assert.deepEqual(inventory.notChecked, ['static source file size limit reached']);
+  } finally { rmSync(chart, { recursive: true, force: true }); }
 });
 
 test('taking one value out removes the maps it leaves empty', () => {
