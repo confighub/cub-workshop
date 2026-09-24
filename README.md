@@ -80,8 +80,10 @@ contact a cluster, or prove that either candidate will be accepted.
 It also says what the chart does that you did not write. A resource preset in force,
 such as Bitnami's `resourcesPreset: nano`, is named with the objects it sets CPU and
 memory for. Setting your own resources replaces the whole preset. A field that changes
-on every render, such as a generated password, is named too, because Argo CD, Flux and
-`helm template` render without your cluster and get a new value every time.
+on every render, such as a generated password, is named too, because Argo CD and offline
+`helm template` render without your target cluster, so a generated value may change every
+time. A Flux HelmRelease runs Helm against its target cluster, where chart lookups can
+observe existing values; whether that preserves a generated value depends on the chart.
 
 `cub config check` names every image tagged `latest` or not tagged at all, since the
 same name can pull different bytes later. With `--images` it also asks each image's own
