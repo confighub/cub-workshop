@@ -30,6 +30,11 @@ establish readiness, or make a runtime claim. `unsafe-to-flatten`, unpublished
 bundles, missing receipts, and mismatched receipt or route evidence are refusals
 before a workspace is created.
 
+For a separately published Helm profile, the listing may explicitly bind the
+receipt's rendered-object file with `flattened.bundleSourcePath`. It must be a
+non-empty repository-relative path using forward slashes; when absent, compose
+uses the legacy chart/version/base path.
+
 A saved route workspace may append new, uniquely named `authored` components,
 then save another workspace. The original materialized manifest is retained as
 hashed evidence; its name, bindings, component order, and original component
