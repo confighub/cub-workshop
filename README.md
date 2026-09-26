@@ -28,6 +28,28 @@ creates a draft GitHub release; publishing the draft remains a separate review s
 The installed plugin still requires `node`, `oras`, `cub`, and Helm where the
 selected command needs them.
 
+## Find a worked example
+
+The [public example index](https://github.com/confighub/examples/tree/main/catalog)
+links to the maintained guide for a task. This checkout carries a reviewed,
+pinned snapshot for offline discovery:
+
+```sh
+cub config examples 'what an app looks like'
+cub config examples 'existing chart values'
+cub config examples 'review an existing Argo app' --json
+```
+
+The first-app tutorial follows source files into a flattened manifest, then
+shows the proposed managed configuration and delivery boundary with a local edit.
+It gives a person and an AI assistant the same path. Each result names its
+first useful artifact, stop condition, source, and proof limits. Open the guide
+at the pinned URL before running its steps. The command reads local JSON only
+and never executes a linked command. `--all` includes clearly labelled research
+candidates that the default view omits. The exact snapshot revision and hash
+are in [`catalog/source.json`](./catalog/source.json). `cub config list --role`
+remains the separate catalog of chart candidates.
+
 ## Find the values that did nothing
 
 Helm accepts a values file without checking it against the chart. A key that is
