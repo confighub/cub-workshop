@@ -42,6 +42,9 @@ test('user problems reach a pinned guide and preserve eligibility limits', () =>
     }
   }
   assert.equal(findExamples('what an app looks like')[0].id, 'first-app-realistic');
+  // Short and common words match nothing on their own.
+  assert.deepEqual(findExamples('how do I start').map(entry => entry.id), []);
+  assert.deepEqual(findExamples('i').map(entry => entry.id), []);
   assert.ok(!findExamples('promotion').some(entry => entry.id === 'promotion-demo-data'));
   assert.ok(findExamples('promotion', { all: true }).some(entry => entry.id === 'promotion-demo-data'));
 });

@@ -19,16 +19,35 @@ function words(value) {
   return String(value).toLowerCase().match(/[a-z0-9]+/g) ?? [];
 }
 
+// Words that carry no meaning in a question, so "how do I start" does not
+// match every example that contains an i or a do.
+const STOP_WORDS = new Set([
+  'a', 'an', 'and', 'are', 'can', 'do', 'does', 'for', 'from', 'how', 'i', 'in',
+  'into', 'is', 'it', 'like', 'me', 'my', 'of', 'on', 'or', 'should', 'so', 'the',
+  'this', 'to', 'want', 'we', 'what', 'when', 'where', 'which', 'with', 'you', 'your',
+]);
+
+function queryWords(query) {
+  return words(query).filter(word => word.length > 1 && !STOP_WORDS.has(word));
+}
+
+// A word matches another when they are equal, or when a query word of three or
+// more letters starts it, so "app" finds "apps" but "i" finds nothing.
+function matches(word, target) {
+  return target === word || (word.length >= 3 && target.startsWith(word));
+}
+
 function score(entry, query) {
-  const tags = entry.tags ?? [];
-  const task = String(entry.task ?? '').toLowerCase();
-  const id = String(entry.id ?? '').toLowerCase();
+  const tags = (entry.tags ?? []).map(tag => String(tag).toLowerCase());
+  const tagWords = tags.flatMap(words);
+  const idWords = words(entry.id ?? '');
+  const taskWords = words(entry.task ?? '');
   let result = 0;
-  for (const word of words(query)) {
+  for (const word of queryWords(query)) {
     if (tags.includes(word)) result += 8;
-    else if (tags.some(tag => tag.includes(word))) result += 4;
-    if (id.includes(word)) result += 5;
-    if (task.includes(word)) result += 2;
+    else if (tagWords.some(tag => matches(word, tag))) result += 4;
+    if (idWords.some(id => matches(word, id))) result += 5;
+    if (taskWords.some(task => matches(word, task))) result += 2;
   }
   return result;
 }
