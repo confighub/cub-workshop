@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-const OWN_HELP = ["diff", "values"];
+const OWN_HELP = ["diff", "values", "examples"];
 const HELP = `cub config — one config, one chart
 
 Usage:
   cub config list
   cub config list --role ROLE [--json] [--catalog-index FILE_OR_HTTPS_URL]
+  cub config examples [problem words] [--json] [--all]
   cub config check <name | local.yaml> [--images] [--exit-code]
   cub config diff <before.yaml> <after.yaml> [--summary] [--json] [--out result.json] [--exit-code]
   cub config values <chart> --values my-values.yaml [--version X] [--repo URL] [--json] [--out result.json] [--render-out candidate.yaml] [--exit-code]
@@ -23,7 +24,9 @@ if (helpRequested && (requestedVerb === undefined || requestedVerb === "list")) 
 if (helpRequested && !OWN_HELP.includes(requestedVerb)) process.argv.length = 2;
 const verb = process.argv[2];
 const lib = (file) => import(new URL(`../lib/${file}`, import.meta.url).href);
-(verb === "diff"
+(verb === "examples"
+  ? import(new URL('../scripts/find-example.mjs', import.meta.url).href).then(({ runExamples }) => { runExamples(process.argv.slice(3)); })
+  : verb === "diff"
   ? lib("config-diff.mjs").then(({ runDiff }) => { process.exitCode = runDiff(process.argv.slice(3)); })
   : verb === "values"
     ? lib("config-values.mjs").then(({ runValues }) => { process.exitCode = runValues(process.argv.slice(3)); })

@@ -16,7 +16,11 @@ test("packages committed HEAD reproducibly and refuses overwrite", () => {
   try {
     mkdirSync(join(fixture, "scripts"));
     mkdirSync(join(fixture, "bin"));
+    mkdirSync(join(fixture, "catalog"));
     cpSync(script, join(fixture, "scripts/package-release.mjs"));
+    cpSync(join(repoRoot, "scripts/find-example.mjs"), join(fixture, "scripts/find-example.mjs"));
+    cpSync(join(repoRoot, "catalog/examples.json"), join(fixture, "catalog/examples.json"));
+    cpSync(join(repoRoot, "catalog/source.json"), join(fixture, "catalog/source.json"));
     cpSync(join(repoRoot, "cub-plugin.yaml"), join(fixture, "cub-plugin.yaml"));
     writeFileSync(join(fixture, "cub-plugin.yaml"), readFileSync(join(fixture, "cub-plugin.yaml"), "utf8").replace(/^version:.*$/m, "version: 1.2.3"));
     for (const entrypoint of ["cub-config", "cub-app", "cub-stack", "cub-fleet"]) {
@@ -67,6 +71,8 @@ test("packages committed HEAD reproducibly and refuses overwrite", () => {
     for (const entrypoint of ["cub-config", "cub-app", "cub-stack", "cub-fleet"]) {
       assert.equal(statSync(join(root, `bin/${entrypoint}`)).mode & 0o111, 0o111);
     }
+    const exampleResult = JSON.parse(execFileSync(process.execPath, [join(root, "bin/cub-config"), "examples", "what an app looks like", "--json"], { encoding: "utf8" }));
+    assert.ok(exampleResult.entries.some((entry) => entry.id === "first-app-realistic"));
     assert.equal(readdirSync(root).includes("untracked.txt"), false);
     assert.throws(() => execFileSync(process.execPath, [script, "--out", out], { cwd: fixture }), /refusing to overwrite/);
   } finally {
