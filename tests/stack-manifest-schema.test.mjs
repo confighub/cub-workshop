@@ -66,7 +66,10 @@ test('malformed envelope, source, and binding forms are rejected', () => {
     ['invalid plane', (m) => { m.spec.components[0].plane = 'edge'; }],
     ['invalid order', (m) => { m.spec.components[0].order = 1.5; }],
     ['malformed bindings', (m) => { m.spec.bindings = { pathBindings: [{ component: 'x' }] }; }],
-    ['malformed source metadata', (m) => { m.spec.source = { kubara: '/tmp/work' }; }],
+    ['malformed source metadata', (m) => { m.spec.source = { cluster: 'hub' }; }],
+    ['variants on an authored component', (m) => { m.spec.components[0].variants = [{ cluster: 'hub', render: 'renders/hub/x.yaml' }]; }],
+    ['variant without a render', (m) => { m.spec.components[0] = { name: 'x', render: 'renders/x.yaml', variants: [{ cluster: 'hub' }] }; }],
+    ['variant with an unknown field', (m) => { m.spec.components[0] = { name: 'x', render: 'renders/x.yaml', variants: [{ cluster: 'hub', render: 'r.yaml', target: 'hub' }] }; }],
     ['null document', () => null],
   ];
   for (const [label, mutate] of cases) {
