@@ -13,34 +13,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: reproducible release packaging
-        run: node --test tests/package-release.test.mjs
-      - name: retained direct and assistant Adapt trials
-        run: node --test tests/adapt-local-evidence.test.mjs
-      - name: local configuration diff
-        run: node --test tests/config-diff.test.mjs
-      - name: which of the values I set did anything
-        run: node --test tests/config-values.test.mjs
-      - name: GPU matching against supplied Node snapshots
-        run: node --test tests/app-match.test.mjs
-      - name: retained direct and assistant Match trials
-        run: node --test tests/match-local-evidence.test.mjs
-      - name: reject incomplete or substituted Match trial artifacts
-        run: node --test tests/match-trial.test.mjs
-      - name: mounted Promtail connection checks
-        run: node --test tests/stack-connections.test.mjs
-      - name: OCI bundle cache race checks
-        run: node --test tests/oci-cache-race.test.mjs
-      - name: stack served API regression tests
-        run: node --test tests/stack-api-compatibility.test.mjs
-      - name: catalog role discovery
-        run: node --test tests/config-list-role.test.mjs
-      - name: stack manifest schema and runtime contract tests
-        run: node --test tests/stack-manifest-schema.test.mjs
-      - name: from-kubara passes CRD-provided APIs to helm
-        run: node --test tests/kubara-render.test.mjs
-      - name: stack retained catalog composition tests
-        run: node --test tests/stack-compose.test.mjs
+      # Every test file runs here except the two that pull bundle-form stacks from
+      # public registries; those run in the bundles job. A new tests/*.test.mjs is
+      # picked up without editing this file.
+      - name: every offline test file
+        run: |
+          files=$(ls tests/*.test.mjs | grep -v -e stack-workspace.test.mjs -e kubara-gitops.test.mjs)
+          echo "$files"
+          node --test $files
       - name: config lists and checks a shipped render
         run: |
           node bin/cub-config list
@@ -52,11 +32,15 @@ jobs:
           node bin/cub-app check hello-standalone
           node bin/cub-app check shop-web
           node bin/cub-app score shop-web
-      - name: stack certifies render-form compositions
+      # Stacks whose components are authored files or bundles seeded in cache/ resolve
+      # with no registry. eks-inference, kubara-* and kubara-gitops-shop pull from
+      # public registries and are sandboxed in the bundles job.
+      - name: stack certifies every stack that resolves offline
         run: |
           node bin/cub-stack list
-          node bin/cub-stack sandbox observability-base
-          node bin/cub-stack sandbox web-tiny
+          for stack in web-tiny web-platform observability-base redis-platform data-services gitops-secrets app-platform; do
+            node bin/cub-stack sandbox "$stack"
+          done
           node bin/cub-stack sandbox shop-platform --out /tmp/shop-platform.yaml
           test -s /tmp/shop-platform.yaml
       - name: a manifest anywhere on disk resolves the shipped sources
@@ -72,18 +56,23 @@ jobs:
               echo "$broken refused as designed"
             fi
           done
-      - name: target prerequisite inventory
-        run: node --test tests/stack-prerequisites.test.mjs
-      - name: local config and app inputs
-        run: node --test tests/local-input.test.mjs
-      - name: fleet lookup failures never become creation attempts
-        run: node --test tests/fleet-lookup-errors.test.mjs
-      - name: Kubara app HTTP evidence
-        run: node --test tests/shop-http-evidence.test.mjs
-      - name: retained assistant identity agreement
-        run: node --test tests/assistant-local-evidence.test.mjs
-      - name: structured check results
-        run: node --test tests/stack-check-json.test.mjs
+      - name: from-kubara converts a Kubara platform into one stack that checks, per cluster too
+        run: |
+          rm -rf /tmp/kubara-out
+          node bin/cub-stack from-kubara tests/fixtures/kubara-platform --out /tmp/kubara-out
+          node bin/cub-stack check /tmp/kubara-out/stack.yaml
+          node bin/cub-stack check /tmp/kubara-out/stack.yaml --cluster spoke
+      - name: upload plans the ConfigHub writes and makes none
+        run: node bin/cub-stack upload web-tiny
+      - name: config diff names one changed field between two files
+        run: |
+          sed 's/"v1"/"v2"/' components/frontend-config.yaml > /tmp/frontend-config-v2.yaml
+          node bin/cub-config diff components/frontend-config.yaml /tmp/frontend-config-v2.yaml | tee /tmp/config-diff.txt
+          grep -q '1 changed' /tmp/config-diff.txt
+      - name: config values checks a values file against a real chart
+        run: |
+          printf 'replicaCount: 3\nmetrics:\n  enabled: true\n' > /tmp/smoke-values.yaml
+          node bin/cub-config values tests/fixtures/values-chart -f /tmp/smoke-values.yaml --max-renders 5 --exit-code
       - name: fleet lists and plans the shipped manifest
         run: |
           node bin/cub-fleet list
@@ -127,6 +116,11 @@ jobs:
           echo plain > /tmp/plain.txt
           digest=$(cd /tmp && oras push localhost:5001/workshop/plain:ci plain.txt --plain-http | grep -oE 'sha256:[0-9a-f]{64}' | tail -1)
           if node bin/cub-config verify "oci://localhost:5001/workshop/plain@$digest"; then echo "verified a bundle with no receipt" && exit 1; else echo "refused as designed"; fi
+      - name: a from-kubara platform publishes as one index
+        run: |
+          if [ -f tests/kubara-publish.test.mjs ]; then
+            CUB_TEST_REGISTRY=localhost:5001 node --test tests/kubara-publish.test.mjs
+          fi
 
   bundles:
     name: bundle-form stacks, pulled by digest
