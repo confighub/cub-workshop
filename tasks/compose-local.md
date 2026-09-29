@@ -1,6 +1,6 @@
 # Save, change and check a Kubara app locally
 
-This task works with workshop 0.6.14 or later. It tests a local editing journey;
+This task needs workshop plugin 0.6.14 or newer. It tests a local editing journey;
 it does not supply GitOps delivery or prove the platform or app runs.
 
 ## Before starting

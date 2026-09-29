@@ -9,7 +9,7 @@ as the manual command:
 cub stack check platform/stack.yaml --json
 ```
 
-The workflow pins Workshop v0.6.34 by commit and runs its Node entrypoint, so it
+The workflow pins Workshop v0.6.50 by commit and runs its Node entrypoint, so it
 does not need a ConfigHub account, cluster credentials or a global cub install.
 It supports local `render` and `authored` component files. OCI bundle sources
 also need ORAS and any registry access; configure those separately before using
@@ -20,11 +20,15 @@ provenance and warnings, then commit the manifest and component files. The
 workflow checks edits under that directory automatically. If your manifest
 references files elsewhere, extend both the trigger paths and the checked path.
 
-A resource ownership conflict, invalid manifest or known wrong-namespace
-Promtail destination makes the check fail. GitHub retains the JSON result for
+A resource ownership conflict, invalid manifest, known wrong-namespace
+Promtail destination or schema violation makes the check fail. GitHub retains the JSON result for
 both passing and refused checks. Make this job required in the repository's
 branch rules if merges must be gated on it; copying the workflow does not set
 those rules.
+
+The schema check runs only where `flux` and its schema plugin are installed on the
+runner (`flux plugin install schema`). Without them the result carries a warning and
+the verdict is unchanged. Add the two installs to the workflow if you want it enforced.
 
 Warnings and unknown target facts do not become live proof. This workflow does
 not apply objects, test health, establish rollout safety or prove rollback.
