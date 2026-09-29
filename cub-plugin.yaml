@@ -2,14 +2,14 @@ name: workshop
 version: 0.6.50
 commands:
     - name: config
-      summary: 'One config, one chart: render it for free and see what it installs'
+      summary: 'One config, one chart: list, examples, check, verify, diff, and values, most of them free'
       entrypoint: bin/cub-config
     - name: app
-      summary: 'A workload: check what it needs, upload it under governance, export it to Score'
+      summary: 'A workload: list, check, match to nodes, upload under governance, and score'
       entrypoint: bin/cub-app
     - name: stack
-      summary: 'A composition of components: check, sandbox, and upload'
+      summary: 'A composition of components: list, schema, compose, check, sandbox, publish, upload, and from-kubara'
       entrypoint: bin/cub-stack
     - name: fleet
-      summary: 'Placement as data: build, age, and read a whole governed fleet from a fleet manifest'
+      summary: 'Placement as data: list, plan, up, age, status, rollout, and down for a governed fleet manifest'
       entrypoint: bin/cub-fleet
