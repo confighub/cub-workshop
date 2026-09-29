@@ -110,3 +110,88 @@ test('a seeded prefix without full receipt identity cannot serve silently', () =
     assert.notEqual(result.status, 0);
   } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });
+
+function plant(f, digest, files) {
+  const entry = join(f.dir, 'cub-stack-bundles', digest);
+  mkdirSync(entry, { recursive: true });
+  for (const [name, contents] of Object.entries(files)) writeFileSync(join(entry, name), contents);
+  return entry;
+}
+
+function assertRecovered(f, digest, result) {
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, new RegExp(`cache ${join(f.dir, 'cub-stack-bundles', digest).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} is`));
+  assert.equal(readFileSync(f.log, 'utf8').trim().split('\n').length, 1);
+  assert.deepEqual(readdirSync(join(f.dir, 'cub-stack-bundles')), [digest]);
+  assert.deepEqual(readdirSync(join(f.dir, 'cub-stack-bundles', digest)).sort(), ['.ok', 'config.yaml']);
+  assert.equal(readFileSync(join(f.dir, 'cub-stack-bundles', digest, 'config.yaml'), 'utf8'), readFileSync(f.source, 'utf8'));
+  assert.deepEqual(readdirSync(f.dir).filter((name) => name.startsWith('cub-stack-')), ['cub-stack-bundles']);
+}
+
+for (const [label, files] of [
+  ['an unmarked partial entry', { 'config.yaml': 'apiVersion: v1\nkind: Conf' }],
+  ['a marked entry whose bytes no longer verify', { '.ok': 'complete\n', 'config.yaml': 'apiVersion: v1\nkind: Conf' }],
+  ['a marked entry whose files were pruned', { '.ok': 'complete\n' }],
+]) {
+  test(`${label} is discarded and pulled again`, () => {
+    const f = fixture();
+    try {
+      const digest = 'e'.repeat(64);
+      plant(f, digest, files);
+      const env = { ...process.env, PATH: `${f.fakeBin}:${process.env.PATH}`, TMPDIR: f.dir, FAKE_ORAS_SOURCE: f.dir, FAKE_ORAS_LOG: f.log };
+      const code = `import { resolveBundle } from ${JSON.stringify(common)}; console.log(JSON.stringify(resolveBundle(${JSON.stringify(component(digest, f.receipt))}).map((object) => object.metadata?.name)));`;
+      const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], { cwd: root, env, encoding: 'utf8' });
+      assertRecovered(f, digest, result);
+      assert.deepEqual(JSON.parse(result.stdout.trim()), ['cache-fixture']);
+    } finally { rmSync(f.dir, { recursive: true, force: true }); }
+  });
+}
+
+test('cub stack check recovers from an incomplete cached component bundle', () => {
+  const f = fixture();
+  try {
+    const digest = 'f'.repeat(64);
+    plant(f, digest, { 'config.yaml': 'apiVersion: v1\n' });
+    const manifest = join(f.dir, 'platform.yaml');
+    writeFileSync(manifest, [
+      'apiVersion: helm-expt.confighub.com/v1alpha1', 'kind: Stack', 'metadata:', '  name: cache-recovery', 'spec:', '  components:',
+      '    - name: cert-manager', `      bundle: "oci://localhost:5001/fixture@sha256:${digest}"`, '      receipt: receipt.json', '',
+    ].join('\n'));
+    const env = { ...process.env, PATH: `${f.fakeBin}:${process.env.PATH}`, TMPDIR: f.dir, FAKE_ORAS_SOURCE: f.dir, FAKE_ORAS_LOG: f.log };
+    const result = spawnSync(process.execPath, [join(root, 'bin', 'cub-stack'), 'check', manifest, '--json'], { cwd: f.dir, env, encoding: 'utf8', timeout: 30000 });
+    assert.doesNotMatch(result.stderr, /cache publication was incomplete/);
+    assertRecovered(f, digest, result);
+    assert.equal(JSON.parse(result.stdout).certified, true);
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});
+
+test('a stale entry that cannot be removed names its path and says to delete it', { skip: process.getuid?.() === 0 && 'root ignores directory permissions' }, () => {
+  const f = fixture();
+  const cacheRoot = join(f.dir, 'cub-stack-bundles');
+  try {
+    const digest = '9'.repeat(64);
+    const entry = plant(f, digest, { 'config.yaml': 'apiVersion: v1\n' });
+    chmodSync(cacheRoot, 0o555);
+    const env = { ...process.env, PATH: `${f.fakeBin}:${process.env.PATH}`, TMPDIR: f.dir, FAKE_ORAS_SOURCE: f.dir, FAKE_ORAS_LOG: f.log };
+    const code = `import { resolveBundle } from ${JSON.stringify(common)}; resolveBundle(${JSON.stringify(component(digest, f.receipt))});`;
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], { cwd: root, env, encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+    assert.ok(result.stderr.includes(`cache ${entry} is incomplete and could not be removed`), result.stderr);
+    assert.match(result.stderr, /delete that directory and run the command again/);
+  } finally { chmodSync(cacheRoot, 0o755); rmSync(f.dir, { recursive: true, force: true }); }
+});
+
+test('processes recovering one stale entry together all succeed with one complete winner', async () => {
+  const f = fixture();
+  try {
+    const digest = '8'.repeat(64);
+    plant(f, digest, { 'config.yaml': 'apiVersion: v1\n' });
+    const env = { ...process.env, PATH: `${f.fakeBin}:${process.env.PATH}`, TMPDIR: f.dir, FAKE_ORAS_SOURCE: f.dir, FAKE_ORAS_LOG: f.log };
+    const results = await Promise.all(Array.from({ length: 4 }, () => collect(child(component(digest, f.receipt), env))));
+    assert.deepEqual(results.map((result) => result.status), [0, 0, 0, 0], results.map((result) => result.stderr).join('\n'));
+    assert.deepEqual(results.map((result) => JSON.parse(result.stdout.trim())), Array.from({ length: 4 }, () => ['cache-fixture']));
+    assert.deepEqual(readdirSync(join(f.dir, 'cub-stack-bundles')), [digest]);
+    assert.deepEqual(readdirSync(join(f.dir, 'cub-stack-bundles', digest)).sort(), ['.ok', 'config.yaml']);
+    assert.deepEqual(readdirSync(f.dir).filter((name) => name.startsWith('cub-stack-')), ['cub-stack-bundles']);
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, cpSync, renameSync, rmSync, chmodSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, cpSync, renameSync, rmSync, chmodSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -142,16 +142,19 @@ test('legacy bundle routes are required only when saving a workspace', () => {
     const fakeOras = join(fakeBin, 'oras');
     writeFileSync(fakeOras, '#!/bin/sh\nset -eu\n[ "$1" = pull ]\nout=""\nfor arg in "$@"; do if [ "${previous-}" = -o ]; then out="$arg"; fi; previous="$arg"; done\nmkdir -p "$out"\ntar -cf "$out/bundle.tar" -C "$FAKE_BUNDLE_SOURCE" config.yaml\n');
     chmodSync(fakeOras, 0o755);
-    const env = { PATH: `${fakeBin}:${process.env.PATH}`, FAKE_BUNDLE_SOURCE: source };
+    const env = { PATH: `${fakeBin}:${process.env.PATH}`, FAKE_BUNDLE_SOURCE: source, TMPDIR: dir };
     const plain = join(dir, 'plain.yaml');
     const plainResult = runWithEnv(env, bin, 'sandbox', manifest, '--out', plain);
     assert.equal(plainResult.status, 0, plainResult.stderr);
     assert.ok(existsSync(plain));
     const workspace = join(dir, 'workspace');
     const workspaceResult = runWithEnv(env, bin, 'sandbox', manifest, '--workspace', workspace);
-    assert.equal(workspaceResult.status, 2);
-    assert.match(workspaceResult.stderr, /cache is marked complete but does not match its receipt/);
+    assert.equal(workspaceResult.status, 1);
+    assert.match(workspaceResult.stderr, /pulled files do not match its receipt/);
     assert.equal(existsSync(workspace), false);
+    // The cached entry is complete for its configuration; the bundle, not the
+    // cache, lacks the route, so the entry is kept rather than discarded.
+    assert.deepEqual(readdirSync(join(dir, 'cub-stack-bundles', digest)).sort(), ['.ok', 'config.yaml']);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
