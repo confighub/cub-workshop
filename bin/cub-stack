@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-const OWN_HELP = [];
 // --help is never a name: it prints the usage and exits 0.
-if (process.argv.slice(3).some((arg) => arg === "--help" || arg === "-h") && !OWN_HELP.includes(process.argv[2])) process.argv.length = 2;
+if (process.argv.slice(3).some((arg) => arg === "--help" || arg === "-h")) process.argv.length = 2;
 const implementation = process.argv[2] === "compose" ? "stack-compose.mjs" : "stack.mjs";
 import(new URL(`../lib/${implementation}`, import.meta.url).href).catch((error) => {
   if (process.argv[2] === "compose" && process.argv.slice(3).includes("--json")) {
