@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // --help is never a name: it prints the usage and exits 0.
-if (process.argv.slice(3).some((arg) => arg === "--help" || arg === "-h")) process.argv.length = 2;
+if (process.argv.slice(2).some((arg) => arg === "--help" || arg === "-h")) process.argv.length = 2;
 import(new URL("../lib/fleet.mjs", import.meta.url).href).catch((error) => {
   // A failure reads as one line, never a stack trace. With no message, name the code or error type.
   const kind = [error?.code, error?.name].find((value) => value && value !== "Error");

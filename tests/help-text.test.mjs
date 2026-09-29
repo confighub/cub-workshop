@@ -38,8 +38,10 @@ for (const row of NOUNS) {
     assert.ok(verbs.length >= 4, `expected the dispatch of cub ${row.noun} to name its verbs, found ${verbs.join(", ") || "none"}`);
     const help = run(row.noun, "--help");
     const bare = run(row.noun);
-    // The usage is what is compared; `cub app|stack|fleet --help` exits 2 today, as an unknown verb would.
+    // Asking for help is not an error, bare or with a verb.
     assert.equal(bare.status, 0, bare.stderr);
+    assert.equal(help.status, 0, `cub ${row.noun} --help exits ${help.status}`);
+    assert.equal(run(row.noun, "check", "--help").status, 0, `cub ${row.noun} check --help`);
     assert.equal(help.stdout, bare.stdout, `cub ${row.noun} --help and the bare command diverge`);
     for (const verb of verbs) {
       assert.match(help.stdout, new RegExp(`cub ${row.noun} ${verb}\\b`), `usage of cub ${row.noun} omits ${verb}`);
