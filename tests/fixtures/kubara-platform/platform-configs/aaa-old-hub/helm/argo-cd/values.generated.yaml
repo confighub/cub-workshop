@@ -1,0 +1,7 @@
+# A stale directory from a hub that was renamed. It sorts first, and its
+# ApplicationSets must not be read: config.yaml names the hub.
+bootstrapValues:
+  applicationSets:
+    old:
+      apps:
+        web: {name: stale-web, path: web, namespace: stale}

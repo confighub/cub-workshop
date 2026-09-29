@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-settings
+  namespace: {{ .Release.Namespace }}
+data:
+  replicas: "{{ .Values.replicas }}"
+  level: {{ .Values.level }}
+{{- if .Capabilities.APIVersions.Has "example.com/v1/Widget" }}
+---
+apiVersion: example.com/v1
+kind: Widget
+metadata:
+  name: {{ .Release.Name }}-widget
+  namespace: {{ .Release.Namespace }}
+{{- end }}
