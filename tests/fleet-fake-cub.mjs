@@ -27,21 +27,22 @@ for (const rule of JSON.parse(process.env.FAKE_CUB_RULES||'[]')) {
 // Run bin/cub-fleet with the fake cub (and any extra fake tools) first on PATH.
 // files are written into the scratch directory before the run, so a manifest
 // can sit beside the tools; {dir} in their content is replaced by its path.
+// An extra tool logs its argv to FAKE_TOOL_LOG, returned as toolCalls.
 export function runFleet(argv, { rules = [], files = {}, tools = {}, env = {} } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'fleet-fake-'));
   try {
     const bin = join(dir, 'bin'); mkdirSync(bin);
-    const log = join(dir, 'calls.jsonl');
+    const log = join(dir, 'calls.jsonl'); const toolLog = join(dir, 'tools.jsonl');
     writeFileSync(join(bin, 'cub'), FAKE_CUB, { mode: 0o755 });
     for (const [tool, source] of Object.entries(tools)) writeFileSync(join(bin, tool), `#!${process.execPath}\n${source}`, { mode: 0o755 });
     for (const [file, content] of Object.entries(files)) writeFileSync(join(dir, file), String(content).replaceAll('{dir}', dir));
     const resolved = argv.map((arg) => arg.replaceAll('{dir}', dir));
     const result = spawnSync(process.execPath, [join(root, 'bin/cub-fleet'), ...resolved], {
       encoding: 'utf8',
-      env: { ...process.env, ...env, PATH: `${bin}:${process.env.PATH}`, FAKE_CUB_LOG: log, FAKE_CUB_RULES: JSON.stringify(rules), FAKE_DIR: dir },
+      env: { ...process.env, ...env, PATH: `${bin}:${process.env.PATH}`, FAKE_CUB_LOG: log, FAKE_CUB_RULES: JSON.stringify(rules), FAKE_TOOL_LOG: toolLog },
     });
-    const calls = existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').filter(Boolean).map((row) => JSON.parse(row)) : [];
-    return { result, calls, output: result.stdout + result.stderr };
+    const read = (file) => existsSync(file) ? readFileSync(file, 'utf8').trim().split('\n').filter(Boolean).map((row) => JSON.parse(row)) : [];
+    return { result, calls: read(log), toolCalls: read(toolLog) };
   } finally { rmSync(dir, { recursive: true, force: true }); }
 }
 
