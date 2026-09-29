@@ -104,11 +104,12 @@ test('upload makes one base per service and clones each cluster variant from it'
     assert.equal(fromKubara(f.platform, '--out', f.out).status, 0);
     const bin = join(f.dir, 'bin'); mkdirSync(bin);
     const log = join(f.dir, 'calls.jsonl');
-    writeFileSync(join(bin, 'cub'), `#!${process.execPath}\nrequire('node:fs').appendFileSync(process.env.CALL_LOG, JSON.stringify(process.argv.slice(2)) + '\\n');\n`);
+    // A fresh organization: every Space lookup answers not found.
+    writeFileSync(join(bin, 'cub'), `#!${process.execPath}\nconst args = process.argv.slice(2); require('node:fs').appendFileSync(process.env.CALL_LOG, JSON.stringify(args) + '\\n');\nif (args[1] === 'get') { console.error('Failed: ' + args[0] + ' ' + args[2] + ' not found'); process.exit(1); }\n`);
     chmodSync(join(bin, 'cub'), 0o755);
     const result = spawnSync(process.execPath, [join(root, 'bin', 'cub-stack'), 'upload', join(f.out, 'stack.yaml'), '--run'], { encoding: 'utf8', env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, CALL_LOG: log } });
     assert.equal(result.status, 0, result.stderr);
-    const calls = readFileSync(log, 'utf8').trim().split('\n').map(JSON.parse).map((call) => call.map((arg) => arg.startsWith(f.out) ? arg.slice(f.out.length + 1) : arg));
+    const calls = readFileSync(log, 'utf8').trim().split('\n').map(JSON.parse).filter((call) => call[1] !== 'get').map((call) => call.map((arg) => arg.startsWith(f.out) ? arg.slice(f.out.length + 1) : arg));
     const web = calls.filter((call) => call.includes('web') || call.includes('web-base'));
     assert.deepEqual(web, [
       ['variant', 'upload', '--component', 'web', '--variant', 'base', '--owner', 'kubara-platform', 'renders/hub/web.yaml'],
