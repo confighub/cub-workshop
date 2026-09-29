@@ -12,7 +12,10 @@ cub plugin install confighub/cub-workshop
 To pin a version, install its release tag, such as
 `cub plugin install confighub/cub-workshop@v0.6.50`.
 
-Requires `node`, `oras`, and `cub` on the PATH, and `helm` for `cub config values`.
+Requires `node`, `oras`, and `cub` on the PATH. Some commands need more: `helm` for
+`cub config values` and `cub stack from-kubara`, `cosign` only for `--sign` and
+`--key`, and `flux` with its schema plugin for the optional schema check. A command
+that needs a tool you do not have stops and names it.
 [DEMO.md](./DEMO.md) walks the whole ladder in ten minutes, copy-paste.
 [Check proposed platform edits in CI](./examples/stack-ci/README.md) with the
 same static checker a person or agent runs locally.
@@ -59,12 +62,21 @@ Each value you set gets one verdict. `APPLIED` names the objects it changed. `IG
 means the chart has no such key. It may list up to three advisory, fully qualified
 keys declared by the chart's source values or schema; review them before changing
 your values, because Cub never applies a replacement. `NO EFFECT` is a real key that another setting
-switches off. `DEFAULT` is what the chart already uses. The chart is rendered with your
-values, then once more for each value with that one value taken out, so the verdict
-follows the rendered objects and not a guess. Generated passwords and checksums are
-found first and left out of every comparison. `--json` gives the report as data,
-`--exit-code` fails when a value did nothing, and no value is ever printed. To keep a
-redacted diagnosis for review, save each attempt under a fresh name:
+switches off. `DEFAULT` is what the chart already uses. `NOT CHECKED` means the value was
+not tested because the render limit ran out first; it is not a finding about the value.
+The chart is rendered with your values, then once more for each value with that one
+value taken out, so the verdict follows the rendered objects and not a guess. Generated
+passwords and checksums are found first and left out of every comparison. `--json` gives
+the report as data, `--exit-code` fails when a value did nothing or was not checked,
+and no value is ever printed.
+
+`--max-renders N` sets how many renders the check may spend. The default is 60. A value
+past the limit reads `NOT CHECKED`, and the report names the number that would check
+them all:
+
+```bash
+cub config values ./chart --values my-values.yaml --max-renders 200 --exit-code
+```
 
 The report also inventories literal `lookup` calls in the chart source, including
 packaged dependencies where they can be read within fixed limits. It never evaluates a
@@ -75,6 +87,8 @@ An `APPLIED` value can still render an invalid container resource field, such as
 `resources.limit` instead of `resources.limits`; that is reported separately as
 `INVALID`. `--exit-code` also fails for those findings. This check covers container
 resource field names only, not the full Kubernetes schema or cluster admission.
+
+To keep a redacted diagnosis for review, save each attempt under a fresh name:
 
 ```bash
 cub config values ./chart --values before.yaml --out before-diagnosis.json --render-out before-candidate.yaml --exit-code
@@ -121,6 +135,23 @@ check incomplete. The latter is not reported as missing. A strict check writes n
 It also names the bytes. An image already pinned by digest reads `pinned`, and one named
 by a tag reads `resolves … -> sha256:…`, which is the digest that name answers to right
 now. Pin with `name@digest` and you keep the bytes you checked.
+
+## Check configuration you already have
+
+```sh
+cub config check ./rendered.yaml --out ./retained.yaml
+cub app check ./my-app.yaml
+```
+
+Local YAML or JSON files can be outside the plugin installation. The check reads
+named Kubernetes objects and refuses empty or partly invalid documents. A local
+`--out` copy preserves the original bytes. These inspections summarize resources
+and recognized dependencies; they do not prove target compatibility or that a
+workload runs. Keep the source version and your authored values or edits when
+bringing a new upstream render; this command does not merge upstream changes.
+A failure names its cause, such as the limit that was exceeded, the file that could
+not be read or the tool that is missing, instead of a generic line. YAML syntax detail
+and fetch URLs stay withheld, because either can quote a Secret or a credential.
 
 ## Inspect a local configuration edit
 
@@ -189,8 +220,13 @@ cub stack publish shop-platform --out oci://registry.example.com/team/shop-platf
 A component named only by `bundle: oci://…@sha256:…` needs no local receipt when
 one is attached in the registry; the resolver discovers it. A published index is a
 stack you can check or sandbox by digest: `cub stack check oci://…@sha256:<index>`.
-Add `--sign cosign.key` to any publish and `--key cosign.pub` to verify; without a key,
-verify says plainly that the signature was not checked. The shipped stacks name their
+Add `--sign cosign.key` to any publish and `--key cosign.pub` to verify. Without a
+key, `cub config verify` still looks in the registry and says which of three things is
+true: a signature is attached but was not checked, no signature is attached, or the
+registry did not answer, so presence is unknown. Only `--key` can make it a pass, and
+with `--key` an attached signature that does not verify, or none at all, fails. Presence
+is not trust: an attached signature proves nothing until a key you trust verifies it.
+The shipped stacks name their
 components as images: the nine renders are published as bundles with receipts whose bytes
 ship in `cache/` keyed by digest, so the check works offline and still hash-verifies
 every file against the receipt in `receipts/workshop/`. `scripts/seed-cache.mjs`
@@ -198,7 +234,8 @@ rebuilds that from `renders/`, and the same script pushes the same digests to th
 public registry. Registries on
 localhost are spoken to over plain HTTP, so `docker run -d -p 5001:5000 registry:2`
 is enough to try all of this. The design note is
-`docs/planning/oci-design-center.md` in the ConfigHub Workshop repository.
+[`docs/planning/oci-design-center.md`](https://github.com/confighub/helm-expt/blob/main/docs/planning/oci-design-center.md)
+in the helm-expt repository.
 
 ## The nouns
 
@@ -260,6 +297,14 @@ so it can name the nine shipped renders (`renders/argo-cd.yaml`, `cert-manager`,
 an assistant pointed at the ConfigHub Workshop site; the recorded run is in
 `proofs/assistant-composition-2026-09-02/`.
 
+`cub stack schema` prints the JSON Schema of the manifest this installed version
+reads. Give it to an assistant that writes a manifest, or validate one before you
+run `check`. It reads a file in the plugin and contacts nothing:
+
+```bash
+cub stack schema > stack-manifest.schema.json
+```
+
 Bringing your own chart? `cub config values <chart> --values my-values.yaml` checks
 your values against any chart Helm can pull. The config catalog here is fixed to the
 nine shipped renders, so to check what your chart installs, render it first: `helm template <chart> >
@@ -272,16 +317,138 @@ With an account (the governed rungs):
 
 ```bash
 cub app upload hello-standalone --run     # one Unit per resource, release gated on review
+cub stack upload eks-inference            # the plan, no changes; add --run to upload the base Spaces
 cub stack upload eks-inference --run      # base Spaces and profile links for a composition that checked out
 cub fleet up meridian                     # scaffold clusters, upload bases, place and release everything
                                           # a placement may name a whole stack: `stack: web-platform`
 cub fleet age meridian                    # replay the declared operations so real attention states exist
 cub fleet status meridian                 # the four attention tiles, recomputed from fleet queries
-cub fleet down meridian                   # delete everything the manifest names
+cub fleet rollout meridian external-dns   # the next wave's ChangeOrder; dry run unless --run
+cub fleet down meridian                   # delete what up and age created; stops on any failure
 ```
 
 From there the generic cub verbs continue the ladder: `cub release publish`,
 `cub variant promote`, gates and ChangeOrders for governance.
+
+## Turn a Kubara platform into one stack
+
+If a Kubara platform already exists, its own output becomes a stack. After
+`kubara ... generate --helm`, point `from-kubara` at the work directory:
+
+```bash
+cub stack from-kubara ./my-kubara --app shop-web-kubara
+cub stack check ./my-kubara/confighub/stack.yaml
+```
+
+The whole platform is one stack. Each service is one component, and each cluster in
+Kubara's `config.yaml` that enables it is a variant of that component. The base is the
+hub's render where the hub runs the service, and otherwise the first cluster's.
+Each service is rendered the way Kubara's hub ApplicationSets deliver it: their release
+name and namespace, their values files in their order, and only the services that
+cluster enables, plus Argo CD on a hub. `bootstrap-crds` contributes its CRDs alone, and
+a CRD that a chart also carries is kept once, under `bootstrap-crds`, so each
+object has one owner. `--app` adds a shipped app as a workload component, and `--out`
+changes the output directory, which defaults to `confighub/` in the work directory.
+
+It needs `helm`. If a chart's dependencies are not already under `charts/`, it fetches
+them, which needs network access. It stops if a service sets its own sources, because
+it cannot then render that service as Kubara delivers it. What it writes is a
+composition. It does not create an Argo CD Application, contact a cluster or show
+that Kubara would sync it.
+
+To read one cluster's platform, narrow with `--cluster`. On `from-kubara` it writes
+a stack for that cluster alone. On `check`, `sandbox` and `upload` it reads any stack
+whose components carry per-cluster variants as that cluster runs it: each variant
+stands in for its base, and a component the cluster does not run drops out. A cluster
+the stack does not name is refused, and the error lists the ones it does.
+
+```bash
+cub stack check ./my-kubara/confighub/stack.yaml --cluster prod
+cub stack sandbox ./my-kubara/confighub/stack.yaml --cluster prod --out prod.yaml
+```
+
+A fleet manifest may place the stack by path (`stack: ./confighub/stack.yaml`).
+
+## Upload a stack, and rerun it
+
+`cub stack upload` prints a plan and changes nothing. Add `--run` to execute it.
+
+```bash
+cub stack upload ./my-kubara/confighub/stack.yaml --space-prefix acme
+cub stack upload ./my-kubara/confighub/stack.yaml --space-prefix acme --run
+```
+
+Each run issues every upload. An upload is create-or-update, so a run that stopped
+for a network or quota error is resumed by running the same command again: what
+landed is re-read unchanged, and a manifest whose digest or render moved updates its
+base. A variant that was already cloned is reported as such. A failure stops the run
+and prints what was uploaded, what was not, and the command to rerun.
+
+`--space-prefix` keeps one stack's Spaces apart from another's in a shared
+organization. A base Space is named `<prefix>-<component>` instead of
+`<component>-base`, and a cluster's variant `<prefix>-<component>-<cluster>`. The prefix
+takes lowercase letters, digits and dashes. `--cluster` uploads only that cluster's
+variants of the components it runs.
+
+After the bases are up, the upload creates a link for each declared path binding: the
+value in the profile, which is the stack's one hub-plane component, feeds the path in
+the workload that the binding names. A link that already exists is left as it is. A
+binding that cannot be linked is listed as `Not linked` with its reason, such as a
+missing Unit or two resources that would share one. Env bindings are always listed
+that way, because they name no resource and no profile path. To link one, declare it
+as a path binding. The dry run lists the links it would create and the bindings it
+cannot link. It cannot say which links already exist, because that needs the server.
+
+## Roll a component out in waves
+
+A fleet placement may name the phases it rolls out through. Each cluster it lands on
+carries one as a label, and `cub fleet rollout` opens one ChangeOrder per phase, in order:
+
+```yaml
+clusters:
+  - {name: eu-north-dev1, labels: {phase: canary}}
+placements:
+  - {app: external-dns, clusters: ["*"], waves: [canary, secondary, primary]}
+```
+
+```bash
+cub fleet rollout meridian external-dns          # dry run: the next wave's ChangeOrder
+cub fleet rollout meridian external-dns --run    # open it
+cub fleet status meridian                        # adds "Rollouts by wave"
+```
+
+The ChangeOrder for a wave is `<component>-rollout-<wave>`, opened on the component's
+base and scoped to the deployment Spaces of the clusters in that phase. The next wave is
+refused while an earlier wave's ChangeOrder is still open or was aborted, because a
+canary that has not finished is no evidence for the wider waves. `--where` names the
+Units the rollout change is stamped on. Every cluster a waved placement lands on needs
+a phase, and every wave must be the phase of some cluster; otherwise the fleet does not
+load. `fleet status` adds the number of Spaces each opened wave takes in, and which waves
+are still open. Opening a wave does not promote anything: the change still moves
+through the generic `cub` verbs.
+
+A placement may also name a published stack by its index digest, so a fleet places
+exactly what was checked and published. A tag is refused, because a tag can move:
+
+```yaml
+placements:
+  - stack: oci://registry.example.com/team/shop-platform@sha256:<index digest>
+    clusters: ["*"]
+```
+
+`oras resolve` prints the digest a tag points at. The index's components are placed as
+the bundles it pins. `cub fleet list` never contacts a registry, so it counts such a
+stack apart; `cub fleet plan` resolves it.
+
+Fleet commands stop rather than guess. `cub fleet up` creates a Space only when the CLI
+says explicitly that it does not exist, so an authentication, permission or network
+failure stops it. `spec.owner` labels the cluster Spaces, and the fleet's name is the
+owner when it is absent. If `up` stops part way, inspect the steps that completed before
+you retry it; a rerun skips what exists. `cub fleet down` deletes only what `up` and
+`age` created, including the ChangeOrders they opened, and keeps a shared base while
+another fleet's variant still uses it. Something already gone counts as absent, and any
+other failure stops the teardown and says how many Spaces it removed. Run it again once
+the cause is fixed.
 
 ## Save, change and hand over a local stack
 
@@ -338,6 +505,28 @@ This example still needs target namespaces, an issuer and a secret store before
 live use. No target has been checked, no application response has been observed,
 and this local copy is not a published OCI artifact.
 
+## Select Kubara with an Argo CD controller
+
+```sh
+cub stack sandbox kubara-gitops-shop --workspace ./gitops-platform
+```
+
+This named selection adds the retained, digest-pinned Argo CD bundle to all five
+components of `kubara-shop-platform`. It preserves the existing app and its
+requirements. Static composition contains 184 objects, including the Argo CD
+application controller and Application CRD. It does not create an Application,
+bind a repository or release, or establish a working GitOps loop.
+
+Before delivery, verify the six namespaces (`argocd`, `cert-manager`,
+`external-secrets`, `kube-system`, `shop`, `traefik`), issuer, secret store,
+controller access and app prerequisites on the named target. Select and review
+the GitOps source and destination separately. A controller render is not a
+controller observation or an application response.
+
+The [local CLI and assistant task](tasks/compose-local.md) gives the same save,
+change and refusal exercise to a person, Claude Code or Codex. It is a bounded
+local workflow, with live delivery and independent human trials still separate.
+
 ## Certification for assistants and automation
 
 ```bash
@@ -357,35 +546,17 @@ that hash does not make it approved or published. `scope` explicitly marks targe
 availability and application health as `not-checked`. No account or target is
 contacted by the check; uncached bundle inputs may require registry access.
 
+`--json` takes one more flag, `--cluster <name>`, for a stack that carries per-cluster
+variants. The result also includes a `schemaValidation` record when the schema check
+below ran.
+
 Claude Code, Codex and other consumers should use `checked` and the scope fields
 for control flow, preserve warnings and findings for review, and retain the result
 when handing work to another person. Do not infer deployment approval or a healthy
 application from a static result. Run the same command without `--json` for human
 output; both forms run the same check.
 
-## What ships in the plugin
-
-- `renders/` — nine verified chart renders from the public catalog, the config catalog.
-- `apps/` — thirteen authored workloads: two teaching apps (`hello-standalone`,
-  `shop-web`) and the eleven services the meridian fleet places.
-- `stacks/` — twelve stack manifests: nine composed from the shipped renders, now named as images by digest with the bytes in `cache/`
-  (including `metrics-double`, which the check rightly refuses), plus `eks-inference`
-  and `kubara-platform` built from digest-pinned bundles with receipts pulled by `oras`
-  and hash-verified against `receipts/`, and `conflict-demo`.
-- `fleets/meridian.yaml` — ten regional clusters, twenty components, 125 placements,
-  and the demo-aging operations that give the fleet real attention states.
-
-Everything is a prototype of the proposed `cub <noun>` surface, packaged so it runs
-as cub itself. The manifest formats (stack, fleet) are documented in the Config
-Workshop repository's planning notes, and the receipts derive from the public
-evidence in confighub/helm-expt at the pinned digests they name.
-
-Maintenance rule: `receipts/` and `renders/` are copies of that public evidence.
-When a chart re-renders or a bundle republishes upstream, refresh the copy and its
-digest here in the same change — the resolver hash-verifies every bundle against
-these receipts, so a stale copy fails loudly rather than drifting silently.
-
-### Inspect target prerequisites before delivery
+## Inspect target prerequisites before delivery
 
 `cub stack check <stack> --json` includes a scoped `prerequisites` inventory.
 It reports explicit namespaces, Certificate issuer references, ExternalSecret
@@ -402,45 +573,59 @@ not exhaustive: credentials, storage, DNS, workload scheduling, implicit/default
 namespaces, arbitrary resource references and application responses are outside
 this check. Neither people nor assistants should use `checked: true` as a
 permission or readiness signal for deployment.
-### Check configuration you already have
 
-```sh
-cub config check ./rendered.yaml --out ./retained.yaml
-cub app check ./my-app.yaml
-```
-
-Local YAML or JSON files can be outside the plugin installation. The check reads
-named Kubernetes objects and refuses empty or partly invalid documents. A local
-`--out` copy preserves the original bytes. These inspections summarize resources
-and recognized dependencies; they do not prove target compatibility or that a
-workload runs. Keep the source version and your authored values or edits when
-bringing a new upstream render; this command does not merge upstream changes.
-Fleet creation stops on authentication, permission or other lookup failures;
-only the CLI's explicit missing-Space response permits creating that Space.
-Errors keep the useful message instead of a trailing punctuation line. Inspect
-any earlier completed steps before retrying a partially completed fleet operation.
 The Kubara shop fixture explicitly starts a digest-pinned HTTP hostname server
 on port 8080 and has an HTTP readiness probe. Its [local container receipt](proofs/shop-http-2026-09-09/README.md)
 proves a response from that image and command only; Kubernetes, ingress, issuer,
 secret-store and release observations still need the named target.
 
-### Select Kubara with an Argo CD controller
+## Validate the delivered objects against their schemas
 
-```sh
-cub stack sandbox kubara-gitops-shop --workspace ./gitops-platform
+`cub stack check` and `cub stack sandbox` add one line to the verdict: every object
+a cluster would receive is validated against its API schema, including its CEL
+rules, by the Flux schema plugin. That catches a wrong field type or an unknown field
+before an apply would. It needs `flux` 2.9 or later and the plugin, and it fetches the
+schema catalogs over HTTPS:
+
+```bash
+flux plugin install schema
+cub stack check kubara-shop-platform
 ```
 
-This named selection adds the retained, digest-pinned Argo CD bundle to all five
-components of `kubara-shop-platform`. It preserves the existing app and its
-requirements. Static composition contains 184 objects, including the Argo CD
-application controller and Application CRD. It does not create an Application,
-bind a repository or release, or establish a working GitOps loop.
+```
+  [PASS] schema validation: <n> object(s) valid against the default and ecosystem catalogs (flux-schema)
+```
 
-Before delivery, verify the six namespaces (`argocd`, `cert-manager`,
-`external-secrets`, `kube-system`, `shop`, `traefik`), issuer, secret store,
-controller access and app prerequisites on the named target. Select and review
-the GitOps source and destination separately. A controller render is not a
-controller observation or an application response.
-The [local CLI and assistant task](tasks/compose-local.md) gives the same save,
-change and refusal exercise to a person, Claude Code or Codex. It is a bounded
-local workflow, with live delivery and independent human trials still separate.
+Only a violation the plugin reports refuses the stack, and the check names the object,
+path and message of the first eight; `--json` carries all of them. If `flux` or its
+plugin is missing, the check times out, or the plugin fails, the line is a `WARN` and the
+verdict is unchanged, so a stack can read `CHECKED` without ever having been validated.
+Read the line. A catalog that cannot be reached is a `NOTE`. Hub-plane components are
+held in ConfigHub and never applied, so they are not validated, and objects without a
+catalog schema are skipped and counted. The catalogs track the latest stable APIs, so a
+pass says nothing about the Kubernetes version of your target. `publish` and `upload`
+repeat the composition checks but not this one.
+
+## What ships in the plugin
+
+- `renders/` — nine verified chart renders from the public catalog, the config catalog.
+- `apps/` — authored workloads: the teaching apps (`hello-standalone`, `shop-web`
+  and its Kubara adaptation `shop-web-kubara`), the services the meridian fleet
+  places, and the pair `conflict-demo` uses. `cub app list` names them all.
+- `stacks/` — stack manifests, listed by `cub stack list`. Their components are
+  digest-pinned images with receipts, or small authored files. The bytes of the nine
+  renders ship in `cache/`; the other bundles are pulled by `oras` and hash-verified
+  against `receipts/`. `metrics-double` and `conflict-demo` are refused on purpose.
+- `fleets/meridian.yaml` — ten regional clusters, twenty components, 125 placements,
+  and the demo-aging operations that give the fleet real attention states.
+
+Everything is a prototype of the proposed `cub <noun>` surface, packaged so it runs
+as cub itself. The manifest formats (stack, fleet) are documented in the Config
+Workshop repository's planning notes, and the receipts derive from the public
+evidence in confighub/helm-expt at the pinned digests they name.
+
+Maintenance rule: `receipts/` and `renders/` are copies of that public evidence.
+When a chart re-renders or a bundle republishes upstream, refresh the copy and its
+digest here in the same change — the resolver hash-verifies every bundle against
+these receipts, so a stale copy fails loudly rather than drifting silently.
+
