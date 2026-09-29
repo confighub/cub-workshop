@@ -161,7 +161,7 @@ test('cub stack check recovers from an incomplete cached component bundle', () =
     const result = spawnSync(process.execPath, [join(root, 'bin', 'cub-stack'), 'check', manifest, '--json'], { cwd: f.dir, env, encoding: 'utf8', timeout: 30000 });
     assert.doesNotMatch(result.stderr, /cache publication was incomplete/);
     assertRecovered(f, digest, result);
-    assert.equal(JSON.parse(result.stdout).certified, true);
+    assert.equal(JSON.parse(result.stdout).checked, true);
   } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });
 
