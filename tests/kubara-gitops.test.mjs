@@ -22,7 +22,7 @@ test('GitOps selection retains the full existing app stack and adds pinned Argo 
   const checked = run('check', 'kubara-gitops-shop', '--json');
   assert.equal(checked.status, 0, checked.stderr);
   const result = JSON.parse(checked.stdout);
-  assert.equal(result.certified, true);
+  assert.equal(result.checked, true);
   assert.equal(result.objectCount, 184);
   assert.equal(result.scope.targetAvailability, 'not-checked');
   assert.equal(result.scope.applicationHealth, 'not-checked');
