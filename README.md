@@ -317,8 +317,8 @@ With an account (the governed rungs):
 
 ```bash
 cub app upload hello-standalone --run     # one Unit per resource, release gated on review
-cub stack upload eks-inference            # the plan, no changes; add --run to upload the base Spaces
-cub stack upload eks-inference --run      # base Spaces and profile links for a composition that checked out
+cub stack upload shop-platform            # the plan, no changes; add --run to upload the base Spaces
+cub stack upload shop-platform --run      # base Spaces for a composition that checked out
 cub fleet up meridian                     # scaffold clusters, upload bases, place and release everything
                                           # a placement may name a whole stack: `stack: web-platform`
 cub fleet age meridian                    # replay the declared operations so real attention states exist
