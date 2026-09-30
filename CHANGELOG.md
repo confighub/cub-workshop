@@ -26,9 +26,15 @@ requests hold the reasons and the evidence.
   and the verdict is unchanged (#69, closes #3).
 - `upload` says what an interrupted run left and gives the rerun command;
   rerunning is safe, since every upload is create-or-update (#73).
-- `upload` creates the declared path bindings as links; env bindings are
-  reported as not linked, with the reason (#74, draft until it has run
-  against a live server).
+- `upload` links every declared binding to the profile, path and env
+  bindings alike, and the linked values follow the profile; verified on
+  hub.confighub.com (#74).
+- `upload` refuses a component that defines an object twice before writing
+  anything, since the hub refuses it; `check` says so (#77).
+- A current hub's not-found wording is read as absence, so `fleet up` and
+  `upload` create what is missing instead of stopping (#70, #73), and
+  `--space-prefix` names Spaces by the Component slug the hub can render
+  (#73, #68).
 - The verdict word is CHECKED everywhere, including the published index
   annotation. **Breaking:** `cub stack check --json` no longer carries the
   deprecated `certified` field; read `checked` (#62).

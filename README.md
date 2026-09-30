@@ -390,14 +390,21 @@ organization. A base Space is named `<prefix>-<component>` instead of
 takes lowercase letters, digits and dashes. `--cluster` uploads only that cluster's
 variants of the components it runs.
 
-After the bases are up, the upload creates a link for each declared path binding: the
-value in the profile, which is the stack's one hub-plane component, feeds the path in
-the workload that the binding names. A link that already exists is left as it is. A
+After the bases are up, the upload links each declared binding to the profile, which is
+the stack's one hub-plane component. A path binding writes the profile's value to the
+path the binding names. An env binding sets the container's variable by name, so a chart
+that reorders its env list cannot redirect the write. There is one link per downstream
+Unit, and each follows the profile: change a value in the profile and the linked Units
+take it, and a later promote or re-upload leaves it in place. The upload resolves each
+linked Unit at once, so the values are there when it ends. A rerun updates the links it
+finds, so a binding added to the manifest later reaches a stack linked before it. A
 binding that cannot be linked is listed as `Not linked` with its reason, such as a
-missing Unit or two resources that would share one. Env bindings are always listed
-that way, because they name no resource and no profile path. To link one, declare it
-as a path binding. The dry run lists the links it would create and the bindings it
-cannot link. It cannot say which links already exist, because that needs the server.
+missing Unit or two resources that would share one. The dry run prints the link and
+resolve commands.
+
+A component that defines one object twice is refused before anything is uploaded:
+`kubectl apply` keeps the last copy, but `cub variant upload` refuses the component.
+`cub stack check` warns about it.
 
 ## Roll a component out in waves
 
