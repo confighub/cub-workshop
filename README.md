@@ -10,7 +10,7 @@ cub plugin install confighub/cub-workshop
 ```
 
 To pin a version, install its release tag, such as
-`cub plugin install confighub/cub-workshop@v0.6.54`.
+`cub plugin install confighub/cub-workshop@v0.6.55`.
 
 Requires `node`, `oras`, and `cub` on the PATH, on Linux or macOS (Windows is not
 supported). CI tests Node 22, the current LTS; Node 25 can hang when a command exits, so
