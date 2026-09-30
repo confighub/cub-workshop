@@ -422,7 +422,9 @@ and prints what was uploaded, what was not, and the command to rerun.
 `--space-prefix` keeps one stack apart from another in a shared organization. Each
 Component is named `<prefix>-<component>`, its base Space `<prefix>-<component>`
 instead of `<component>-base`, and a cluster's variant `<prefix>-<component>-<cluster>`,
-so the upload creates no bare Component such as `cert-manager`. The prefix
+so the upload creates no bare Component such as `cert-manager`. A stack uploaded with a
+prefix by v0.6.54 or earlier moves over when rerun; delete its old, now empty, bare
+Components with `cub component delete`. The prefix
 takes lowercase letters, digits and dashes. `--cluster` uploads only that cluster's
 variants of the components it runs.
 
