@@ -3,7 +3,7 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
-## Unreleased
+## 0.6.53
 
 ### Kubara
 - `cub stack from-kubara` renders through `cub kubara render` (kubara-confighub
