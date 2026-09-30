@@ -53,9 +53,13 @@
       ]
     },
     "variant": {
-      "description": "One cluster's render of a rendered component. The component's own render is the base each cluster's variant is created from.",
-      "type": "object", "additionalProperties": false, "required": ["cluster", "render"],
-      "properties": { "cluster": { "type": "string", "minLength": 1 }, "stage": { "type": "string", "minLength": 1 }, "render": { "type": "string", "minLength": 1 } }
+      "description": "One cluster's render of a rendered component, as a local render or, in a published index, a bundle digest. The component's own render is the base each cluster's variant is created from.",
+      "type": "object", "additionalProperties": false, "required": ["cluster"],
+      "properties": { "cluster": { "type": "string", "minLength": 1 }, "stage": { "type": "string", "minLength": 1 }, "render": { "type": "string", "minLength": 1 }, "bundle": { "type": "string", "pattern": "^oci://[^\\s@]+@sha256:[0-9a-f]{64}$" } },
+      "oneOf": [
+        { "required": ["render"], "not": { "required": ["bundle"] } },
+        { "required": ["bundle"], "not": { "required": ["render"] } }
+      ]
     },
     "pathBinding": {
       "type": "object", "additionalProperties": false,
