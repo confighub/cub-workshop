@@ -19,8 +19,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: confighub/cub-workshop
-          # Workshop v0.6.50: the same engine invoked by cub stack check.
-          ref: 0dff6d417c35c07ff56dc1a8f73a3e08e16d7fe8
+          # Workshop v0.6.51: the same engine invoked by cub stack check.
+          ref: e1c9e26545b89d54cba99ac7bf77cf9b5f50ece8
           path: .workshop-checker
       - name: Check the proposed local composition
         run: node .workshop-checker/bin/cub-stack check platform/stack.yaml --json > platform-check.json
