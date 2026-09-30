@@ -3,6 +3,11 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
+## 0.6.56
+
+- `cub config examples` points the Kubara kind lab at `cub kubara` v0.2.4. The
+  snapshot reads confighub/examples at `921cb9d`.
+
 ## 0.6.55
 
 - `cub stack upload --space-prefix` names each Component `<prefix>-<component>` as
