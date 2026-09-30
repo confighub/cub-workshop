@@ -121,3 +121,15 @@ test('upload makes one base per service and clones each cluster variant from it'
     assert.equal(calls.filter((call) => call[1] === 'create' && call[3] === 'argo-cd-base').length, 1, 'Argo CD has a hub variant only');
   } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });
+
+// A live hub renders a new Space's slug before it carries a Component label, so
+// a prefixed variant is named from .Component.Slug; .Labels.Component is a 400.
+test('a prefixed upload names each variant Space by the Component slug', { skip: !hasHelm && 'helm is not installed' }, () => {
+  const f = copy();
+  try {
+    assert.equal(fromKubara(f.platform, '--out', f.out).status, 0);
+    const plan = spawnSync(process.execPath, [join(root, 'bin', 'cub-stack'), 'upload', join(f.out, 'stack.yaml'), '--space-prefix', 'lab'], { encoding: 'utf8' }).stdout;
+    assert.match(plan, /variant create spoke lab-web --stage prod --space-pattern template:lab-\{\{\.Component\.Slug\}\}-\{\{\.Labels\.Variant\}\}/);
+    assert.doesNotMatch(plan, /Labels\.Component\}\}-/);
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});
