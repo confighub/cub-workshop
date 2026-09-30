@@ -198,7 +198,8 @@ test('a prefixed upload names each variant Space by the Component slug', () => {
   try {
     assert.equal(f.fromKubara().status, 0);
     const plan = f.run(['upload', join(f.out, 'stack.yaml'), '--space-prefix', 'lab']).stdout;
-    assert.match(plan, /variant create spoke lab-web --stage prod --space-pattern template:lab-\{\{\.Component\.Slug\}\}-\{\{\.Labels\.Variant\}\}/);
+    assert.match(plan, /variant create spoke lab-web --stage prod --space-pattern template:\{\{\.Component\.Slug\}\}-\{\{\.Labels\.Variant\}\}/);
+    assert.match(plan, /variant upload --component lab-web --variant spoke /);
     assert.doesNotMatch(plan, /Labels\.Component\}\}-/);
   } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });
