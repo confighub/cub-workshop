@@ -3,6 +3,12 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
+## 0.6.54
+
+- `cub config examples` knows the Kubara kind lab: "bring my Kubara platform
+  into ConfigHub" returns the `cub kubara` v0.2.3 walkthrough first. The
+  snapshot reads confighub/examples at `ed58e32` (#89).
+
 ## 0.6.53
 
 ### Kubara
