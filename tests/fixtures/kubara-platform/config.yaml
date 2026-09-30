@@ -1,0 +1,9 @@
+version: v1alpha4
+bootstrapCatalog: oci://ghcr.io/kubara-io/catalogs/bootstrap:3.0.0
+clusters:
+  - name: hub
+    stage: dev
+    type: hub
+    argocd: {selfManaged: enabled}
+    catalogs: [oci://ghcr.io/kubara-io/catalogs/general:3.0.0]
+    services: {web: {status: enabled}}

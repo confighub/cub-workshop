@@ -1,0 +1,6 @@
+bootstrapValues:
+  applicationSets:
+    hub-dev:
+      apps:
+        argocd: {name: argocd, path: argo-cd, namespace: argocd}
+        web: {name: webapp, path: web}
