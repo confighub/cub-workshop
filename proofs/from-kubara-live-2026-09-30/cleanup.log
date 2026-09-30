@@ -1,0 +1,19 @@
+$ cub space delete --recursive --space m6-0930-argo-cd,m6-0930-argo-cd-hub,m6-0930-bootstrap-crds,m6-0930-bootstrap-crds-hub,m6-0930-bootstrap-crds-spoke,m6-0930-cert-manager,m6-0930-cert-manager-hub,m6-0930-cert-manager-spoke,m6-0930-homer-dashboard,m6-0930-homer-dashboard-hub,m6-0930-metrics-server,m6-0930-metrics-server-hub,m6-0930-metrics-server-spoke,m6-0930-traefik,m6-0930-traefik-hub,m6-0930-traefik-spoke
+
+Bulk delete operation completed:
+  Success: 16 space(s)
+  Context: Slug IN ('m6-0930-argo-cd', 'm6-0930-argo-cd-hub', 'm6-0930-bootstrap-crds', 'm6-0930-bootstrap-crds-hub', 'm6-0930-bootstrap-crds-spoke', 'm6-0930-cert-manager', 'm6-0930-cert-manager-hub', 'm6-0930-cert-manager-spoke', 'm6-0930-homer-dashboard', 'm6-0930-homer-dashboard-hub', 'm6-0930-metrics-server', 'm6-0930-metrics-server-hub', 'm6-0930-metrics-server-spoke', 'm6-0930-traefik', 'm6-0930-traefik-hub', 'm6-0930-traefik-spoke')
+$ cub component delete bootstrap-crds
+Successfully deleted component bootstrap-crds (f78ef728-818c-449e-9bc4-964e5011908e)
+$ cub component delete cert-manager
+Successfully deleted component cert-manager (9214a45e-8552-4488-be98-b8fe4e9f95c1)
+$ cub component delete traefik
+Successfully deleted component traefik (3c3b5f6e-1615-43b0-9284-ea324493eaf9)
+$ cub component delete metrics-server
+Successfully deleted component metrics-server (cca6af3c-845f-4d7e-851e-082bd4c06f42)
+$ cub component delete homer-dashboard
+Successfully deleted component homer-dashboard (9713eb6c-ba39-4d1d-b3cf-b871da1bd9c4)
+$ cub component delete argo-cd
+Successfully deleted component argo-cd (4f105551-62c8-4231-b3e7-c9cc43206578)
+$ cub space list --where "Slug LIKE 'm6-0930-%'"
+0 Space(s) left with the prefix m6-0930-
