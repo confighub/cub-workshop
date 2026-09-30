@@ -1,5 +1,5 @@
 name: workshop
-version: 0.6.54
+version: 0.6.55
 commands:
     - name: config
       summary: 'One config, one chart: list, examples, check, verify, diff, values, and path, most of them free'

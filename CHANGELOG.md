@@ -3,7 +3,7 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
-## Unreleased
+## 0.6.55
 
 - `cub stack upload --space-prefix` names each Component `<prefix>-<component>` as
   well as its Spaces, so an upload into a shared organization creates no bare
