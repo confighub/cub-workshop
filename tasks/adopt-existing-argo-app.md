@@ -5,6 +5,10 @@ understand its scope, review an intended revision, and leave Argo in control.
 It creates local review files only. It does not import, sync, disable, delete,
 connect, or change the Application.
 
+Needs: a live cluster reachable through a kubeconfig, the `argocd` CLI logged in
+to that Argo CD, and [`cub-scout`](https://github.com/confighub/cub-scout) on the
+PATH, besides this plugin. Without them, use the offline check at the end.
+
 ## Inputs and outcome
 
 Choose an Argo CD Application and namespace, an Argo CLI context, and two exact
@@ -97,14 +101,15 @@ schema admission, target readiness, sync, drift, or application health.
 
 ## Offline rehearsal
 
-From this Workshop checkout, the retained Prometheus Deployment excerpt checks
-the local half of this task without an Argo server or cluster:
+The retained Prometheus Deployment excerpt, shipped with the plugin, checks the
+local half of this task without an Argo server or cluster:
 
 ```sh
 mkdir local-argo-review
-cub config check examples/adapt/prometheus-before.yaml
-cub config diff examples/adapt/prometheus-before.yaml \
-  examples/adapt/prometheus-before.yaml --json \
+EXCERPT="$(cub config path)/examples/adapt/prometheus-before.yaml"
+cub config check "$EXCERPT"
+cub config diff "$EXCERPT" \
+  "$EXCERPT" --json \
   --out local-argo-review/unchanged.json
 ```
 

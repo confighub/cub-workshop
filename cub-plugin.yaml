@@ -2,7 +2,7 @@ name: workshop
 version: 0.6.51
 commands:
     - name: config
-      summary: 'One config, one chart: list, examples, check, verify, diff, and values, most of them free'
+      summary: 'One config, one chart: list, examples, check, verify, diff, values, and path, most of them free'
       entrypoint: bin/cub-config
     - name: app
       summary: 'A workload: list, check, match to nodes, upload under governance, and score'

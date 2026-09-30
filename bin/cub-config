@@ -9,6 +9,12 @@ if (helpRequested && (requestedVerb === undefined || requestedVerb === "list")) 
 // --help is never a name: it prints the usage and exits 0.
 if (helpRequested && !OWN_HELP.includes(requestedVerb)) process.argv.length = 2;
 const verb = process.argv[2];
+// Where the plugin is installed, so a guide can copy its shipped examples:
+// cp "$(cub config path)/examples/adapt/prometheus-before.yaml" before.yaml
+if (verb === "path") {
+  console.log(new URL("..", import.meta.url).pathname.replace(/\/$/, ""));
+  process.exit(0);
+}
 const lib = (file) => import(new URL(`../lib/${file}`, import.meta.url).href);
 (verb === "examples"
   ? import(new URL('../scripts/find-example.mjs', import.meta.url).href).then(({ runExamples }) => { runExamples(process.argv.slice(3)); })

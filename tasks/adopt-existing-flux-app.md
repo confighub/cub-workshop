@@ -5,6 +5,10 @@ its ownership, review a Kustomization change, and leave Flux in control. It
 creates private local review files only. It does not import, reconcile, suspend,
 delete, connect, or change a Flux object.
 
+Needs: a live cluster reachable through a kubeconfig, the `flux` CLI, and
+[`cub-scout`](https://github.com/confighub/cub-scout) on the PATH, besides this
+plugin. Without a cluster, use the offline rehearsal at the end.
+
 ## Inputs and outcome
 
 Choose a workload kind/name/namespace, Flux Kustomization name/namespace, and
@@ -121,7 +125,7 @@ Helm controller post-renderer, capabilities, decryption, or cluster parity.
 
 ## Offline rehearsal
 
-Without a cluster, copy `examples/adapt/prometheus-before.yaml` into separate
+Without a cluster, copy `"$(cub config path)/examples/adapt/prometheus-before.yaml"` into separate
 `before/` and `candidate/` directories, each with a `kustomization.yaml` that
 lists `prometheus.yaml`; change only candidate `spec.replicas` from 1 to 2.
 Create a local Flux `Kustomization` named `prometheus-review`, then run the two

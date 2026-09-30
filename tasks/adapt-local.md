@@ -7,11 +7,12 @@ provenance is in `examples/adapt/source.json`.
 
 ## Direct route
 
-From this plugin checkout, with the plugin installed, create a fresh directory:
+With the plugin installed, create a fresh directory anywhere. `cub config path`
+prints where the plugin is installed, which is where its examples are:
 
 ```sh
 mkdir adapt-demo
-cp examples/adapt/prometheus-before.yaml adapt-demo/before.yaml
+cp "$(cub config path)/examples/adapt/prometheus-before.yaml" adapt-demo/before.yaml
 cp adapt-demo/before.yaml adapt-demo/after.yaml
 ```
 
