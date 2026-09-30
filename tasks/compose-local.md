@@ -8,8 +8,8 @@ it does not supply GitOps delivery or prove the platform or app runs.
 Install Node.js, cub and the Workshop plugin using the repository instructions.
 Choose a new working directory. Initial source resolution may use public registry
 access and ORAS. Save the plugin revision and CLI version alongside the result.
-For an isolated trial, create an empty directory and set CUB_CONFIG to its absolute
-path before installing the plugin. This keeps the existing user installation intact.
+For an isolated trial, create an empty directory and set CUB_CONFIG to that directory's absolute
+path (a directory, not a file) before installing the plugin. This keeps the existing user installation intact.
 The recorded assistant trial used an already prepared isolated installation; setup
 time is separate from task execution time.
 

@@ -6,7 +6,13 @@ Older installations do not support it. The command was added in
 revision `31202099f41dbd8db51c2f9bd9d87a2be714091d`.
 
 Install that reviewed plugin revision or a newer release, and prepare a new directory with `model.yaml`
-and `nodes.yaml` from its `examples/match/` directory. The model is retained Catalog
+and `nodes.yaml` from the plugin's `examples/match/` directory:
+
+```sh
+mkdir match-demo && cd match-demo
+cp "$(cub config path)"/examples/match/model.yaml "$(cub config path)"/examples/match/nodes.yaml .
+```
+ The model is retained Catalog
 configuration; the Node snapshot is illustrative, not a real target observation.
 Setup and task execution are separate. An isolated trial uses a separate CUB_CONFIG
 folder; an ordinary installation does not need that extra sentence in the prompt.

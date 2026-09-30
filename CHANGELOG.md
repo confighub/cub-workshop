@@ -3,6 +3,22 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
+## 0.6.52
+
+- `sandbox` no longer says Ready for a stack that upload would refuse, and
+  says why; the README's upload example is one that uploads (#80).
+- A logged-out `cub` is reported with its reason and the fix, `cub auth
+  login`, instead of "Failed: ."; `fleet age` no longer reports success
+  when nothing aged (#80).
+- `cub config examples` answers "how do I start", and shows the best match
+  in full and the rest in a line each; `--full` shows all (#80).
+- `cub config path` prints where the plugin is installed, and the task
+  guides copy their examples from it (#80).
+- The README opens with a first run that needs no account or cluster,
+  states the requirements (Linux or macOS, Node 22), and its examples run
+  as written, including a shipped sample values file (#80).
+- `app check` suggests a shipped stack that already places the app (#80).
+
 ## 0.6.51
 
 ### Kubara
@@ -51,6 +67,8 @@ requests hold the reasons and the evidence.
   components (#70).
 
 ### Config
+- `cub config examples` finds a pinned, public worked example for a problem
+  described in plain words (#56).
 - `cub config values` fails `--exit-code` on values it did not check, and
   `--max-renders` raises the cap (#63).
 - `cub config verify` says whether a signature is attached, with or without

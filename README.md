@@ -12,10 +12,25 @@ cub plugin install confighub/cub-workshop
 To pin a version, install its release tag, such as
 `cub plugin install confighub/cub-workshop@v0.6.51`.
 
-Requires `node`, `oras`, and `cub` on the PATH. Some commands need more: `helm` for
-`cub config values` and `cub stack from-kubara`, `cosign` only for `--sign` and
+Requires `node`, `oras`, and `cub` on the PATH, on Linux or macOS (Windows is not
+supported). CI tests Node 22, the current LTS; Node 25 can hang when a command exits, so
+prefer Node 22. The plugin is tested with cub 0.6.8. Some commands need more: `helm`
+for `cub config values` and `cub stack from-kubara`, `cosign` only for `--sign` and
 `--key`, and `flux` with its schema plugin for the optional schema check. A command
-that needs a tool you do not have stops and names it.
+that needs a tool you do not have stops and names it. Without `node` the shell
+reports `env: node: No such file or directory`; install Node and run the command again.
+
+### Try it first (no account, no cluster, under a minute)
+
+```bash
+cub config check redis                       # what a chart installs, before you install it
+cub app check shop-web                       # which platform services a workload needs
+cub stack sandbox shop-platform              # check a whole platform and render it
+cub config examples 'how do I start'         # a worked example to follow next
+```
+
+Commands that change ConfigHub (`upload --run`, `fleet up`) need an account: run
+`cub auth login` first. Everything above, and most of this page, does not.
 [DEMO.md](./DEMO.md) walks the whole ladder in ten minutes, copy-paste.
 [Check proposed platform edits in CI](./examples/stack-ci/README.md) with the
 same static checker a person or agent runs locally.
@@ -55,9 +70,11 @@ misspelled, out of date, or written from memory for a different chart is ignored
 the install succeeds.
 
 ```bash
-cub config values oci://registry-1.docker.io/cloudpirates/redis --version 0.34.11 --values my-values.yaml
+cub config values oci://registry-1.docker.io/cloudpirates/redis --version 0.34.11 \
+  --values "$(cub config path)/examples/values/redis-values.yaml"
 ```
 
+That sample file sets one value of each kind; point `--values` at your own file next.
 Each value you set gets one verdict. `APPLIED` names the objects it changed. `IGNORED`
 means the chart has no such key. It may list up to three advisory, fully qualified
 keys declared by the chart's source values or schema; review them before changing
@@ -75,7 +92,7 @@ past the limit reads `NOT CHECKED`, and the report names the number that would c
 them all:
 
 ```bash
-cub config values ./chart --values my-values.yaml --max-renders 200 --exit-code
+cub config values ./your-chart --values your-values.yaml --max-renders 200 --exit-code
 ```
 
 The report also inventories literal `lookup` calls in the chart source, including
@@ -139,8 +156,9 @@ now. Pin with `name@digest` and you keep the bytes you checked.
 ## Check configuration you already have
 
 ```sh
-cub config check ./rendered.yaml --out ./retained.yaml
-cub app check ./my-app.yaml
+cub config check "$(cub config path)/examples/adapt/prometheus-before.yaml"   # a shipped sample
+cub config check ./rendered.yaml --out ./retained.yaml   # your own rendered YAML
+cub app check ./my-app.yaml                              # your own workload
 ```
 
 Local YAML or JSON files can be outside the plugin installation. The check reads
@@ -265,7 +283,8 @@ cub stack check metrics-double      # the composition alone; exits non-zero on a
 cub stack sandbox eks-inference       # check, then render the whole platform with no infrastructure
 cub stack sandbox shop-platform --out shop-platform.yaml   # and write the rendered objects, in plane order
 cub stack check ./my-stack.yaml     # your own manifest, anywhere on disk
-cub stack compose --entry ID --name platform --out ./platform  # explicitly save a catalog selection
+cub stack compose --entry prometheus-community-prometheus-29-9-0-default \
+  --entry grafana-promtail-6-17-1-default --name platform --out ./platform  # save a catalog selection
 
 cub fleet list
 cub fleet plan meridian               # the expanded placements, a whole stack per line if you place one
@@ -317,8 +336,8 @@ With an account (the governed rungs):
 
 ```bash
 cub app upload hello-standalone --run     # one Unit per resource, release gated on review
-cub stack upload eks-inference            # the plan, no changes; add --run to upload the base Spaces
-cub stack upload eks-inference --run      # base Spaces and profile links for a composition that checked out
+cub stack upload shop-platform            # the plan, no changes; add --run to upload the base Spaces
+cub stack upload shop-platform --run      # base Spaces for a composition that checked out
 cub fleet up meridian                     # scaffold clusters, upload bases, place and release everything
                                           # a placement may name a whole stack: `stack: web-platform`
 cub fleet age meridian                    # replay the declared operations so real attention states exist

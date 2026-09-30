@@ -37,12 +37,17 @@ function matches(word, target) {
   return target === word || (word.length >= 3 && target.startsWith(word));
 }
 
+// Words a newcomer uses before they know what to ask for. They lead to the
+// examples tagged first-app, rather than to nothing.
+const STARTING_WORDS = new Set(['start', 'started', 'starting', 'begin', 'beginning', 'new', 'first', 'intro', 'introduction', 'basics', 'tutorial', 'getting']);
+
 function score(entry, query) {
   const tags = (entry.tags ?? []).map(tag => String(tag).toLowerCase());
   const tagWords = tags.flatMap(words);
   const idWords = words(entry.id ?? '');
   const taskWords = words(entry.task ?? '');
   let result = 0;
+  if (tags.includes('first-app') && queryWords(query).some(word => STARTING_WORDS.has(word))) result += 8;
   for (const word of queryWords(query)) {
     if (tags.includes(word)) result += 8;
     else if (tagWords.some(tag => matches(word, tag))) result += 4;
@@ -77,14 +82,15 @@ function tutorialUrl(entry) {
 
 export function runExamples(args) {
   if (args.includes('--help') || args.includes('-h')) {
-    process.stdout.write('Usage: cub config examples [problem words] [--json] [--all]\n');
+    process.stdout.write('Usage: cub config examples [problem words] [--json] [--all] [--full]\n');
     return;
   }
   const all = args.includes('--all');
   const json = args.includes('--json');
-  const terms = args.filter(arg => arg !== '--all' && arg !== '--json');
+  const full = args.includes('--full');
+  const terms = args.filter(arg => arg !== '--all' && arg !== '--json' && arg !== '--full');
   if (terms.some(arg => arg.startsWith('-'))) {
-    throw new Error('Usage: cub config examples [problem words] [--json] [--all]');
+    throw new Error('Usage: cub config examples [problem words] [--json] [--all] [--full]');
   }
   const query = terms.join(' ');
   const entries = findExamples(query, { all });
@@ -92,7 +98,10 @@ export function runExamples(args) {
     process.stdout.write(JSON.stringify({ schema_version: 1, query, entries }, null, 2) + '\n');
     return;
   }
-  for (const entry of entries) {
+  // The best match in full; the rest one line each, so a first question reads
+  // as an answer. --full prints every match in full; --json always does.
+  const shown = full ? entries : entries.slice(0, 1);
+  for (const entry of shown) {
     process.stdout.write(`${entry.task} [${entry.id}]\n`);
     process.stdout.write(`  Start here: ${tutorialUrl(entry) ?? guideUrl(entry)}\n`);
     if (entry.lesson) process.stdout.write(`  What it shows: ${entry.lesson}\n`);
@@ -120,7 +129,16 @@ export function runExamples(args) {
     process.stdout.write(`  Maintainer acceptance: ${entry.maintainer_acceptance}\n`);
     process.stdout.write(`  Source: ${entry.source.url} (${entry.lifecycle}; ${entry.admission})\n`);
   }
-  if (entries.length === 0) process.stdout.write('No admitted public example matched. Try --all for research candidates.\n');
+  const more = entries.slice(shown.length);
+  if (more.length) {
+    process.stdout.write(`\nAlso matched (cub config examples <id> for one, or add --full for all):\n`);
+    for (const entry of more) process.stdout.write(`  ${entry.id}: ${entry.task}\n`);
+  }
+  if (entries.length === 0) {
+    process.stdout.write(all
+      ? 'No public example matched, research candidates included. Try other words, or run cub config examples with no words to list every example.\n'
+      : 'No admitted public example matched. Try other words, --all for research candidates, or no words to list every example.\n');
+  }
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
