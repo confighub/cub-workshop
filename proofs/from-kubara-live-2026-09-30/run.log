@@ -1,0 +1,522 @@
+
+== Tools
+$ kubara --version
+kubara version v0.16.0
+$ cub kubara version
+cub kubara 0.2.3-dev (commit 96ba39392dfe4229c42d6ccc6f7d20e293067b23, built 2026-09-30T00:00:00Z)
+$ helm version --short
+v4.1.4+g05fa379
+$ cub version
+Client Version:
+  Version:    v0.6.8
+  Commit:     4c8d2fc3885fed0d7af6835f2aac0a24387b6221
+$ cub context get
+Context Name         tree-paw                                                                
+Organization Name    Kubara                                                                  
+Server URL           https://hub.confighub.com                                               
+
+== 1. A two-cluster Kubara platform: hub in dev, spoke in prod, as in kubara-confighub's kind lab
+$ cub kubara init --out platform --hub hub:dev --spoke spoke:prod --services cert-manager,metrics-server,traefik,homer-dashboard --repository http://git.git-server.svc.cluster.local/platform.git --email lab@example.com
+wrote platform/config.yaml
+wrote platform/.env.example
+wrote platform/confighub-intent.yaml
+left out homer-dashboard on spoke (a spoke; it runs only on hub)
+
+Next
+  cp platform/.env.example platform/.env   # then fill in the values it asks for
+  kubara --work-dir platform --config-file config.yaml --env-file .env generate --helm
+  cub kubara plan platform
+$ kubara --work-dir . --config-file config.yaml --env-file .env generate --helm
+2026-09-30 17:57:03 INF All files generated successfully.
+✅ Templating complete! Don't forget to PUSH the changes to apply them!
+$ ls platform-components/helm
+argo-cd
+bootstrap-crds
+cert-manager
+homer-dashboard
+metrics-server
+template-library
+traefik
+
+== 2. The stack, from cub kubara render
+$ cub stack from-kubara .
+
+Kubara platform at $LAB/platform: 2 cluster(s), 6 components, rendered by cub kubara 0.2.3-dev
+
+  cluster hub (hub, dev)
+    bootstrap-crds: 35 CRDs, what kubara bootstrap applies (185 other object(s) in the chart left out)
+    cert-manager: 54 objects from Kubara's chart and 1 values file(s), release cert-manager, namespace cert-manager
+    traefik: 33 objects from Kubara's chart and 1 values file(s), release traefik, namespace traefik
+    metrics-server: 11 objects from Kubara's chart and 1 values file(s), release metrics-server, namespace metrics-server
+    homer-dashboard: 7 objects from Kubara's chart and 1 values file(s), release homer-dashboard, namespace homer-dashboard
+    argo-cd: 91 objects from Kubara's chart and 1 values file(s), release argocd, namespace argocd
+  cluster spoke (spoke, prod)
+    bootstrap-crds: 35 CRDs, what kubara bootstrap applies (185 other object(s) in the chart left out)
+    cert-manager: 54 objects from Kubara's chart and 1 values file(s), release cert-manager, namespace cert-manager
+    traefik: 33 objects from Kubara's chart and 1 values file(s), release traefik, namespace traefik
+    metrics-server: 11 objects from Kubara's chart and 1 values file(s), release metrics-server, namespace metrics-server
+
+  These Secrets carry their keys and not their values; the values belong in each cluster's secret store:
+    hub/argo-cd: Secret argocd/cluster-kubernetes.default.svc (3 values)
+
+  Wrote $LAB/platform/confighub/stack.yaml
+
+  Next: cub stack check $LAB/platform/confighub/stack.yaml
+        cub stack sandbox $LAB/platform/confighub/stack.yaml
+        cub stack upload $LAB/platform/confighub/stack.yaml --run
+
+$ jq '{generator, secretValues, clusters: [.clusters[] | {name, services: [.services[] | {name, objects, sha256}], shared: (.shared | length)}]}' confighub/kubara-render/render.json
+{
+  "generator": "cub kubara render 0.2.3-dev",
+  "secretValues": "emptied",
+  "clusters": [
+    {
+      "name": "hub",
+      "services": [
+        {
+          "name": "bootstrap-crds",
+          "objects": 35,
+          "sha256": "sha256:38ea5c835ee8e24f3f858bbb2f61898feb0fbca3ed0cdf2293fce62dd8a6c68b"
+        },
+        {
+          "name": "argo-cd",
+          "objects": 91,
+          "sha256": "sha256:3a4dcba11c7f32c01a9423c2c3dbf2eaaceae61240239477cc6320f7be9b6c4f"
+        },
+        {
+          "name": "cert-manager",
+          "objects": 54,
+          "sha256": "sha256:b3a8a824704885dea761bcdfe66d3582247fe556afbb6234bb84a97add041821"
+        },
+        {
+          "name": "homer-dashboard",
+          "objects": 7,
+          "sha256": "sha256:44583a19f67f2ccbba23a3b6ff3db7f1a846bcc706b5babae70416e0d7c5cee8"
+        },
+        {
+          "name": "metrics-server",
+          "objects": 11,
+          "sha256": "sha256:23c14536acaff269854322c5a3eb4d924047c82ba8773a63ee31d75c3670d26c"
+        },
+        {
+          "name": "traefik",
+          "objects": 33,
+          "sha256": "sha256:d0fdea0ff8bc2d9be07a6836d4966beb132e7db1badbecadc97d53dac1963985"
+        }
+      ],
+      "shared": 0
+    },
+    {
+      "name": "spoke",
+      "services": [
+        {
+          "name": "bootstrap-crds",
+          "objects": 35,
+          "sha256": "sha256:38ea5c835ee8e24f3f858bbb2f61898feb0fbca3ed0cdf2293fce62dd8a6c68b"
+        },
+        {
+          "name": "cert-manager",
+          "objects": 54,
+          "sha256": "sha256:265bcdc036700d7b94f9a65fed055dc780883f257e9f11bd75dab2b31e237d0b"
+        },
+        {
+          "name": "metrics-server",
+          "objects": 11,
+          "sha256": "sha256:62bdd75bdb7a67009b1bde012e19e26783c6b32c9e3f78ab46885bc0a5c0c7f7"
+        },
+        {
+          "name": "traefik",
+          "objects": 33,
+          "sha256": "sha256:6ffcf9749972435494d0faf53ca54753c2730c8f49882414bbfcc3194bbb8ed8"
+        }
+      ],
+      "shared": 0
+    }
+  ]
+}
+
+== 3. Check: the whole stack, then each cluster
+$ cub stack check confighub/stack.yaml
+
+Stack: kubara-platform  —  The platform Kubara generated, 2 cluster(s): each service one component, rendered as Kubara's ApplicationSets deliver it on every cluster that enables it.
+Clusters: hub, spoke. Checking each component's base; --cluster <name> checks what one cluster runs
+Resolving 6 components: bootstrap-crds, cert-manager, traefik, metrics-server, homer-dashboard, argo-cd
+
+Check
+  [PASS] no resource conflicts across components (231 objects)
+  [PASS] CRD ordering: 69 CRDs are delivered before the 30 custom resources that need them
+  [PASS] served API versions: 30 custom resource(s) match their bundled CRD; target availability is not checked
+  [WARN] 2 admission webhook(s) need a caBundle — cert-manager is in the stack and can issue it
+  [WARN] namespaces: 5 created, 1 must already exist (kube-system)
+  [WARN] target prerequisite unknown: ClusterSecretStore/hub-dev; Include ClusterSecretStore/hub-dev in the stack, or verify it exists on the selected target before delivery.
+  [WARN] schema validation not run: the flux schema plugin is not installed; next: `flux plugin install schema` (Flux 2.9 or later)
+  => CHECKED
+
+$ cub stack check confighub/stack.yaml --cluster hub
+
+Stack: kubara-platform  —  The platform Kubara generated, 2 cluster(s): each service one component, rendered as Kubara's ApplicationSets deliver it on every cluster that enables it.
+Cluster: hub, each component as that cluster's variant renders it
+Resolving 6 components: bootstrap-crds, cert-manager, traefik, metrics-server, homer-dashboard, argo-cd
+
+Check
+  [PASS] no resource conflicts across components (231 objects)
+  [PASS] CRD ordering: 69 CRDs are delivered before the 30 custom resources that need them
+  [PASS] served API versions: 30 custom resource(s) match their bundled CRD; target availability is not checked
+  [WARN] 2 admission webhook(s) need a caBundle — cert-manager is in the stack and can issue it
+  [WARN] namespaces: 5 created, 1 must already exist (kube-system)
+  [WARN] target prerequisite unknown: ClusterSecretStore/hub-dev; Include ClusterSecretStore/hub-dev in the stack, or verify it exists on the selected target before delivery.
+  [WARN] schema validation not run: the flux schema plugin is not installed; next: `flux plugin install schema` (Flux 2.9 or later)
+  => CHECKED
+
+$ cub stack check confighub/stack.yaml --cluster spoke
+
+Stack: kubara-platform  —  The platform Kubara generated, 2 cluster(s): each service one component, rendered as Kubara's ApplicationSets deliver it on every cluster that enables it.
+Cluster: spoke, each component as that cluster's variant renders it
+Resolving 4 components: bootstrap-crds, cert-manager, traefik, metrics-server
+
+Check
+  [PASS] no resource conflicts across components (133 objects)
+  [PASS] CRD ordering: 66 CRDs are delivered before the 5 custom resources that need them
+  [PASS] served API versions: 5 custom resource(s) match their bundled CRD; target availability is not checked
+  [WARN] 2 admission webhook(s) need a caBundle — cert-manager is in the stack and can issue it
+  [WARN] namespaces: 3 created, 1 must already exist (kube-system)
+  [WARN] schema validation not run: the flux schema plugin is not installed; next: `flux plugin install schema` (Flux 2.9 or later)
+  => CHECKED
+
+
+== 4. Parity with the JavaScript renderer this replaces (cub-workshop 95b6242), on the same platform
+$ node <cub-workshop@95b6242>/bin/cub-stack from-kubara . --out old-js
+Kubara platform at $LAB/platform: 2 cluster(s), 6 components
+  cluster hub (hub, dev)
+  cluster spoke (spoke, prod)
+  Wrote $LAB/platform/old-js/stack.yaml
+$ node proofs/from-kubara-live-2026-09-30/parity.mjs confighub old-js
+  hub/argo-cd: 91 objects, identical
+  hub/bootstrap-crds: 35 objects, identical
+  hub/cert-manager: 54 objects, identical
+  hub/homer-dashboard: 7 objects, identical
+  hub/metrics-server: 11 objects, identical
+  hub/traefik: 33 objects, identical
+  spoke/bootstrap-crds: 35 objects, identical
+  spoke/cert-manager: 54 objects, identical
+  spoke/metrics-server: 11 objects, identical
+  spoke/traefik: 33 objects, identical
+10 cluster renders, 364 objects: all identical (2 Secret(s) compared by keys)
+
+== 5. Publish to a registry: the bases and every cluster checked first
+$ cub stack publish confighub/stack.yaml --out oci://localhost:5002/m6-0930/kubara-platform:live
+
+Stack: kubara-platform  —  The platform Kubara generated, 2 cluster(s): each service one component, rendered as Kubara's ApplicationSets deliver it on every cluster that enables it.
+Clusters: hub, spoke. Checking each component's base; --cluster <name> checks what one cluster runs
+Resolving 6 components: bootstrap-crds, cert-manager, traefik, metrics-server, homer-dashboard, argo-cd
+
+Check
+  [PASS] no resource conflicts across components (231 objects)
+  [PASS] CRD ordering: 69 CRDs are delivered before the 30 custom resources that need them
+  [PASS] served API versions: 30 custom resource(s) match their bundled CRD; target availability is not checked
+  [WARN] 2 admission webhook(s) need a caBundle — cert-manager is in the stack and can issue it
+  [WARN] namespaces: 5 created, 1 must already exist (kube-system)
+  [WARN] target prerequisite unknown: ClusterSecretStore/hub-dev; Include ClusterSecretStore/hub-dev in the stack, or verify it exists on the selected target before delivery.
+  => CHECKED
+
+Check, each cluster as its variants compose
+  [PASS] cluster hub: CHECKED, 231 objects, 3 WARN
+  [PASS] cluster spoke: CHECKED, 133 objects, 2 WARN
+
+Publishing components into the index repository
+
+  bootstrap-crds on hub: published sha256:fbaf02cb7a75
+  bootstrap-crds on spoke: published sha256:9dbe47ef93f7
+  bootstrap-crds: published sha256:9e410174cfa4
+  cert-manager on hub: published sha256:531572a7777e
+  cert-manager on spoke: published sha256:3aa2bfcb4f04
+  cert-manager: published sha256:69390f5e85e5
+  traefik on hub: published sha256:b60c84858301
+  traefik on spoke: published sha256:12588482c84f
+  traefik: published sha256:2cfe458a1824
+  metrics-server on hub: published sha256:d68c9f46be4f
+  metrics-server on spoke: published sha256:180207136586
+  metrics-server: published sha256:f97c12da1645
+  homer-dashboard on hub: published sha256:32680f0ba93f
+  homer-dashboard: published sha256:9fcf812ba6a0
+  argo-cd on hub: published sha256:d0693697347c
+  argo-cd: published sha256:d217552fb8b0
+
+  Published stack kubara-platform as an index of 6 images
+    oci://localhost:5002/m6-0930/kubara-platform@sha256:a95072785fd29bac4621236f5d08f32c548326fe310113b25a5abc1f2c302a27
+    manifest and verdict attached: sha256:64b480ef78b90f5ee6c3aab56b1987c403111486de7f3c2aede2605615520d58
+
+$ cub stack check oci://localhost:5002/m6-0930/kubara-platform@sha256:a95072785fd29bac4621236f5d08f32c548326fe310113b25a5abc1f2c302a27 --cluster spoke
+
+Stack: kubara-platform  —  The platform Kubara generated, 2 cluster(s): each service one component, rendered as Kubara's ApplicationSets deliver it on every cluster that enables it.
+Cluster: spoke, each component as that cluster's variant renders it
+Resolving 4 components: bootstrap-crds, cert-manager, traefik, metrics-server
+
+Check
+  [PASS] no resource conflicts across components (133 objects)
+  [PASS] CRD ordering: 66 CRDs are delivered before the 5 custom resources that need them
+  [PASS] served API versions: 5 custom resource(s) match their bundled CRD; target availability is not checked
+  [WARN] 2 admission webhook(s) need a caBundle — cert-manager is in the stack and can issue it
+  [WARN] namespaces: 3 created, 1 must already exist (kube-system)
+  [WARN] schema validation not run: the flux schema plugin is not installed; next: `flux plugin install schema` (Flux 2.9 or later)
+  => CHECKED
+
+
+== 6. Upload to Kubara, twice: the rerun is safe
+$ cub stack upload confighub/stack.yaml --space-prefix m6-0930 --run
+
+Stack: kubara-platform  —  The platform Kubara generated, 2 cluster(s): each service one component, rendered as Kubara's ApplicationSets deliver it on every cluster that enables it.
+Clusters: hub, spoke. Checking each component's base; --cluster <name> checks what one cluster runs
+Resolving 6 components: bootstrap-crds, cert-manager, traefik, metrics-server, homer-dashboard, argo-cd
+
+Check
+  [PASS] no resource conflicts across components (231 objects)
+  [PASS] CRD ordering: 69 CRDs are delivered before the 30 custom resources that need them
+  [PASS] served API versions: 30 custom resource(s) match their bundled CRD; target availability is not checked
+  [WARN] 2 admission webhook(s) need a caBundle — cert-manager is in the stack and can issue it
+  [WARN] namespaces: 5 created, 1 must already exist (kube-system)
+  [WARN] target prerequisite unknown: ClusterSecretStore/hub-dev; Include ClusterSecretStore/hub-dev in the stack, or verify it exists on the selected target before delivery.
+  => CHECKED
+
+Uploading (live)
+
+  cub variant upload --component bootstrap-crds --variant base --owner kubara-platform --space-pattern template:m6-0930-{{.Component.Slug}} $LAB/platform/confighub/renders/hub/bootstrap-crds.yaml
+  cub variant create hub m6-0930-bootstrap-crds --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component bootstrap-crds --variant hub --owner kubara-platform --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/hub/bootstrap-crds.yaml
+  cub variant create spoke m6-0930-bootstrap-crds --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component bootstrap-crds --variant spoke --owner kubara-platform --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/spoke/bootstrap-crds.yaml
+  cub variant upload --component cert-manager --variant base --owner kubara-platform --space-pattern template:m6-0930-{{.Component.Slug}} $LAB/platform/confighub/renders/hub/cert-manager.yaml
+  cub variant create hub m6-0930-cert-manager --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component cert-manager --variant hub --owner kubara-platform --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/hub/cert-manager.yaml
+  cub variant create spoke m6-0930-cert-manager --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component cert-manager --variant spoke --owner kubara-platform --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/spoke/cert-manager.yaml
+  cub variant upload --component traefik --variant base --owner kubara-platform --space-pattern template:m6-0930-{{.Component.Slug}} $LAB/platform/confighub/renders/hub/traefik.yaml
+  cub variant create hub m6-0930-traefik --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component traefik --variant hub --owner kubara-platform --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/hub/traefik.yaml
+  cub variant create spoke m6-0930-traefik --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component traefik --variant spoke --owner kubara-platform --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/spoke/traefik.yaml
+  cub variant upload --component metrics-server --variant base --owner kubara-platform --space-pattern template:m6-0930-{{.Component.Slug}} $LAB/platform/confighub/renders/hub/metrics-server.yaml
+  cub variant create hub m6-0930-metrics-server --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component metrics-server --variant hub --owner kubara-platform --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/hub/metrics-server.yaml
+  cub variant create spoke m6-0930-metrics-server --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component metrics-server --variant spoke --owner kubara-platform --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/spoke/metrics-server.yaml
+  cub variant upload --component homer-dashboard --variant base --owner kubara-platform --space-pattern template:m6-0930-{{.Component.Slug}} $LAB/platform/confighub/renders/hub/homer-dashboard.yaml
+  cub variant create hub m6-0930-homer-dashboard --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component homer-dashboard --variant hub --owner kubara-platform --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/hub/homer-dashboard.yaml
+  cub variant upload --component argo-cd --variant base --owner kubara-platform --space-pattern template:m6-0930-{{.Component.Slug}} $LAB/platform/confighub/renders/hub/argo-cd.yaml
+  cub variant create hub m6-0930-argo-cd --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component argo-cd --variant hub --owner kubara-platform --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/hub/argo-cd.yaml
+
+  bootstrap-crds... ok
+  m6-0930-bootstrap-crds → hub... ok
+  bootstrap-crds hub... ok
+  m6-0930-bootstrap-crds → spoke... ok
+  bootstrap-crds spoke... ok
+  cert-manager... ok
+  m6-0930-cert-manager → hub... ok
+  cert-manager hub... ok
+  m6-0930-cert-manager → spoke... ok
+  cert-manager spoke... ok
+  traefik... ok
+  m6-0930-traefik → hub... ok
+  traefik hub... ok
+  m6-0930-traefik → spoke... ok
+  traefik spoke... ok
+  metrics-server... ok
+  m6-0930-metrics-server → hub... ok
+  metrics-server hub... ok
+  m6-0930-metrics-server → spoke... ok
+  metrics-server spoke... ok
+  homer-dashboard... ok
+  m6-0930-homer-dashboard → hub... ok
+  homer-dashboard hub... ok
+  argo-cd... ok
+  m6-0930-argo-cd → hub... ok
+  argo-cd hub... ok
+
+  Bases uploaded, and each cluster's variant cloned from its base. Links and releases continue with the generic cub verbs.
+
+$ snapshot: each Unit in the m6-0930- Spaces and its head revision
+  m6-0930-argo-cd                 89 units, head revisions summing to 178
+  m6-0930-argo-cd-hub             89 units, head revisions summing to 179
+  m6-0930-bootstrap-crds          35 units, head revisions summing to 70
+  m6-0930-bootstrap-crds-hub      35 units, head revisions summing to 76
+  m6-0930-bootstrap-crds-spoke    35 units, head revisions summing to 76
+  m6-0930-cert-manager            54 units, head revisions summing to 108
+  m6-0930-cert-manager-hub        54 units, head revisions summing to 108
+  m6-0930-cert-manager-spoke      54 units, head revisions summing to 110
+  m6-0930-homer-dashboard          7 units, head revisions summing to 14
+  m6-0930-homer-dashboard-hub      7 units, head revisions summing to 14
+  m6-0930-metrics-server          11 units, head revisions summing to 22
+  m6-0930-metrics-server-hub      11 units, head revisions summing to 22
+  m6-0930-metrics-server-spoke    11 units, head revisions summing to 24
+  m6-0930-traefik                 33 units, head revisions summing to 66
+  m6-0930-traefik-hub             33 units, head revisions summing to 66
+  m6-0930-traefik-spoke           33 units, head revisions summing to 68
+
+== 6b. The same upload again
+$ cub stack upload confighub/stack.yaml --space-prefix m6-0930 --run
+
+Stack: kubara-platform  —  The platform Kubara generated, 2 cluster(s): each service one component, rendered as Kubara's ApplicationSets deliver it on every cluster that enables it.
+Clusters: hub, spoke. Checking each component's base; --cluster <name> checks what one cluster runs
+Resolving 6 components: bootstrap-crds, cert-manager, traefik, metrics-server, homer-dashboard, argo-cd
+
+Check
+  [PASS] no resource conflicts across components (231 objects)
+  [PASS] CRD ordering: 69 CRDs are delivered before the 30 custom resources that need them
+  [PASS] served API versions: 30 custom resource(s) match their bundled CRD; target availability is not checked
+  [WARN] 2 admission webhook(s) need a caBundle — cert-manager is in the stack and can issue it
+  [WARN] namespaces: 5 created, 1 must already exist (kube-system)
+  [WARN] target prerequisite unknown: ClusterSecretStore/hub-dev; Include ClusterSecretStore/hub-dev in the stack, or verify it exists on the selected target before delivery.
+  => CHECKED
+
+Uploading (live)
+
+  cub variant upload --component bootstrap-crds --variant base --owner kubara-platform --space-pattern template:m6-0930-{{.Component.Slug}} $LAB/platform/confighub/renders/hub/bootstrap-crds.yaml
+  cub variant create hub m6-0930-bootstrap-crds --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component bootstrap-crds --variant hub --owner kubara-platform --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/hub/bootstrap-crds.yaml
+  cub variant create spoke m6-0930-bootstrap-crds --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component bootstrap-crds --variant spoke --owner kubara-platform --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/spoke/bootstrap-crds.yaml
+  cub variant upload --component cert-manager --variant base --owner kubara-platform --space-pattern template:m6-0930-{{.Component.Slug}} $LAB/platform/confighub/renders/hub/cert-manager.yaml
+  cub variant create hub m6-0930-cert-manager --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component cert-manager --variant hub --owner kubara-platform --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/hub/cert-manager.yaml
+  cub variant create spoke m6-0930-cert-manager --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component cert-manager --variant spoke --owner kubara-platform --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/spoke/cert-manager.yaml
+  cub variant upload --component traefik --variant base --owner kubara-platform --space-pattern template:m6-0930-{{.Component.Slug}} $LAB/platform/confighub/renders/hub/traefik.yaml
+  cub variant create hub m6-0930-traefik --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component traefik --variant hub --owner kubara-platform --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/hub/traefik.yaml
+  cub variant create spoke m6-0930-traefik --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component traefik --variant spoke --owner kubara-platform --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/spoke/traefik.yaml
+  cub variant upload --component metrics-server --variant base --owner kubara-platform --space-pattern template:m6-0930-{{.Component.Slug}} $LAB/platform/confighub/renders/hub/metrics-server.yaml
+  cub variant create hub m6-0930-metrics-server --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component metrics-server --variant hub --owner kubara-platform --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/hub/metrics-server.yaml
+  cub variant create spoke m6-0930-metrics-server --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component metrics-server --variant spoke --owner kubara-platform --stage prod --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/spoke/metrics-server.yaml
+  cub variant upload --component homer-dashboard --variant base --owner kubara-platform --space-pattern template:m6-0930-{{.Component.Slug}} $LAB/platform/confighub/renders/hub/homer-dashboard.yaml
+  cub variant create hub m6-0930-homer-dashboard --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component homer-dashboard --variant hub --owner kubara-platform --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/hub/homer-dashboard.yaml
+  cub variant upload --component argo-cd --variant base --owner kubara-platform --space-pattern template:m6-0930-{{.Component.Slug}} $LAB/platform/confighub/renders/hub/argo-cd.yaml
+  cub variant create hub m6-0930-argo-cd --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component argo-cd --variant hub --owner kubara-platform --stage dev --space-pattern template:m6-0930-{{.Component.Slug}}-{{.Labels.Variant}} $LAB/platform/confighub/renders/hub/argo-cd.yaml
+
+  bootstrap-crds... ok
+  m6-0930-bootstrap-crds → hub... already cloned
+  bootstrap-crds hub... ok
+  m6-0930-bootstrap-crds → spoke... already cloned
+  bootstrap-crds spoke... ok
+  cert-manager... ok
+  m6-0930-cert-manager → hub... already cloned
+  cert-manager hub... ok
+  m6-0930-cert-manager → spoke... already cloned
+  cert-manager spoke... ok
+  traefik... ok
+  m6-0930-traefik → hub... already cloned
+  traefik hub... ok
+  m6-0930-traefik → spoke... already cloned
+  traefik spoke... ok
+  metrics-server... ok
+  m6-0930-metrics-server → hub... already cloned
+  metrics-server hub... ok
+  m6-0930-metrics-server → spoke... already cloned
+  metrics-server spoke... ok
+  homer-dashboard... ok
+  m6-0930-homer-dashboard → hub... already cloned
+  homer-dashboard hub... ok
+  argo-cd... ok
+  m6-0930-argo-cd → hub... already cloned
+  argo-cd hub... ok
+
+  Bases uploaded, and each cluster's variant cloned from its base. Links and releases continue with the generic cub verbs.
+
+$ snapshot again, and diff it against the first
+  m6-0930-argo-cd                 89 units, head revisions summing to 178
+  m6-0930-argo-cd-hub             89 units, head revisions summing to 179
+  m6-0930-bootstrap-crds          35 units, head revisions summing to 70
+  m6-0930-bootstrap-crds-hub      35 units, head revisions summing to 76
+  m6-0930-bootstrap-crds-spoke    35 units, head revisions summing to 76
+  m6-0930-cert-manager            54 units, head revisions summing to 108
+  m6-0930-cert-manager-hub        54 units, head revisions summing to 108
+  m6-0930-cert-manager-spoke      54 units, head revisions summing to 110
+  m6-0930-homer-dashboard          7 units, head revisions summing to 14
+  m6-0930-homer-dashboard-hub      7 units, head revisions summing to 14
+  m6-0930-metrics-server          11 units, head revisions summing to 22
+  m6-0930-metrics-server-hub      11 units, head revisions summing to 22
+  m6-0930-metrics-server-spoke    11 units, head revisions summing to 24
+  m6-0930-traefik                 33 units, head revisions summing to 66
+  m6-0930-traefik-hub             33 units, head revisions summing to 66
+  m6-0930-traefik-spoke           33 units, head revisions summing to 68
+  identical: 591 Units, and the rerun wrote no new revision to any of them
+
+== 7. What the organization holds
+$ cub space list --where "Slug LIKE 'm6-0930-%'"
+m6-0930-argo-cd                 argo-cd            kubara-platform    base                         89    
+m6-0930-argo-cd-hub             argo-cd            kubara-platform    hub      dev                 89    
+m6-0930-bootstrap-crds          bootstrap-crds     kubara-platform    base                         35    
+m6-0930-bootstrap-crds-hub      bootstrap-crds     kubara-platform    hub      dev                 35    
+m6-0930-bootstrap-crds-spoke    bootstrap-crds     kubara-platform    spoke    prod                35    
+m6-0930-cert-manager            cert-manager       kubara-platform    base                         54    
+m6-0930-cert-manager-hub        cert-manager       kubara-platform    hub      dev                 54    
+m6-0930-cert-manager-spoke      cert-manager       kubara-platform    spoke    prod                54    
+m6-0930-homer-dashboard         homer-dashboard    kubara-platform    base                         7     
+m6-0930-homer-dashboard-hub     homer-dashboard    kubara-platform    hub      dev                 7     
+m6-0930-metrics-server          metrics-server     kubara-platform    base                         11    
+m6-0930-metrics-server-hub      metrics-server     kubara-platform    hub      dev                 11    
+m6-0930-metrics-server-spoke    metrics-server     kubara-platform    spoke    prod                11    
+m6-0930-traefik                 traefik            kubara-platform    base                         33    
+m6-0930-traefik-hub             traefik            kubara-platform    hub      dev                 33    
+m6-0930-traefik-spoke           traefik            kubara-platform    spoke    prod                33    
+$ cub unit list --space m6-0930-cert-manager-spoke
+cainjector
+cainjector-clusterrole
+cainjector-clusterrolebinding
+cainjector-leaderelection-role
+cainjector-leaderelection-rolebinding
+cainjector-service
+cainjector-serviceaccount
+cert-manager
+cert-manager-leaderelection-role
+cert-manager-leaderelection-rolebinding
+cert-manager-prometheusrule
+cert-manager-service
+cert-manager-serviceaccount
+cert-manager-servicemonitor
+certificaterequests.cert-manager.io-crd
+certificates.cert-manager.io-crd
+challenges.acme.cert-manager.io-crd
+cluster-view-clusterrole
+clusterissuers.cert-manager.io-crd
+controller-approve-cert-manager-io-clusterrole
+controller-approve-cert-manager-io-clusterrolebinding
+controller-certificates-clusterrole
+controller-certificates-clusterrolebinding
+controller-certificatesigningrequests-clusterrole
+controller-certificatesigningrequests-clusterrolebinding
+controller-challenges-clusterrole
+controller-challenges-clusterrolebinding
+controller-clusterissuers-clusterrole
+controller-clusterissuers-clusterrolebinding
+controller-ingress-shim-clusterrole
+controller-ingress-shim-clusterrolebinding
+controller-issuers-clusterrole
+controller-issuers-clusterrolebinding
+controller-orders-clusterrole
+controller-orders-clusterrolebinding
+edit-clusterrole
+issuers.cert-manager.io-crd
+letsencrypt-staging-clusterissuer
+namespace
+orders.acme.cert-manager.io-crd
+startupapicheck
+startupapicheck-create-cert-role
+startupapicheck-create-cert-rolebinding
+startupapicheck-serviceaccount
+view-clusterrole
+webhook
+webhook-dynamic-serving-role
+webhook-dynamic-serving-rolebinding
+webhook-mutatingwebhookconfiguration
+webhook-service
+webhook-serviceaccount
+webhook-subjectaccessreviews-clusterrole
+webhook-subjectaccessreviews-clusterrolebinding
+webhook-validatingwebhookconfiguration

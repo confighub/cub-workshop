@@ -1,7 +1,8 @@
 # The whole ladder in ten minutes
 
 Every step is copy-paste. The free rungs need only `node`, `oras`, and `cub`, plus
-`helm` for the values check and for `from-kubara`; the governed rungs need a ConfigHub org you can write to — the disposable self-hosted
+`helm` for the values check and for `from-kubara`, which also needs `cub kubara` v0.2.3 or later
+(`cub plugin install confighub/kubara-confighub`); the governed rungs need a ConfigHub org you can write to — the disposable self-hosted
 sandbox from `cub server` is ideal, and the hosted hub works the same way.
 
 ## 0. Install the family
@@ -76,8 +77,8 @@ cub stack check ./confighub/stack.yaml --cluster prod   # what one cluster runs
 cub stack upload  ./confighub/stack.yaml               # the plan; add --run to upload
 ```
 
-Each service is rendered the way Kubara's ApplicationSets deliver it, with one owner
-per object. A rerun of `upload --run` after a stop repeats every upload safely and
+`cub kubara render` renders each service the way Kubara's ApplicationSets deliver it,
+and `from-kubara` keeps one owner per object and each Secret's keys without its values. A rerun of `upload --run` after a stop repeats every upload safely and
 links the declared path bindings once the bases are up. A fleet manifest may place
 that stack by path (`stack: ./confighub/stack.yaml`), and `cub fleet up
 path/to/fleet.yaml` builds it like any shipped fleet.

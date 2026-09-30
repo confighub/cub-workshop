@@ -6,26 +6,29 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseDocs } from '../lib/common.mjs';
+import { goldenPlatform, installFakeCub } from './kubara-fake-cub.mjs';
 
 // Needs a registry this machine can push to, such as CI's registry:2 service:
 // CUB_TEST_REGISTRY=localhost:5000 node --test tests/kubara-publish.test.mjs
 const registry = process.env.CUB_TEST_REGISTRY;
 const root = fileURLToPath(new URL('../', import.meta.url));
 const stackBin = join(root, 'bin', 'cub-stack');
-const hasHelm = spawnSync('helm', ['version', '--short']).status === 0;
 const run = (args, env = {}) => spawnSync(process.execPath, [stackBin, ...args], { encoding: 'utf8', timeout: 120000, env: { ...process.env, ...env } });
 
-test('a whole Kubara platform publishes as one index, and every cluster reads back by digest', { skip: (!registry && 'set CUB_TEST_REGISTRY to a registry to push to') || (!hasHelm && 'helm is not installed') }, () => {
+test('a whole Kubara platform publishes as one index, and every cluster reads back by digest', { skip: !registry && 'set CUB_TEST_REGISTRY to a registry to push to' }, () => {
   const dir = mkdtempSync(join(tmpdir(), 'kubara-publish-'));
   try {
-    cpSync(join(root, 'tests', 'fixtures', 'kubara-platform'), join(dir, 'platform'), { recursive: true });
+    cpSync(goldenPlatform, join(dir, 'platform'), { recursive: true });
     const env = { TMPDIR: dir };
-    assert.equal(run(['from-kubara', join(dir, 'platform'), '--out', join(dir, 'out')]).status, 0);
+    // A fake cub kubara writes the golden render; see tests/kubara-fake-cub.mjs.
+    const bin = installFakeCub(join(dir, 'bin'));
+    assert.equal(run(['from-kubara', join(dir, 'platform'), '--out', join(dir, 'out')], { PATH: `${bin}:${process.env.PATH}` }).status, 0);
     const manifest = join(dir, 'out', 'stack.yaml');
     const repo = `${registry}/kubara-platform-${process.pid}`;
     assert.match(run(['publish', manifest, '--out', `oci://${repo}:t`, '--cluster', 'hub']).stderr, /publish takes the whole platform/);
     const published = run(['publish', manifest, '--out', `oci://${repo}:t`], env);
     assert.equal(published.status, 0, published.stderr + published.stdout);
+    assert.match(published.stdout, /\[PASS\] cluster hub: CHECKED[^\n]*\n\s+\[PASS\] cluster spoke: CHECKED/, 'each cluster checks before anything is pushed');
     assert.match(published.stdout, /web on spoke: published sha256:/);
     const index = published.stdout.match(/oci:\/\/\S+@sha256:[0-9a-f]{64}/g).pop();
 

@@ -1,0 +1,49 @@
+# Source: web/templates/app.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: webapp-admin
+  namespace: webapp
+stringData:
+  password: ""
+---
+# Source: web/charts/greeter/templates/greeting.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webapp-greeting
+  namespace: webapp
+data: {hello: world}
+---
+# Source: web/templates/app.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webapp-settings
+  namespace: webapp
+data:
+  replicas: "5"
+  level: spoke
+---
+# Source: web/templates/app.yaml
+# The chart ships the CRD bootstrap-crds also holds, as some Kubara charts do.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: widgets.example.com
+spec:
+  group: example.com
+  names: {kind: Widget, plural: widgets}
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema: {openAPIV3Schema: {type: object}}
+---
+# Source: web/templates/app.yaml
+apiVersion: example.com/v1
+kind: Widget
+metadata:
+  name: webapp-widget
+  namespace: webapp
