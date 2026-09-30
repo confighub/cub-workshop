@@ -3,7 +3,7 @@ kind: Stack
 metadata:
   name: metrics-double
 spec:
-  description: "Two copies of metrics-server, composed to show the certify step catching a resource conflict."
+  description: "Two copies of metrics-server, composed to show cub stack check catching a resource conflict."
   components:
     - name: metrics-server
       bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/workshop-metrics-server@sha256:db0795803b4a7d2ac7112ef6b5939174266022d75764e757cdd11db72d265fff"

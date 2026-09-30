@@ -1,0 +1,6 @@
+# Values for chart oci://registry-1.docker.io/cloudpirates/redis 0.34.11, written
+# to show each verdict of cub config values. Check your own values file the same way.
+persistence:
+  size: 16Gi              # a real key that changes the volume claim: APPLIED
+replicas: 2               # not a key of this chart (it calls it replicaCount): IGNORED
+revisionHistoryLimit: 10  # the value the chart already uses: DEFAULT

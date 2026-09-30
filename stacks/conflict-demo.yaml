@@ -3,7 +3,7 @@ kind: Stack
 metadata:
   name: conflict-demo
 spec:
-  description: "Two components claim the same object with different content. Certify must refuse this composition."
+  description: "Two components claim the same object with different content. cub stack check must refuse this composition."
   components:
     - name: team-a
       authored: apps/conflict-a.yaml

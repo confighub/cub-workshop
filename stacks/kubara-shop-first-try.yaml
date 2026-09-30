@@ -3,7 +3,7 @@ kind: Stack
 metadata:
   name: kubara-shop-first-try
 spec:
-  description: "The Kubara platform as first picked (cert-manager, Traefik, metrics-server) with the shop app placed on it. Certify refuses it: the app asks for things the platform does not carry."
+  description: "The Kubara platform as first picked (cert-manager, Traefik, metrics-server) with the shop app placed on it. cub stack check refuses it: the app asks for things the platform does not carry."
   components:
     - name: cert-manager
       plane: mgmt
