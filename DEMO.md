@@ -1,7 +1,7 @@
 # The whole ladder in ten minutes
 
-Every step is copy-paste. The free rungs need only `node`, `oras`, and `cub`; the
-governed rungs need a ConfigHub org you can write to — the disposable self-hosted
+Every step is copy-paste. The free rungs need only `node`, `oras`, and `cub`, plus
+`helm` for the values check and for `from-kubara`; the governed rungs need a ConfigHub org you can write to — the disposable self-hosted
 sandbox from `cub server` is ideal, and the hosted hub works the same way.
 
 ## 0. Install the family
@@ -51,14 +51,14 @@ refuses rather than reports.
 
 ### An app tells the platform what it needs
 
-Certify also reads what each authored app needs from the platform under it, off
+Check also reads what each authored app needs from the platform under it, off
 the app's own objects, and refuses a stack that does not carry it:
 
 ```
 cub app check shop-web                      # needs an ingress controller, cert-manager, a Prometheus operator
-cub stack check kubara-shop-first-try     # REJECTED: the Ingress asks for class nginx and the platform's controller is Traefik; nothing provides the operator
+cub stack check kubara-shop-first-try     # REFUSED: the Ingress asks for class nginx and the platform's controller is Traefik; nothing provides the operator
 cub app check shop-web-kubara               # the app adapted: Traefik's class, a secret through external-secrets
-cub stack sandbox kubara-shop-platform      # CERTIFIED: the platform grew by external-secrets, every need carried
+cub stack sandbox kubara-shop-platform      # CHECKED: the platform grew by external-secrets, every need carried
 ```
 
 ### A platform Kubara generated
@@ -69,13 +69,17 @@ have rather than the catalog's copy of its parts:
 
 ```
 kubara --work-dir . --config-file config.yaml --env-file .env generate --helm
-cub stack from-kubara . --app shop-web-kubara        # renders each umbrella chart with its values; one owner per object
+cub stack from-kubara . --app shop-web-kubara        # the whole platform: a component per service, a variant per cluster
 cub stack check ./confighub/stack.yaml
-cub stack upload  ./confighub/stack.yaml --run
+cub stack check ./confighub/stack.yaml --cluster prod   # what one cluster runs
+cub stack upload  ./confighub/stack.yaml               # the plan; add --run to upload
 ```
 
-A fleet manifest may place that stack by path (`stack: ./confighub/stack.yaml`),
-and `cub fleet up path/to/fleet.yaml` builds it like any shipped fleet.
+Each service is rendered the way Kubara's ApplicationSets deliver it, with one owner
+per object. A rerun of `upload --run` after a stop repeats every upload safely and
+links the declared path bindings once the bases are up. A fleet manifest may place
+that stack by path (`stack: ./confighub/stack.yaml`), and `cub fleet up
+path/to/fleet.yaml` builds it like any shipped fleet.
 
 ## 3b. Hand it on as an image (free, any registry)
 
@@ -86,7 +90,7 @@ cub config verify oci://localhost:5001/demo/redis@sha256:<the digest it printed>
 cub stack publish shop-platform --out oci://localhost:5001/demo/shop-platform:v1
 ```
 
-The first command pushes the render as a bundle with its receipt with its receipt
+The first command pushes the render as a bundle with its receipt
 attached and pulls it back to verify it. The second re-hashes every file against
 that receipt from nothing but the digest. The third publishes the stack as an
 index of five images with the manifest and verdict attached: the form a catalog
@@ -116,7 +120,9 @@ Spaces.
 
 What it does not do: nothing pulls those releases. The sandbox has no reconciler
 attached, so the fleet is loaded into ConfigHub and governed there, and it runs
-nowhere. Attaching a cluster that pulls is what `cub cluster up` adds.
+nowhere. Attaching a cluster that pulls is a separate step. It is not part of this
+plugin: `cub cluster up` is a `cub` command that brings up a local kind cluster with
+Argo CD wired to ConfigHub, and `cub cluster --help` describes it.
 
 `up` scaffolds ten regional cluster Spaces, uploads twenty component bases, and
 places and releases 125 deployments through the ordinary governed verbs. `age`
@@ -125,11 +131,26 @@ approval gate arming, a ChangeOrder opening — so the attention states are real
 residue, not staged data. `status` recomputes the four attention tiles from the
 same queries a components view renders; open the hub UI to see them drawn.
 
+`external-dns` is placed in waves, canary then secondary then primary. Open the first
+wave's ChangeOrder, check where it stands, and see what comes next:
+
+```bash
+cub fleet rollout meridian external-dns          # the plan, no changes
+cub fleet rollout meridian external-dns --run    # open the canary wave
+cub fleet status meridian                        # adds the Rollouts by wave line
+```
+
+The next wave is refused until the canary's ChangeOrder closes. Opening a wave does not
+deliver anything by itself.
+
 Tear it all down when finished:
 
 ```bash
 cub fleet down meridian
 ```
+
+It deletes what `up` and `age` created, including the ChangeOrders, keeps a base that
+another fleet still uses, and stops on the first failure other than not-found.
 
 ## What to take away
 

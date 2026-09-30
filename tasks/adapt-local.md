@@ -1,6 +1,6 @@
 # Edit a configuration and inspect exactly what changed
 
-This task requires the Workshop version that provides `cub config diff` (0.6.20).
+This task needs workshop plugin 0.6.20 or newer, the first version with `cub config diff`.
 It uses one Deployment excerpt from retained Prometheus chart 29.8.0. The excerpt
 is for reviewing an edit, not a complete chart or standalone deployment. Its
 provenance is in `examples/adapt/source.json`.
@@ -65,8 +65,10 @@ That receipt is historical evidence, not the result of this local exercise.
 The managed continuation needs an authorized organization, valid authentication,
 reviewed sources and the current installer commands. Reuse its existing runner
 and protected-field mechanism for a fresh qualified run; do not replace it with
-an ad hoc file merge. In a Catalog checkout, the existing receipt can be verified
-without repeating the managed run:
+an ad hoc file merge. The runner is
+[`scripts/run-prometheus-upgrade-preservation-proof.mjs`](https://github.com/confighub/helm-expt/blob/main/scripts/run-prometheus-upgrade-preservation-proof.mjs)
+in the helm-expt repository, not in this plugin. In a checkout of that repository, the
+existing receipt can be verified without repeating the managed run:
 
 ```sh
 node scripts/run-prometheus-upgrade-preservation-proof.mjs --verify

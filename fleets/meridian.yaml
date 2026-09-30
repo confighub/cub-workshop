@@ -4,7 +4,7 @@ metadata:
   name: meridian
 spec:
   owner: Meridian
-  description: "A meridian-shaped fleet: eight teams, nineteen components, ten regional clusters. Platform components come from published certified bundles; the applications are authored. Generated entirely through the governed verbs."
+  description: "A meridian-shaped fleet: eight teams, twenty components, ten regional clusters. Platform components come from published certified bundles; the applications are authored. Generated entirely through the governed verbs."
   clusters:
     - name: ap-northeast-dev1
       labels: {phase: secondary}

@@ -336,12 +336,14 @@ test('--max-renders wants a positive whole number, before anything is read or re
   assert.match(missing.stderr, /--max-renders requires a positive whole number/);
 });
 
-test('the values help in bin/cub-config, lib/config.mjs and --help names every option, the same way', () => {
+test('the values help in lib/config-usage.mjs, the bare command, config --help and values --help names every option, the same way', () => {
   const block = (text) => text.replace(/^usage: /m, '').split('\n').filter((line) => /^\s*cub config values |^\s+-f is short|^\s+--max-renders N/.test(line)).map((line) => line.trim());
-  const bin = block(readFileSync(join(root, 'bin/cub-config'), 'utf8'));
-  const lib = block(readFileSync(join(root, 'lib/config.mjs'), 'utf8'));
+  const bin = block(readFileSync(join(root, 'lib/config-usage.mjs'), 'utf8'));
   assert.equal(bin.length, 3);
-  assert.deepEqual(lib, bin, 'the two top-level usages are identical');
+  const bare = spawnSync(join(root, 'bin/cub-config'), [], { encoding: 'utf8' }).stdout;
+  const top = spawnSync(join(root, 'bin/cub-config'), ['--help'], { encoding: 'utf8' }).stdout;
+  assert.deepEqual(block(bare), bin, 'the bare usage is the shared one');
+  assert.deepEqual(block(top), bin, 'config --help is the shared one');
   const help = spawnSync(join(root, 'bin/cub-config'), ['values', '--help'], { encoding: 'utf8' }).stdout;
   assert.deepEqual(block(help), bin, '--help says the same');
   for (const option of ['--values | -f', '--namespace', '--release', '--max-renders']) assert.ok(bin[0].includes(option), option);

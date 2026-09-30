@@ -1,10 +1,11 @@
 # Match a GPU workload with supplied facts
 
-Requires the implementation in [PR #16](https://github.com/confighub/cub-workshop/pull/16),
-tested at revision `31202099f41dbd8db51c2f9bd9d87a2be714091d` (proposed plugin
-version 0.6.19). This task is not supported by older plugin installations.
+This task needs workshop plugin 0.6.19 or newer, the first version with `cub app match`.
+Older installations do not support it. The command was added in
+[PR #16](https://github.com/confighub/cub-workshop/pull/16) and the task was tested at
+revision `31202099f41dbd8db51c2f9bd9d87a2be714091d`.
 
-Install that reviewed plugin revision and prepare a new directory with `model.yaml`
+Install that reviewed plugin revision or a newer release, and prepare a new directory with `model.yaml`
 and `nodes.yaml` from its `examples/match/` directory. The model is retained Catalog
 configuration; the Node snapshot is illustrative, not a real target observation.
 Setup and task execution are separate. An isolated trial uses a separate CUB_CONFIG
