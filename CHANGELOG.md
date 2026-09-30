@@ -3,6 +3,15 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
+## Unreleased
+
+- `cub stack upload --space-prefix` names each Component `<prefix>-<component>` as
+  well as its Spaces, so an upload into a shared organization creates no bare
+  Component such as `cert-manager`. Space names are unchanged. A stack uploaded
+  with a prefix by 0.6.54 or earlier moves over in place when rerun, leaving its
+  old bare Components empty for `cub component delete`
+  (`proofs/stack-prefix-live-2026-09-30`, #88).
+
 ## 0.6.54
 
 - `cub config examples` knows the Kubara kind lab: "bring my Kubara platform

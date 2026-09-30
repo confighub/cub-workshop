@@ -1,0 +1,45 @@
+
+Stack: kubara-m6check  —  The platform Kubara generated, 2 cluster(s): each service one component, rendered as Kubara's ApplicationSets deliver it on every cluster that enables it.
+Clusters: hub, spoke. Checking each component's base; --cluster <name> checks what one cluster runs
+Resolving 3 components: bootstrap-crds, web, argo-cd
+
+Check
+  [PASS] no resource conflicts across components (6 objects)
+  [PASS] CRD ordering: 1 CRDs are delivered before the 1 custom resources that need them
+  [PASS] served API versions: 1 custom resource(s) match their bundled CRD; target availability is not checked
+  [PASS] no admission webhooks need a certificate
+  [WARN] namespaces: 0 created, 2 must already exist (argocd, webapp)
+  => CHECKED
+
+Uploading (live)
+
+  cub variant upload --component cw88a-0930-bootstrap-crds --variant base --owner kubara-m6check --space-pattern template:{{.Component.Slug}} $LAB/m6check/confighub/renders/hub/bootstrap-crds.yaml
+  cub variant create hub cw88a-0930-bootstrap-crds --stage dev --space-pattern template:{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component cw88a-0930-bootstrap-crds --variant hub --owner kubara-m6check --stage dev --space-pattern template:{{.Component.Slug}}-{{.Labels.Variant}} $LAB/m6check/confighub/renders/hub/bootstrap-crds.yaml
+  cub variant create spoke cw88a-0930-bootstrap-crds --stage prod --space-pattern template:{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component cw88a-0930-bootstrap-crds --variant spoke --owner kubara-m6check --stage prod --space-pattern template:{{.Component.Slug}}-{{.Labels.Variant}} $LAB/m6check/confighub/renders/spoke/bootstrap-crds.yaml
+  cub variant upload --component cw88a-0930-web --variant base --owner kubara-m6check --space-pattern template:{{.Component.Slug}} $LAB/m6check/confighub/renders/hub/web.yaml
+  cub variant create hub cw88a-0930-web --stage dev --space-pattern template:{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component cw88a-0930-web --variant hub --owner kubara-m6check --stage dev --space-pattern template:{{.Component.Slug}}-{{.Labels.Variant}} $LAB/m6check/confighub/renders/hub/web.yaml
+  cub variant create spoke cw88a-0930-web --stage prod --space-pattern template:{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component cw88a-0930-web --variant spoke --owner kubara-m6check --stage prod --space-pattern template:{{.Component.Slug}}-{{.Labels.Variant}} $LAB/m6check/confighub/renders/spoke/web.yaml
+  cub variant upload --component cw88a-0930-argo-cd --variant base --owner kubara-m6check --space-pattern template:{{.Component.Slug}} $LAB/m6check/confighub/renders/hub/argo-cd.yaml
+  cub variant create hub cw88a-0930-argo-cd --stage dev --space-pattern template:{{.Component.Slug}}-{{.Labels.Variant}}
+  cub variant upload --component cw88a-0930-argo-cd --variant hub --owner kubara-m6check --stage dev --space-pattern template:{{.Component.Slug}}-{{.Labels.Variant}} $LAB/m6check/confighub/renders/hub/argo-cd.yaml
+
+  cw88a-0930-bootstrap-crds... ok
+  cw88a-0930-bootstrap-crds → hub... already cloned
+  cw88a-0930-bootstrap-crds hub... ok
+  cw88a-0930-bootstrap-crds → spoke... already cloned
+  cw88a-0930-bootstrap-crds spoke... ok
+  cw88a-0930-web... ok
+  cw88a-0930-web → hub... already cloned
+  cw88a-0930-web hub... ok
+  cw88a-0930-web → spoke... already cloned
+  cw88a-0930-web spoke... ok
+  cw88a-0930-argo-cd... ok
+  cw88a-0930-argo-cd → hub... already cloned
+  cw88a-0930-argo-cd hub... ok
+
+  Bases uploaded, and each cluster's variant cloned from its base. Links and releases continue with the generic cub verbs.
+

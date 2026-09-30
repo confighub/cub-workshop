@@ -116,6 +116,9 @@ test('saysNotFound reads both of cub not-found wordings and nothing else', () =>
 test('--space-prefix names Spaces by the Component slug the hub can render', () => {
   const result = spawnSync(process.execPath, [join(root, 'bin', 'cub-stack'), 'upload', 'web-tiny', '--space-prefix', 'lab'], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /--space-pattern template:lab-\{\{\.Component\.Slug\}\}/);
+  assert.match(result.stdout, /--component lab-frontend --variant base --owner web-tiny --space-pattern template:\{\{\.Component\.Slug\}\} /);
   assert.doesNotMatch(result.stdout, /Labels\.Component/);
+  // The prefix is on the Component too, so a shared organization gets no bare
+  // Components (#88), and the Space name is the same <prefix>-<component>.
+  assert.doesNotMatch(result.stdout, /--component frontend /);
 });
