@@ -10,7 +10,7 @@ cub plugin install confighub/cub-workshop
 ```
 
 To pin a version, install its release tag, such as
-`cub plugin install confighub/cub-workshop@v0.6.50`.
+`cub plugin install confighub/cub-workshop@v0.6.51`.
 
 Requires `node`, `oras`, and `cub` on the PATH. Some commands need more: `helm` for
 `cub config values` and `cub stack from-kubara`, `cosign` only for `--sign` and
