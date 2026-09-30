@@ -110,3 +110,12 @@ test('saysNotFound reads both of cub not-found wordings and nothing else', () =>
     ['Failed: authentication problem. Try logging in (again).', 'space', 'absent', false],
   ]) assert.equal(saysNotFound(text, kind, slug), expected, text);
 });
+
+// A live hub renders a new Space's slug before it carries a Component label, so
+// the prefix pattern must read .Component.Slug; .Labels.Component is a 400.
+test('--space-prefix names Spaces by the Component slug the hub can render', () => {
+  const result = spawnSync(process.execPath, [join(root, 'bin', 'cub-stack'), 'upload', 'web-tiny', '--space-prefix', 'lab'], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /--space-pattern template:lab-\{\{\.Component\.Slug\}\}/);
+  assert.doesNotMatch(result.stdout, /Labels\.Component/);
+});
