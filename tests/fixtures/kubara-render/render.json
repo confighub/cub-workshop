@@ -1,0 +1,187 @@
+{
+  "apiVersion": "kubara.confighub.com/v1alpha1",
+  "kind": "KubaraRender",
+  "generator": "cub kubara render test",
+  "source": {
+    "workDir": "testdata/platform",
+    "configSha256": "sha256:fb842f67e28b91ea47730a88d85de1f8531afe8b0fe996371dcd0bb189d61f20",
+    "bootstrapCatalog": "oci://ghcr.io/kubara-io/catalogs/bootstrap:3.0.0"
+  },
+  "secretValues": "emptied",
+  "clusters": [
+    {
+      "name": "hub",
+      "type": "hub",
+      "stage": "dev",
+      "catalogs": [
+        "oci://ghcr.io/kubara-io/catalogs/general:3.0.0"
+      ],
+      "enabled": [
+        "web"
+      ],
+      "services": [
+        {
+          "name": "bootstrap-crds",
+          "release": "bootstrap-crds",
+          "namespace": "kube-system",
+          "delivery": "bootstrap",
+          "chart": {
+            "name": "bootstrap-crds",
+            "version": "1.0.0",
+            "path": "platform-components/helm/bootstrap-crds"
+          },
+          "upstream": [],
+          "valuesFiles": [],
+          "apiVersions": [],
+          "file": "hub/bootstrap-crds/objects.yaml",
+          "objects": 1,
+          "leftOut": 1,
+          "sha256": "sha256:6dafbde972e6315eab31a0e79a25ace4d5b66e2bf086e9b37d8020c8ae7dcfbc",
+          "secrets": []
+        },
+        {
+          "name": "argo-cd",
+          "release": "argocd",
+          "namespace": "argocd",
+          "delivery": "applicationset",
+          "chart": {
+            "name": "argo-cd",
+            "version": "1.8.0",
+            "path": "platform-components/helm/argo-cd"
+          },
+          "upstream": [],
+          "valuesFiles": [
+            "platform-configs/hub/helm/argo-cd/values.generated.yaml"
+          ],
+          "apiVersions": [
+            "example.com/v1",
+            "example.com/v1/Widget"
+          ],
+          "file": "hub/argo-cd/objects.yaml",
+          "objects": 1,
+          "leftOut": 0,
+          "sha256": "sha256:1a0a895f8431e48d7ff91c4c831dd537e56b387a08a4ae83ed6d955ae34aced7",
+          "secrets": []
+        },
+        {
+          "name": "web",
+          "release": "webapp",
+          "namespace": "webapp",
+          "delivery": "applicationset",
+          "chart": {
+            "name": "web",
+            "version": "0.3.1",
+            "path": "platform-components/helm/web"
+          },
+          "upstream": [
+            {
+              "name": "greeter",
+              "version": "1.2.3",
+              "repository": "https://charts.example.com"
+            }
+          ],
+          "valuesFiles": [
+            "platform-configs/hub/helm/web/values.generated.yaml",
+            "platform-configs/hub/helm/web/additional-values.yaml",
+            "platform-configs/hub/helm/web/values-zz.yaml"
+          ],
+          "apiVersions": [
+            "example.com/v1",
+            "example.com/v1/Widget"
+          ],
+          "file": "hub/web/objects.yaml",
+          "objects": 5,
+          "leftOut": 0,
+          "sha256": "sha256:3c025ce360fbb4dc00e255b31f9d288532d26945954aaebf94e685273c1a0fa7",
+          "secrets": [
+            "Secret webapp/webapp-admin (1 value)"
+          ]
+        }
+      ],
+      "shared": [
+        {
+          "object": "apiextensions.k8s.io/v1|CustomResourceDefinition||widgets.example.com",
+          "services": [
+            "bootstrap-crds",
+            "web"
+          ],
+          "owner": "bootstrap-crds"
+        }
+      ]
+    },
+    {
+      "name": "spoke",
+      "type": "spoke",
+      "stage": "prod",
+      "catalogs": [
+        "oci://ghcr.io/kubara-io/catalogs/general:3.0.0"
+      ],
+      "enabled": [
+        "web"
+      ],
+      "services": [
+        {
+          "name": "bootstrap-crds",
+          "release": "bootstrap-crds",
+          "namespace": "kube-system",
+          "delivery": "bootstrap",
+          "chart": {
+            "name": "bootstrap-crds",
+            "version": "1.0.0",
+            "path": "platform-components/helm/bootstrap-crds"
+          },
+          "upstream": [],
+          "valuesFiles": [],
+          "apiVersions": [],
+          "file": "spoke/bootstrap-crds/objects.yaml",
+          "objects": 1,
+          "leftOut": 1,
+          "sha256": "sha256:6dafbde972e6315eab31a0e79a25ace4d5b66e2bf086e9b37d8020c8ae7dcfbc",
+          "secrets": []
+        },
+        {
+          "name": "web",
+          "release": "webapp",
+          "namespace": "webapp",
+          "delivery": "applicationset",
+          "chart": {
+            "name": "web",
+            "version": "0.3.1",
+            "path": "platform-components/helm/web"
+          },
+          "upstream": [
+            {
+              "name": "greeter",
+              "version": "1.2.3",
+              "repository": "https://charts.example.com"
+            }
+          ],
+          "valuesFiles": [
+            "platform-configs/spoke/helm/web/values.generated.yaml"
+          ],
+          "apiVersions": [
+            "example.com/v1",
+            "example.com/v1/Widget"
+          ],
+          "file": "spoke/web/objects.yaml",
+          "objects": 5,
+          "leftOut": 0,
+          "sha256": "sha256:d856b36e64a5ffae35d342f232be107678b8ef57283fe5b7d8eba52837bbe8cb",
+          "secrets": [
+            "Secret webapp/webapp-admin (1 value)"
+          ]
+        }
+      ],
+      "shared": [
+        {
+          "object": "apiextensions.k8s.io/v1|CustomResourceDefinition||widgets.example.com",
+          "services": [
+            "bootstrap-crds",
+            "web"
+          ],
+          "owner": "bootstrap-crds"
+        }
+      ]
+    }
+  ]
+}

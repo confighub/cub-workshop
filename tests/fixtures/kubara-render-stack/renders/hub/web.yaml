@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: webapp-admin
+  namespace: webapp
+stringData:
+  password: ''
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webapp-greeting
+  namespace: webapp
+data:
+  hello: world
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webapp-settings
+  namespace: webapp
+data:
+  replicas: '2'
+  level: last
+---
+apiVersion: example.com/v1
+kind: Widget
+metadata:
+  name: webapp-widget
+  namespace: webapp

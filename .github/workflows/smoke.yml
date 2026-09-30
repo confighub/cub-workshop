@@ -56,10 +56,13 @@ jobs:
               echo "$broken refused as designed"
             fi
           done
-      - name: from-kubara converts a Kubara platform into one stack that checks, per cluster too
+      # cub kubara render renders the platform; here a fake cub writes the golden
+      # render kubara-confighub publishes, so this lane needs no cub and no helm.
+      - name: from-kubara builds one stack from cub kubara render that checks, per cluster too
         run: |
           rm -rf /tmp/kubara-out
-          node bin/cub-stack from-kubara tests/fixtures/kubara-platform --out /tmp/kubara-out
+          node tests/kubara-fake-cub.mjs /tmp/fake-cub
+          PATH=/tmp/fake-cub:$PATH node bin/cub-stack from-kubara tests/fixtures/kubara-platform --out /tmp/kubara-out
           node bin/cub-stack check /tmp/kubara-out/stack.yaml
           node bin/cub-stack check /tmp/kubara-out/stack.yaml --cluster spoke
       - name: upload plans the ConfigHub writes and makes none

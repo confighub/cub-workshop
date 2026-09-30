@@ -15,7 +15,8 @@ To pin a version, install its release tag, such as
 Requires `node`, `oras`, and `cub` on the PATH, on Linux or macOS (Windows is not
 supported). CI tests Node 22, the current LTS; Node 25 can hang when a command exits, so
 prefer Node 22. The plugin is tested with cub 0.6.8. Some commands need more: `helm`
-for `cub config values` and `cub stack from-kubara`, `cosign` only for `--sign` and
+for `cub config values`, `cub kubara` v0.2.3 or later (`cub plugin install
+confighub/kubara-confighub`) and `helm` for `cub stack from-kubara`, `cosign` only for `--sign` and
 `--key`, and `flux` with its schema plugin for the optional schema check. A command
 that needs a tool you do not have stops and names it. Without `node` the shell
 reports `env: node: No such file or directory`; install Node and run the command again.
@@ -235,6 +236,11 @@ cub stack sandbox shop-platform --out oci://registry.example.com/team/shop-platf
 cub stack publish shop-platform --out oci://registry.example.com/team/shop-platform:v1        # the index of images, the catalog form
 ```
 
+A platform stack, whose components carry per-cluster variants, publishes every
+cluster's variant by digest. `publish` checks the bases and then each cluster's
+composition, as `check --cluster` would, and refuses before it pushes anything if one
+cluster does not check out; each cluster's verdict is attached with the manifest.
+
 A component named only by `bundle: oci://…@sha256:…` needs no local receipt when
 one is attached in the registry; the resolver discovers it. A published index is a
 stack you can check or sandbox by digest: `cub stack check oci://…@sha256:<index>`.
@@ -362,17 +368,27 @@ cub stack check ./my-kubara/confighub/stack.yaml
 The whole platform is one stack. Each service is one component, and each cluster in
 Kubara's `config.yaml` that enables it is a variant of that component. The base is the
 hub's render where the hub runs the service, and otherwise the first cluster's.
+`from-kubara` renders nothing itself. It runs `cub kubara render` from
+[kubara-confighub](https://github.com/confighub/kubara-confighub), the one renderer of a
+Kubara platform as Kubara delivers it, and assembles the stack from what that writes.
 Each service is rendered the way Kubara's hub ApplicationSets deliver it: their release
 name and namespace, their values files in their order, and only the services that
-cluster enables, plus Argo CD on a hub. `bootstrap-crds` contributes its CRDs alone, and
-a CRD that a chart also carries is kept once, under `bootstrap-crds`, so each
-object has one owner. `--app` adds a shipped app as a workload component, and `--out`
-changes the output directory, which defaults to `confighub/` in the work directory.
+cluster enables, plus Argo CD on a hub. `bootstrap-crds` contributes its CRDs alone.
+An object two services render, such as a CRD a chart also carries, is kept once, with
+the owner the render names (`bootstrap-crds` for those CRDs), so each object has one
+owner. `--app` adds a shipped app as a workload component, and `--out` changes the
+output directory, which defaults to `confighub/` in the work directory. The render stays
+beside the stack in `kubara-render/`, whose `render.json` records each service's
+chart, values files and digest.
 
-It needs `helm`. If a chart's dependencies are not already under `charts/`, it fetches
-them, which needs network access. It stops if a service sets its own sources, because
-it cannot then render that service as Kubara delivers it. What it writes is a
-composition. It does not create an Argo CD Application, contact a cluster or show
+A Secret reaches the stack with its keys and without its values: a stack is published
+and uploaded, and a chart can make up a credential when it renders. `from-kubara`
+names each Secret it emptied; the values belong in each cluster's secret store.
+
+It needs `cub kubara` v0.2.3 or later and `helm`; without them it stops and says how to
+install them (`cub plugin install confighub/kubara-confighub`). If a chart's dependencies
+are not already under `charts/`, the render fetches them, which needs network access.
+What it writes is a composition. It does not create an Argo CD Application, contact a cluster or show
 that Kubara would sync it.
 
 To read one cluster's platform, narrow with `--cluster`. On `from-kubara` it writes

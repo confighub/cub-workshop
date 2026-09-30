@@ -4,3 +4,4 @@ bootstrapValues:
       apps:
         argocd: {name: argocd, path: argo-cd, namespace: argocd}
         web: {name: webapp, path: web}
+        unused: {name: unused, path: unused}

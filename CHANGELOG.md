@@ -3,6 +3,29 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
+## Unreleased
+
+### Kubara
+- `cub stack from-kubara` renders through `cub kubara render` (kubara-confighub
+  v0.2.3 or later), the one renderer of a platform as Kubara delivers it, and
+  builds the stack from its `render.json` and object files. Its own helm
+  rendering is gone. It needs `cub kubara`; without it, or with an older one,
+  it stops and names `cub plugin install confighub/kubara-confighub` (#84).
+- A shared object stays with the owner the render names and leaves every other
+  service. The render is kept beside the stack in `kubara-render/` (#84).
+- A Secret reaches the stack with its keys and without its values, and
+  `from-kubara` names each one it emptied. Before, the stack carried the
+  values the chart rendered (#84).
+- Proven on real Kubara v0.16 output and a hosted organization
+  (`proofs/from-kubara-live-2026-09-30`): the stack checks whole and per
+  cluster, publishes, and uploads twice with the rerun writing nothing; its
+  364 objects match what the old renderer wrote, Secrets compared by keys (#84).
+
+### Stacks
+- `cub stack publish` checks each cluster's composition as well as the bases,
+  refuses before it pushes anything when one cluster does not check out, and
+  attaches each cluster's verdict to the index record (#84).
+
 ## 0.6.52
 
 - `sandbox` no longer says Ready for a stack that upload would refuse, and

@@ -1,4 +1,4 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: not-enabled-on-any-cluster
+  name: unused

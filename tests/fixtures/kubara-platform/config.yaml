@@ -6,9 +6,10 @@ clusters:
     type: hub
     argocd: {selfManaged: enabled}
     catalogs: [oci://ghcr.io/kubara-io/catalogs/general:3.0.0]
-    services: {web: {status: enabled}}
+    services: {web: {status: enabled}, unused: {status: disabled}}
   - name: spoke
     stage: prod
     type: spoke
+    argocd: {selfManaged: disabled}
     catalogs: [oci://ghcr.io/kubara-io/catalogs/general:3.0.0]
     services: {web: {status: enabled}, unused: {status: disabled}}

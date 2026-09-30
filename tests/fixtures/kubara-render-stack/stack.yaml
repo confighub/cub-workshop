@@ -1,0 +1,44 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Stack
+metadata:
+  name: kubara-platform
+spec:
+  description: >-
+    The platform Kubara generated, 2 cluster(s): each service one component, rendered as Kubara's ApplicationSets
+    deliver it on every cluster that enables it.
+  source:
+    kubara: <work-dir>
+    clusters:
+      - hub
+      - spoke
+  components:
+    - name: bootstrap-crds
+      plane: mgmt
+      order: 0
+      render: renders/hub/bootstrap-crds.yaml
+      variants:
+        - cluster: hub
+          stage: dev
+          render: renders/hub/bootstrap-crds.yaml
+        - cluster: spoke
+          stage: prod
+          render: renders/spoke/bootstrap-crds.yaml
+    - name: web
+      plane: mgmt
+      order: 1
+      render: renders/hub/web.yaml
+      variants:
+        - cluster: hub
+          stage: dev
+          render: renders/hub/web.yaml
+        - cluster: spoke
+          stage: prod
+          render: renders/spoke/web.yaml
+    - name: argo-cd
+      plane: mgmt
+      order: 2
+      render: renders/hub/argo-cd.yaml
+      variants:
+        - cluster: hub
+          stage: dev
+          render: renders/hub/argo-cd.yaml
