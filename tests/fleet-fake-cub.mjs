@@ -48,4 +48,5 @@ export function runFleet(argv, { rules = [], files = {}, tools = {}, env = {} } 
 // The cub message for an absent entity, as the CLI prints it.
 export const missing = (entity) => ({ err: `Failed: ${entity} not found\n`, code: 1 });
 // Every Space the call names reads as absent.
-export const noSpaces = { when: '^space get', err: 'Failed: space {2} not found\n', code: 1 };
+// The wording a current hub gives; tests/fleet-lookup-errors.test.mjs keeps the older one.
+export const noSpaces = { when: '^space get', err: 'Failed: space "{2}" not found in any space\n', code: 1 };
