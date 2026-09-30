@@ -23,6 +23,7 @@ test('user problems reach a pinned guide and preserve eligibility limits', () =>
     'app settings provider': 'app-only-provider-config',
     'layered platform': 'layered-platform-recipe',
     'GPU recipe': 'gpu-layered-recipe',
+    'bring my Kubara platform into ConfigHub': 'kubara-kind-lab',
   };
   for (const [request, wanted] of Object.entries(cases)) {
     const candidates = findExamples(request);

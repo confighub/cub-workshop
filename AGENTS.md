@@ -1,8 +1,8 @@
 # Choosing a worked example
 
 For a request about what a first app looks like, an existing chart, Argo CD,
-Flux, app settings, a platform, or GPU configuration, start with the packaged
-public example snapshot:
+Flux, app settings, a platform, a Kubara platform, or GPU configuration, start
+with the packaged public example snapshot:
 
 ```sh
 cub config examples 'the user problem in plain words' --json
