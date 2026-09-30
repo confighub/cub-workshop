@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { spaceExists } from '../lib/cub-lookup.mjs';
+import { saysNotFound, spaceExists } from '../lib/cub-lookup.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 
 // A fake cub that logs its argv. An upload named in TRIAL_FAIL fails the way a
@@ -96,4 +96,17 @@ test('spaceExists treats only an explicit not-found as absence', () => {
       else assert.equal(spaceExists(slug), expected);
     }
   } finally { process.env = saved; trial.cleanup(); }
+});
+
+// The lines a current hub prints, and the older form, both read as absence.
+test('saysNotFound reads both of cub not-found wordings and nothing else', () => {
+  for (const [text, kind, slug, expected] of [
+    ['Failed: space "pr74-karpenter" not found in any space', 'space', 'pr74-karpenter', true],
+    ['Failed: unit "nosuch-unit" not found in space c34c54b9-e72f-4684-b489-0d0ef868ed1d', 'unit', 'nosuch-unit', true],
+    ['Failed: link "nosuch-link" not found in space c34c54b9-e72f-4684-b489-0d0ef868ed1d', 'link', 'nosuch-link', true],
+    ['Failed: space absent not found', 'space', 'absent', true],
+    ['Failed: space "absent-2" not found in any space', 'space', 'absent', false],
+    ['Failed: permission denied', 'space', 'absent', false],
+    ['Failed: authentication problem. Try logging in (again).', 'space', 'absent', false],
+  ]) assert.equal(saysNotFound(text, kind, slug), expected, text);
 });
