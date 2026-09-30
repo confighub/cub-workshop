@@ -8,7 +8,9 @@ Usage:
   cub config examples [problem words] [--json] [--all]
   cub config check <name | local.yaml> [--images] [--exit-code]
   cub config diff <before.yaml> <after.yaml> [--summary] [--json] [--out result.json] [--exit-code]
-  cub config values <chart> --values my-values.yaml [--version X] [--repo URL] [--json] [--out result.json] [--render-out candidate.yaml] [--exit-code]
+  cub config values <chart> (--values | -f) my-values.yaml [--version X] [--repo URL] [--namespace ns] [--release name] [--max-renders N] [--json] [--out result.json] [--render-out candidate.yaml] [--exit-code]
+      -f is short for --values. --namespace (default "default") and --release (default "release") are what the chart renders as.
+      --max-renders N (default 60) caps the renders spent checking values; a value past it is NOT CHECKED, and --exit-code fails on it.
 
 Roles: cache, database, ingress, certificates, metrics, logs, secrets, queue, gpu
 Role discovery returns candidates for inspection; it does not select one or make runtime claims.
@@ -31,8 +33,9 @@ const lib = (file) => import(new URL(`../lib/${file}`, import.meta.url).href);
   : verb === "values"
     ? lib("config-values.mjs").then(({ runValues }) => { process.exitCode = runValues(process.argv.slice(3)); })
     : lib("config.mjs")).catch((error) => {
-  // A failure reads as one line, never a stack trace.
-  const text = String(error.stderr ?? error.message).trim().split("\n").filter(Boolean).pop() ?? "unknown error";
+  // A failure reads as one line, never a stack trace. With no message, name the code or error type.
+  const kind = [error?.code, error?.name].find((value) => value && value !== "Error");
+  const text = String(error?.stderr ?? error?.message ?? (typeof error === "string" ? error : "")).trim().split("\n").filter(Boolean).pop() ?? `unknown error${kind ? ` (${kind})` : ""}`;
   console.error(text.startsWith("Failed") ? text : `Failed: ${text}`);
-  process.exit(error.exitCode ?? (verb === "diff" || verb === "values" ? 2 : 1));
+  process.exit(error?.exitCode ?? (verb === "diff" || verb === "values" ? 2 : 1));
 });

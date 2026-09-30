@@ -20,8 +20,8 @@
         "fullVerdict": { "type": "string", "minLength": 1, "description": "Historical optional path; cub stack does not read it." },
         "components": { "type": "array", "items": { "$ref": "#/$defs/component" } },
         "source": {
-          "type": "object", "additionalProperties": false, "required": ["kubara", "cluster"],
-          "properties": { "kubara": { "type": "string", "minLength": 1 }, "cluster": { "type": "string", "minLength": 1 } }
+          "type": "object", "additionalProperties": false, "required": ["kubara"],
+          "properties": { "kubara": { "type": "string", "minLength": 1 }, "cluster": { "type": "string", "minLength": 1 }, "clusters": { "type": "array", "items": { "type": "string", "minLength": 1 } } }
         },
         "bindings": {
           "type": "object", "additionalProperties": false,
@@ -43,12 +43,22 @@
         "bundle": { "type": "string", "pattern": "^oci://[^\\s@]+@sha256:[0-9a-f]{64}$" },
         "receipt": { "type": "string", "minLength": 1 },
         "render": { "type": "string", "minLength": 1 },
-        "authored": { "type": "string", "minLength": 1 }
+        "authored": { "type": "string", "minLength": 1 },
+        "variants": { "type": "array", "items": { "$ref": "#/$defs/variant" } }
       },
       "oneOf": [
-        { "required": ["bundle"], "not": { "anyOf": [{ "required": ["render"] }, { "required": ["authored"] }] } },
+        { "required": ["bundle"], "not": { "anyOf": [{ "required": ["render"] }, { "required": ["authored"] }, { "required": ["variants"] }] } },
         { "required": ["render"], "not": { "anyOf": [{ "required": ["bundle"] }, { "required": ["authored"] }, { "required": ["receipt"] }] } },
-        { "required": ["authored"], "not": { "anyOf": [{ "required": ["bundle"] }, { "required": ["render"] }, { "required": ["receipt"] }] } }
+        { "required": ["authored"], "not": { "anyOf": [{ "required": ["bundle"] }, { "required": ["render"] }, { "required": ["receipt"] }, { "required": ["variants"] }] } }
+      ]
+    },
+    "variant": {
+      "description": "One cluster's render of a rendered component, as a local render or, in a published index, a bundle digest. The component's own render is the base each cluster's variant is created from.",
+      "type": "object", "additionalProperties": false, "required": ["cluster"],
+      "properties": { "cluster": { "type": "string", "minLength": 1 }, "stage": { "type": "string", "minLength": 1 }, "render": { "type": "string", "minLength": 1 }, "bundle": { "type": "string", "pattern": "^oci://[^\\s@]+@sha256:[0-9a-f]{64}$" } },
+      "oneOf": [
+        { "required": ["render"], "not": { "required": ["bundle"] } },
+        { "required": ["bundle"], "not": { "required": ["render"] } }
       ]
     },
     "pathBinding": {

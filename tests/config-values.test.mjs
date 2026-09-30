@@ -273,6 +273,80 @@ test('against a real chart: a typo, a switched-off setting, a default, a free-fo
   } finally { rmSync(work, { recursive: true, force: true }); }
 });
 
+test('past the render cap a value is NOT CHECKED, and the report names the cap that would check it', () => {
+  const render = (values) => Buffer.from(JSON.stringify({ apiVersion: 'v1', kind: 'ConfigMap', metadata: { name: 'demo' }, data: { all: JSON.stringify(values) } }));
+  const report = diagnose({ values: { a: 1, b: 2, c: 3, d: 4 }, defaults: {}, render, limit: 2 });
+  assert.deepEqual(report.values.map((value) => value.verdict), ['APPLIED', 'APPLIED', 'NOT CHECKED', 'NOT CHECKED'], 'the first two are rendered, the rest are not');
+  assert.equal(report.summary.notChecked, 2);
+  assert.deepEqual(report.renders, { limit: 2, needed: 4, presetsNotChecked: 0 });
+  const all = diagnose({ values: { a: 1, b: 2, c: 3, d: 4 }, defaults: {}, render, limit: report.renders.needed });
+  assert.equal(all.summary.notChecked, 0, 'the number the report names is enough');
+  assert.equal(all.renders.needed, 4);
+});
+
+test('a preset the cap skipped raises the number needed', () => {
+  const presetDefaults = { master: { resourcesPreset: 'nano', resources: {} } };
+  const render = (values) => Buffer.from(JSON.stringify({ apiVersion: 'v1', kind: 'ConfigMap', metadata: { name: 'demo' }, data: { a: String(values.a), preset: values.master?.resourcesPreset ?? 'nano' } }));
+  const capped = diagnose({ values: { a: 1 }, defaults: { ...presetDefaults, a: 0 }, render, limit: 1 });
+  assert.equal(capped.summary.notChecked, 0);
+  assert.deepEqual(capped.renders, { limit: 1, needed: 2, presetsNotChecked: 1 });
+});
+
+test('--max-renders: NOT CHECKED fails --exit-code, names its remedy, and raising the cap checks every value', { skip: !hasHelm }, () => {
+  const work = mkdtempSync(join(tmpdir(), 'cub-values-cap-'));
+  try {
+    const file = join(work, 'values.yaml');
+    // Four values that each change the render, so only the cap can fail the gate.
+    writeFileSync(file, 'replicaCount: 3\npodAnnotations:\n  team: shop\n  tier: gold\n  owner: web\n');
+    const values = (...more) => spawnSync(join(root, 'bin/cub-config'), ['values', chart, '-f', file, ...more], { encoding: 'utf8' });
+
+    const capped = values('--max-renders', '2', '--exit-code');
+    assert.equal(capped.status, 1, 'a gate must not pass on values it did not check');
+    assert.match(capped.stdout, /\[APPLIED\]\s+replicaCount/);
+    assert.match(capped.stdout, /\[NOT CHECKED\] podAnnotations\.tier\s+over the limit of 2 renders; rerun with --max-renders 4/);
+    assert.match(capped.stdout, /2 of 4 values were NOT CHECKED \(limit of 2 renders\), so --exit-code fails\. Rerun with --max-renders 4 to check them all\./);
+    assert.doesNotMatch(capped.stdout, /Every value you set changed the result/, 'unchecked values are not reported as fine');
+    assert.equal(values('--max-renders', '2').status, 0, 'without --exit-code the report is advice');
+
+    const json = JSON.parse(values('--max-renders', '2', '--json').stdout);
+    assert.deepEqual(json.values.map((value) => value.verdict), ['APPLIED', 'APPLIED', 'NOT CHECKED', 'NOT CHECKED']);
+    assert.equal(json.summary.notChecked, 2);
+    assert.deepEqual(json.renders, { limit: 2, needed: 4, presetsNotChecked: 0 });
+
+    const raised = values('--max-renders', '4', '--exit-code');
+    assert.equal(raised.status, 0, raised.stdout);
+    assert.doesNotMatch(raised.stdout, /NOT CHECKED/);
+    assert.match(raised.stdout, /Every value you set changed the result or matches the default\./);
+
+    const usual = values('--exit-code');
+    assert.equal(usual.status, 0, 'the default cap of 60 is unchanged');
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
+});
+
+test('--max-renders wants a positive whole number, before anything is read or rendered', () => {
+  for (const bad of ['0', '-1', '2.5', 'many', '1e3', '']) {
+    const run = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', join(root, 'no-such-values.yaml'), '--max-renders', bad], { encoding: 'utf8' });
+    assert.equal(run.status, 2, `--max-renders ${JSON.stringify(bad)}`);
+    assert.match(run.stderr, /--max-renders requires a positive whole number of renders/, `--max-renders ${JSON.stringify(bad)}`);
+  }
+  const missing = spawnSync(join(root, 'bin/cub-config'), ['values', chart, '--values', join(root, 'no-such-values.yaml'), '--max-renders'], { encoding: 'utf8' });
+  assert.equal(missing.status, 2);
+  assert.match(missing.stderr, /--max-renders requires a positive whole number/);
+});
+
+test('the values help in bin/cub-config, lib/config.mjs and --help names every option, the same way', () => {
+  const block = (text) => text.replace(/^usage: /m, '').split('\n').filter((line) => /^\s*cub config values |^\s+-f is short|^\s+--max-renders N/.test(line)).map((line) => line.trim());
+  const bin = block(readFileSync(join(root, 'bin/cub-config'), 'utf8'));
+  const lib = block(readFileSync(join(root, 'lib/config.mjs'), 'utf8'));
+  assert.equal(bin.length, 3);
+  assert.deepEqual(lib, bin, 'the two top-level usages are identical');
+  const help = spawnSync(join(root, 'bin/cub-config'), ['values', '--help'], { encoding: 'utf8' }).stdout;
+  assert.deepEqual(block(help), bin, '--help says the same');
+  for (const option of ['--values | -f', '--namespace', '--release', '--max-renders']) assert.ok(bin[0].includes(option), option);
+});
+
 test('a missing values file or chart is a usage error', () => {
   const run = spawnSync(join(root, 'bin/cub-config'), ['values', chart], { encoding: 'utf8' });
   assert.equal(run.status, 2);
