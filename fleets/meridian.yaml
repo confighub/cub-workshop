@@ -7,15 +7,25 @@ spec:
   description: "A meridian-shaped fleet: eight teams, nineteen components, ten regional clusters. Platform components come from published certified bundles; the applications are authored. Generated entirely through the governed verbs."
   clusters:
     - name: ap-northeast-dev1
+      labels: {phase: secondary}
     - name: ap-southeast-dev1
+      labels: {phase: secondary}
     - name: eu-central-dev1
+      labels: {phase: primary}
     - name: eu-central-dev2
+      labels: {phase: secondary}
     - name: eu-central-logistics-dev1
+      labels: {phase: primary}
     - name: eu-central-payments-dev1
+      labels: {phase: primary}
     - name: eu-north-dev1
+      labels: {phase: canary}
     - name: us-east-dev1
+      labels: {phase: primary}
     - name: us-west-dev1
+      labels: {phase: primary}
     - name: sa-east-dev1
+      labels: {phase: canary}
   placements:
     - app: cert-manager
       team: platform-team
@@ -32,6 +42,7 @@ spec:
       bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-external-dns-external-dns-1-21-1-default@sha256:2c1f356182245164e26f6107054aeb96be0f5a690a778ea06a094f795f034c25"
       receipt: receipts/catalog/external-dns-1.21.1-default.yaml
       clusters: ["*"]
+      waves: [canary, secondary, primary]
     - app: external-secrets
       team: platform-team
       bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-external-secrets-external-secrets-2-8-0-default@sha256:07c59422c14c9d8eb9a7aff9bd41b747ed306a38b65ef872bb8f00ab3b6dfa81"
