@@ -9,7 +9,7 @@ as the manual command:
 cub stack check platform/stack.yaml --json
 ```
 
-The workflow pins Workshop v0.6.53 by commit and runs its Node entrypoint, so it
+The workflow pins Workshop v0.6.54 by commit and runs its Node entrypoint, so it
 does not need a ConfigHub account, cluster credentials or a global cub install.
 It supports local `render` and `authored` component files. OCI bundle sources
 also need ORAS and any registry access; configure those separately before using
