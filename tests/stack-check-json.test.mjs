@@ -16,7 +16,7 @@ test('JSON has no prose prefix, matches the retained sandbox bytes and preserves
     assert.equal(result.status, 0, result.stderr);
     const body = JSON.parse(result.stdout);
     assert.equal(body.kind, 'StackCertificationResult');
-    assert.equal(body.certified, true);
+    assert.equal(body.checked, true);
     assert.equal(body.scope.targetAvailability, 'not-checked');
     assert.equal(body.scope.applicationHealth, 'not-checked');
     assert.ok(body.checks.some(check => check.result === 'PASS'));
@@ -34,7 +34,7 @@ test('a refused composition is valid JSON with nonzero exit and the actual findi
   const result = run('check', 'conflict-demo', '--json');
   assert.equal(result.status, 1);
   const body = JSON.parse(result.stdout);
-  assert.equal(body.certified, false);
+  assert.equal(body.checked, false);
   assert.ok(body.checks.some(check => check.result === 'FAIL'));
   assert.ok(body.checks.some(check => check.result === 'detail'));
 });
@@ -62,5 +62,5 @@ test('certify is still the old name for check, and says the same thing', () => {
   assert.equal(old.stdout, asked.stdout, 'the old name answers identically');
   const result = JSON.parse(asked.stdout);
   assert.equal(result.checked, true);
-  assert.equal(result.certified, result.checked, 'certified is kept beside checked for one release');
+  assert.equal('certified' in result, false, 'the old field name is gone from the result');
 });
