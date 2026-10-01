@@ -360,7 +360,7 @@ Composition decision: web platform = cert-manager + ingress-nginx; monitoring = 
 
 ```
 $ for d in "$HOME/.confighub" "$HOME/.cub" ...; do find "$d" -maxdepth 4 -name cub-plugin.yaml; done
-/Users/alexis/.confighub/plugins/workshop/cub-plugin.yaml
+$HOME/.confighub/plugins/workshop/cub-plugin.yaml
 (eight other plugins' cub-plugin.yaml, omitted)
 
 $ cat > shop-platform.yaml <<'EOF2'   (the manifest, see section 12)
@@ -377,9 +377,9 @@ The verb takes only a name and resolves it inside the installed plugin. No page,
 ### 10. Place the one new file, certify
 
 ```
-$ ls /Users/alexis/.confighub/plugins/workshop
+$ ls $HOME/.confighub/plugins/workshop
 DEMO.md LICENSE README.md apps bin components cub-plugin.yaml fleets lib receipts renders stacks
-$ grep -m1 version /Users/alexis/.confighub/plugins/workshop/cub-plugin.yaml
+$ grep -m1 version $HOME/.confighub/plugins/workshop/cub-plugin.yaml
 version: 0.3.0
 $ diff <(ls .../workshop/renders) <(ls plugin-repo/renders) && diff <(ls .../workshop/apps) <(ls plugin-repo/apps) && echo same-file-sets
 same-file-sets
@@ -441,7 +441,7 @@ $ cub stack sandbox shop-platform >/dev/null 2>&1; echo "exit=$?"
 exit=0
 ```
 
-Side effects: `find /Users/alexis/.confighub/plugins/workshop -newer shop-platform.yaml -type f` lists only my manifest; `find "$HOME/.confighub" -newer shop-platform.yaml -type f` (excluding it) lists nothing. The sandbox wrote no rendered YAML anywhere I can find.
+Side effects: `find $HOME/.confighub/plugins/workshop -newer shop-platform.yaml -type f` lists only my manifest; `find "$HOME/.confighub" -newer shop-platform.yaml -type f` (excluding it) lists nothing. The sandbox wrote no rendered YAML anywhere I can find.
 
 ### 12. The final manifest (verbatim, the file at .../workshop/stacks/shop-platform.yaml and ./shop-platform.yaml)
 
@@ -546,7 +546,7 @@ with `[PASS] no resource conflicts across components (192 objects)`, `[PASS] CRD
 
 ### (2) The three hardest things to discover
 
-1. Where a manifest of my own has to live. `cub stack certify ./shop-platform.yaml` answers `no such stack`; the verbs take a name and resolve it only inside the installed plugin, and `cub plugin list` prints no paths, so I had to search $HOME for cub-plugin.yaml to find /Users/alexis/.confighub/plugins/workshop/stacks/. Nothing on the site, in README.md, in DEMO.md, or in `cub stack --help` says this. Writing into an installed plugin's directory is the usability finding the run rules anticipated. (README.md does say "drop the file into apps/" for apps, which hints that editing the install is the intended way, but only for apps.)
+1. Where a manifest of my own has to live. `cub stack certify ./shop-platform.yaml` answers `no such stack`; the verbs take a name and resolve it only inside the installed plugin, and `cub plugin list` prints no paths, so I had to search $HOME for cub-plugin.yaml to find $HOME/.confighub/plugins/workshop/stacks/. Nothing on the site, in README.md, in DEMO.md, or in `cub stack --help` says this. Writing into an installed plugin's directory is the usability finding the run rules anticipated. (README.md does say "drop the file into apps/" for apps, which hints that editing the install is the intended way, but only for apps.)
 2. How to put the shop app into the stack. The spec calls the third form "authored: literal YAML the stack owns" and gives "<repo path>"; the only shipped example that reuses an app file that way is conflict-demo, the stack that exists to be refused. Everything else about the format (planes, order, exactly one form per component) came from the spec page, which was easy to find from stack.html.
 3. Which parts exist to compose from. stack.html lists eleven stacks but never the nine render components; the queue (rabbitmq) and the fact that shop-web needs exactly ingress + cert-manager + a Prometheus operator were only learnable by cloning the repository (`ls renders/`) and running `cub app check shop-web`.
 
