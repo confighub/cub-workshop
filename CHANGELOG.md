@@ -3,6 +3,11 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
+## Unreleased
+
+- `cub config examples` describes the Kubara kind lab as "Kubara's managed
+  add-ons". The snapshot reads confighub/examples at `a7ec517`.
+
 ## 0.6.56
 
 - `cub config examples` points the Kubara kind lab at `cub kubara` v0.2.4. The
