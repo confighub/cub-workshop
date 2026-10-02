@@ -16,10 +16,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.25.11
+          cache-dependency-path: plugin-host/go.sum
       - uses: azure/setup-helm@v4
       - uses: oras-project/setup-oras@v1
       - name: run the full Node test suite
         run: node --test tests/*.test.mjs
+      - name: test the SDK plugin host
+        run: go test ./...
+        working-directory: plugin-host
       - name: package the committed tree
         run: node scripts/package-release.mjs --out release
       - name: validate the extracted plugin
@@ -27,6 +34,7 @@ jobs:
           mkdir extracted
           tar -xzf release/*linux-amd64.tar.gz -C extracted
           root=$(find extracted -mindepth 1 -maxdepth 1 -type d -print -quit)
+          "$root/bin/cub-workshop" --workshop-command=config list
           node "$root/bin/cub-config" list
           node "$root/bin/cub-stack" check web-tiny
       - name: upload release package artifact
