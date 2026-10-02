@@ -13,6 +13,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.25.11
+          cache-dependency-path: plugin-host/go.sum
+      - name: test the SDK plugin host
+        run: go test ./...
+        working-directory: plugin-host
       # Every test file runs here except the two that pull bundle-form stacks from
       # public registries; those run in the bundles job. A new tests/*.test.mjs is
       # picked up without editing this file.

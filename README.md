@@ -42,6 +42,18 @@ creates a draft GitHub release; publishing the draft remains a separate review s
 The installed plugin still requires `node`, `oras`, `cub`, and Helm where the
 selected command needs them.
 
+The release package uses `github.com/confighub/sdk/core` v0.8.0's
+`core/plugin` manifest and hook contract. The small Go host routes the four cub
+commands to the existing Node entrypoints; it does not call the ConfigHub API.
+The checked-in `cub-plugin.yaml` keeps direct Node entrypoints so installing a
+local source checkout still works. Release packaging builds the host for Linux
+and macOS on amd64 and arm64, then uses the SDK hook to make the routed release
+manifest from that checked-in manifest. Installing a tarball uses that prepared
+manifest; cub does not run the hook for tarball installs. Go 1.25.11 is needed
+to package and test releases, but users only need the existing Node runtime.
+The host is shipped inside the plugin archive, not as a standalone binary,
+because it needs the Node command files beside it.
+
 ## Find a worked example
 
 The [public example index](https://github.com/confighub/examples/tree/main/catalog)
@@ -673,4 +685,3 @@ Maintenance rule: `receipts/` and `renders/` are copies of that public evidence.
 When a chart re-renders or a bundle republishes upstream, refresh the copy and its
 digest here in the same change — the resolver hash-verifies every bundle against
 these receipts, so a stale copy fails loudly rather than drifting silently.
-

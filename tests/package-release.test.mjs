@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, cpSync, mkdirSync, readFileSync, readdirSync, writeFileSync, statSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { arch, platform, tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -17,12 +17,20 @@ test("packages committed HEAD reproducibly and refuses overwrite", () => {
     mkdirSync(join(fixture, "scripts"));
     mkdirSync(join(fixture, "bin"));
     mkdirSync(join(fixture, "catalog"));
+    mkdirSync(join(fixture, "plugin-host"));
     cpSync(script, join(fixture, "scripts/package-release.mjs"));
+    for (const source of ["go.mod", "go.sum", "main.go"]) {
+      cpSync(join(repoRoot, "plugin-host", source), join(fixture, "plugin-host", source));
+    }
     cpSync(join(repoRoot, "scripts/find-example.mjs"), join(fixture, "scripts/find-example.mjs"));
     cpSync(join(repoRoot, "catalog/examples.json"), join(fixture, "catalog/examples.json"));
     cpSync(join(repoRoot, "catalog/source.json"), join(fixture, "catalog/source.json"));
     cpSync(join(repoRoot, "cub-plugin.yaml"), join(fixture, "cub-plugin.yaml"));
     writeFileSync(join(fixture, "cub-plugin.yaml"), readFileSync(join(fixture, "cub-plugin.yaml"), "utf8").replace(/^version:.*$/m, "version: 1.2.3"));
+    const sourceInstallManifest = readFileSync(join(fixture, "cub-plugin.yaml"), "utf8");
+    for (const [command, entrypoint] of Object.entries({ config: "cub-config", app: "cub-app", stack: "cub-stack", fleet: "cub-fleet" })) {
+      assert.match(sourceInstallManifest, new RegExp(`name: ${command}[\\s\\S]*?entrypoint: bin/${entrypoint}`));
+    }
     for (const entrypoint of ["cub-config", "cub-app", "cub-stack", "cub-fleet"]) {
       cpSync(join(repoRoot, `bin/${entrypoint}`), join(fixture, `bin/${entrypoint}`));
     }
@@ -34,6 +42,7 @@ test("packages committed HEAD reproducibly and refuses overwrite", () => {
     git(fixture, "commit", "-qm", "fixture");
     const commit = git(fixture, "rev-parse", "HEAD");
 
+    writeFileSync(join(fixture, "plugin-host/main.go"), `${readFileSync(join(fixture, "plugin-host/main.go"), "utf8")}\n// dirty worktree edit must not ship\n`);
     writeFileSync(join(fixture, "cub-plugin.yaml"), readFileSync(join(fixture, "cub-plugin.yaml"), "utf8").replace("1.2.3", "9.9.9"));
     writeFileSync(join(fixture, "untracked.txt"), "must not ship\n");
     const out = join(fixture, "release");
@@ -47,7 +56,7 @@ test("packages committed HEAD reproducibly and refuses overwrite", () => {
       "cub-workshop-v1.2.3-linux-arm64.tar.gz",
     ]);
     const hashes = archives.map((name) => readFileSync(join(out, name)).toString("base64"));
-    assert.equal(new Set(hashes).size, 1, "platform archives must contain identical bytes");
+    assert.equal(new Set(hashes).size, 4, "platform archives must contain different native hosts");
     assert.deepEqual(JSON.parse(readFileSync(join(out, "metadata.json"))), { sourceCommit: commit, version: "1.2.3" });
     const sums = readFileSync(join(out, "SHA256SUMS"), "utf8").trim().split("\n");
     assert.equal(sums.length, 4);
@@ -62,17 +71,37 @@ test("packages committed HEAD reproducibly and refuses overwrite", () => {
       assert.deepEqual(readFileSync(join(out, filename)), readFileSync(join(outAgain, filename)), `repeat differs: ${filename}`);
     }
 
+    const osName = platform() === "darwin" ? "darwin" : platform();
+    const cpuName = arch() === "x64" ? "amd64" : arch();
+    const nativeArchive = `cub-workshop-v1.2.3-${osName}-${cpuName}.tar.gz`;
+    assert.ok(archives.includes(nativeArchive), `no archive for ${osName}/${cpuName}`);
     const extracted = join(fixture, "extracted");
     mkdirSync(extracted);
-    execFileSync("tar", ["-xzf", join(out, archives[0]), "-C", extracted]);
+    execFileSync("tar", ["-xzf", join(out, nativeArchive), "-C", extracted]);
     const root = join(extracted, "cub-workshop-v1.2.3");
-    assert.equal(readFileSync(join(root, "cub-plugin.yaml"), "utf8").includes("version: 1.2.3"), true);
+    const releaseManifest = readFileSync(join(root, "cub-plugin.yaml"), "utf8");
+    assert.match(releaseManifest, /version: 1\.2\.3/);
+    assert.doesNotMatch(readFileSync(join(root, "plugin-host/main.go"), "utf8"), /dirty worktree edit must not ship/);
+    for (const command of ["config", "app", "stack", "fleet"]) {
+      assert.match(releaseManifest, new RegExp(`name: ${command}[\\s\\S]*?entrypoint: bin/cub-workshop[\\s\\S]*?--workshop-command=${command}`));
+    }
     assert.equal(readFileSync(join(root, "tracked.txt"), "utf8"), "tracked\n");
     for (const entrypoint of ["cub-config", "cub-app", "cub-stack", "cub-fleet"]) {
       assert.equal(statSync(join(root, `bin/${entrypoint}`)).mode & 0o111, 0o111);
     }
+    assert.equal(statSync(join(root, "bin/cub-workshop")).mode & 0o111, 0o111);
+    const hookStage = join(fixture, "hook-stage");
+    mkdirSync(hookStage);
+    cpSync(join(fixture, "cub-plugin.yaml"), join(hookStage, "cub-plugin.yaml"));
+    execFileSync(join(root, "bin/cub-workshop"), [], {
+      cwd: hookStage,
+      env: { ...process.env, CUB_PLUGIN_HOOK: "upgrade", CUB_PLUGIN_DIR: hookStage, CUB_PLUGIN_PREVIOUS_VERSION: "1.2.2" },
+    });
+    assert.match(readFileSync(join(hookStage, "cub-plugin.yaml"), "utf8"), /--workshop-command=fleet/);
     const exampleResult = JSON.parse(execFileSync(process.execPath, [join(root, "bin/cub-config"), "examples", "what an app looks like", "--json"], { encoding: "utf8" }));
     assert.ok(exampleResult.entries.some((entry) => entry.id === "first-app-realistic"));
+    const hostResult = JSON.parse(execFileSync(join(root, "bin/cub-workshop"), ["--workshop-command=config", "examples", "what an app looks like", "--json"], { encoding: "utf8" }));
+    assert.ok(hostResult.entries.some((entry) => entry.id === "first-app-realistic"));
     assert.equal(readdirSync(root).includes("untracked.txt"), false);
     assert.throws(() => execFileSync(process.execPath, [script, "--out", out], { cwd: fixture }), /refusing to overwrite/);
   } finally {
