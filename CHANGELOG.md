@@ -6,7 +6,8 @@ requests hold the reasons and the evidence.
 ## Unreleased
 
 - `cub config examples` describes the Kubara kind lab as "Kubara's managed
-  add-ons". The snapshot reads confighub/examples at `a7ec517`.
+  add-ons", and points it at `cub kubara` v0.3.0, the first release that works
+  with ConfigHub v0.8.0. The snapshot reads confighub/examples at `bcc3166`.
 
 ## 0.6.56
 
