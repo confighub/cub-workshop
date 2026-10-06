@@ -8,6 +8,13 @@ requests hold the reasons and the evidence.
 - `cub config examples` describes the Kubara kind lab as "Kubara's managed
   add-ons", and points it at `cub kubara` v0.3.0, the first release that works
   with ConfigHub v0.8.0. The snapshot reads confighub/examples at `bcc3166`.
+- `cub app upload` now imports through the current `cub variant upload` contract and
+  creates the predictable `<app>-base` Space. It no longer creates a surprising
+  `<app>-app` Space with a review trigger before the user has a target.
+- `hello-standalone` now carries its Namespace, so the first app is self-contained.
+- `cub stack deploy web-tiny --target <space/target>` provides one deliberately bounded
+  first-stack path: two Bases, two target variants and two Releases. It refuses every
+  other stack and distinguishes requested delivery from controller/runtime proof.
 
 ## 0.6.56
 
