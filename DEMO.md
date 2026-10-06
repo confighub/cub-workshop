@@ -98,6 +98,35 @@ that receipt from nothing but the digest. The third publishes the stack as an
 index of five images with the manifest and verdict attached: the form a catalog
 holds, and the form an assistant picks from.
 
+## 3c. Put one app and one bounded stack live (account and local cluster)
+
+The local checks above do not prove delivery. This lane uses the product's ordinary,
+target-bound Release path and then verifies the controller and cluster outcome.
+
+```bash
+cub auth login
+cub cluster up --name demo
+source ~/.confighub/clusters/demo.env
+
+cub app upload hello-standalone --run
+cub variant create dev hello-standalone-base --target demo/target --namespace hello
+cub release publish hello-standalone-dev
+kubectl get application -n argocd hello-standalone-dev
+kubectl wait -n hello --for=condition=Available deployment/hello --timeout=180s
+
+cub stack check web-tiny
+cub stack deploy web-tiny --target demo/target --run
+kubectl get applications -n argocd first-stack-frontend-dev first-stack-backend-dev
+kubectl get configmap -n web frontend-config backend-config
+```
+
+`app upload` creates `hello-standalone-base`; it does not deploy. `stack deploy` is
+deliberately limited to `web-tiny`, whose two components become
+`first-stack-frontend-dev` and `first-stack-backend-dev`. It publishes the Releases but
+does not call the cluster or claim health; the `kubectl` lines provide that evidence.
+For any other stack, use `check` and `upload`, then review each component's prerequisites
+before creating target variants and publishing Releases.
+
 ## 4. fleet — a governed fleet from two manifests (account)
 
 Prerequisite: a ConfigHub org with room for 155 Spaces. The self-hosted sandbox

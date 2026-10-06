@@ -36,6 +36,51 @@ Commands that change ConfigHub (`upload --run`, `fleet up`) need an account: run
 [Check proposed platform edits in CI](./examples/stack-ci/README.md) with the
 same static checker a person or agent runs locally.
 
+### Put one small app live
+
+This is the bounded first deployment path. The check is local; the import creates a
+reusable Base and still deploys nothing; the final two commands create a target-bound
+deployment and publish it. `cub cluster up` supplies the target and Argo CD controller.
+
+```bash
+cub app check hello-standalone
+cub auth login
+cub cluster up --name demo
+source ~/.confighub/clusters/demo.env
+
+cub app upload hello-standalone             # dry run: shows the import and expected Base name
+cub app upload hello-standalone --run       # creates hello-standalone-base; deploys nothing
+cub variant create dev hello-standalone-base --target demo/target --namespace hello
+cub release publish hello-standalone-dev
+
+kubectl get application -n argocd hello-standalone-dev
+kubectl wait -n hello --for=condition=Available deployment/hello --timeout=180s
+```
+
+The shipped app includes its `hello` Namespace. The expected deployment Space and Argo
+Application are both `hello-standalone-dev`. The last two commands are the runtime
+check; a successful import or Release alone is not proof that the workload is healthy.
+
+### Put the bounded first stack live
+
+`web-tiny` is intentionally small: two independently managed ConfigMaps. `deploy`
+supports only this shipped teaching stack; it is not a promise that an arbitrary stack
+can be placed without reviewing its CRDs, dependencies, namespaces and rollout order.
+
+```bash
+cub stack check web-tiny
+cub stack deploy web-tiny --target demo/target                  # dry run
+cub stack deploy web-tiny --target demo/target --run
+
+kubectl get applications -n argocd first-stack-frontend-dev first-stack-backend-dev
+kubectl get configmap -n web frontend-config backend-config
+```
+
+The command creates Bases `first-stack-frontend` and `first-stack-backend`, deployment
+Spaces with the `-dev` suffix, and publishes one Release per deployment. Only the
+frontend component owns the synthesized `web` Namespace. The command reports delivery
+requested; the `kubectl` checks establish controller and cluster evidence.
+
 Maintainers can manually dispatch `.github/workflows/release.yml` on `main`.
 It runs the full checks, packages the committed tree, uploads the artifacts, and
 creates a draft GitHub release; publishing the draft remains a separate review step.
@@ -353,9 +398,10 @@ your side: every governed rung below publishes OCI your reconciler pulls as usua
 With an account (the governed rungs):
 
 ```bash
-cub app upload hello-standalone --run     # one Unit per resource, release gated on review
+cub app upload hello-standalone --run     # imports hello-standalone-base; nothing deploys yet
 cub stack upload shop-platform            # the plan, no changes; add --run to upload the base Spaces
 cub stack upload shop-platform --run      # base Spaces for a composition that checked out
+cub stack deploy web-tiny --target demo/target --run  # bounded two-component teaching stack; places and releases it
 cub fleet up meridian                     # scaffold clusters, upload bases, place and release everything
                                           # a placement may name a whole stack: `stack: web-platform`
 cub fleet age meridian                    # replay the declared operations so real attention states exist

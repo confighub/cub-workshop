@@ -5,10 +5,10 @@ commands:
       summary: 'One config, one chart: list, examples, check, verify, diff, values, and path, most of them free'
       entrypoint: bin/cub-config
     - name: app
-      summary: 'A workload: list, check, match to nodes, upload under governance, and score'
+      summary: 'A workload: list, check, match to nodes, upload a base, and score'
       entrypoint: bin/cub-app
     - name: stack
-      summary: 'A composition of components: list, schema, compose, check, sandbox, publish, upload, and from-kubara'
+      summary: 'A composition of components: list, schema, compose, check, sandbox, publish, upload, deploy, and from-kubara'
       entrypoint: bin/cub-stack
     - name: fleet
       summary: 'Placement as data: list, plan, up, age, status, rollout, and down for a governed fleet manifest'
