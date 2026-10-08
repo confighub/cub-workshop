@@ -19,7 +19,9 @@ sorted by ID so equivalent retained-only inputs produce the same bytes.
 `safe-to-flatten` and `born-flat` listings compose from their retained objects.
 A `flatten-with-routes` listing is accepted only when the selected listing names
 a published literal-config OCI reference pinned by manifest digest, a committed
-CertifiedBundleReceipt URL and SHA-256, and a receipt that binds the exact chart
+bundle receipt URL and SHA-256 (a `CertifiedBundleReceipt` with verdict
+`certified`, or a `CatalogLiteralBundlePublicationReceipt` with verdict `decided`),
+and a receipt that binds the exact chart
 version, retained-object digest and count, and at least one declared route. The
 command verifies those source bytes and asks the existing stack sandbox to
 materialize an editable workspace. The workspace serializes editable YAML and
