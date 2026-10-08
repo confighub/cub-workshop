@@ -3,7 +3,7 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
-## Unreleased
+## 0.6.57
 
 - `cub stack compose` accepts the Catalog's literal-bundle publication receipts. A
   `flatten-with-routes` entry bound by a `CatalogLiteralBundlePublicationReceipt` with
