@@ -245,20 +245,22 @@ test('a stack check subprocess failure has a structured code', () => {
 });
 
 let routeFixtureSerial = 0;
-function routeFixture({ corruptReceipt = false, omitRoute = false, wrongManifest = false, extraConfig = false, wrongBase = false, bundleSourcePath, receiptSourcePath, sourceHash } = {}) {
+function routeFixture({ corruptReceipt = false, omitRoute = false, wrongManifest = false, extraConfig = false, wrongBase = false, bundleSourcePath, receiptSourcePath, sourceHash, receiptKind = 'CertifiedBundleReceipt', receiptStatus = 'certified', receiptRepoPath } = {}) {
   const f = fixture([{ id: 'traefik-route', yaml: yaml('traefik-route'), verdict: 'flatten-with-routes' }]);
   const objects = readFileSync(join(f.dir, 'traefik-route.yaml'));
   const routeBytes = Buffer.from('apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: declared-route\n');
   const manifest = digest(Buffer.from(JSON.stringify({ corruptReceipt, omitRoute, wrongManifest, extraConfig, wrongBase, serial: routeFixtureSerial++ })));
   const sourcePath = receiptSourcePath ?? bundleSourcePath ?? `packages/traefik/traefik/41.0.2/bases/${wrongBase ? 'other' : 'default'}/upstream.yaml`;
   const receipt = [
-    'apiVersion: confighub.com/v1', 'kind: CertifiedBundleReceipt', 'spec:',
+    receiptKind === 'CatalogLiteralBundlePublicationReceipt' ? 'apiVersion: evidence.confighub.com/v1alpha1' : 'apiVersion: confighub.com/v1', `kind: ${receiptKind}`,
+    ...(receiptKind === 'CatalogLiteralBundlePublicationReceipt' ? ['metadata:', '  name: traefik-route'] : []), 'spec:',
+    ...(receiptKind === 'CatalogLiteralBundlePublicationReceipt' ? ['  catalogEntry: traefik-route'] : []),
     '  source:', '    charts:', '      - name: traefik', '        version: 41.0.2',
     '  bundle:', `    reference: registry.test/catalog-traefik:latest`, `    manifestDigest: ${wrongManifest ? `sha256:${'b'.repeat(64)}` : manifest}`,
     '    objectCount: 1', '    files:', `      - path: ${sourcePath}`, `        sha256: ${sourceHash ?? digest(objects).slice(7)}`, '        role: rendered object set',
     ...(extraConfig ? ['      - path: another.yaml', `        sha256: ${digest(objects).slice(7)}`] : []),
     ...(omitRoute ? [] : ['      - path: routes/route.yaml', `        sha256: ${digest(routeBytes).slice(7)}`, '        role: "route: apply-ordering"']),
-    '  verdict:', '    lane: flatten-with-routes', '    status: certified', '',
+    '  verdict:', '    lane: flatten-with-routes', `    status: ${receiptStatus}`, '',
   ].join('\n');
   const receiptBytes = Buffer.from(corruptReceipt ? `${receipt}changed\n` : receipt);
   writeFileSync(join(f.dir, 'receipt.yaml'), receiptBytes);
@@ -267,7 +269,8 @@ function routeFixture({ corruptReceipt = false, omitRoute = false, wrongManifest
   listing.identity.name = 'traefik/traefik'; listing.identity.version = '41.0.2'; listing.identity.base = 'default';
   if (bundleSourcePath !== undefined) listing.flattened.bundleSourcePath = bundleSourcePath;
   listing.oci = { bundles: [{ role: 'literal-config', state: 'published', referenceState: 'published',
-    reference: `oci://registry.test/catalog-traefik:latest@${manifest}`, receipt: 'receipt.yaml', receiptUrl: 'receipt.yaml',
+    reference: `oci://registry.test/catalog-traefik:latest@${manifest}`, receipt: receiptRepoPath ?? 'receipt.yaml',
+    receiptUrl: receiptRepoPath ? `https://github.com/confighub/helm-expt/blob/main/${receiptRepoPath}` : 'receipt.yaml',
     digests: [{ field: 'manifestDigest', value: manifest }, { field: 'objectSetSha256', value: digest(objects) }, { field: 'receiptSha256', value: digest(Buffer.from(receipt)) }] }] };
   writeFileSync(listingPath, JSON.stringify(listing));
   const bundle = join(f.dir, 'bundle'); mkdirSync(join(bundle, 'routes'), { recursive: true });
@@ -277,7 +280,10 @@ function routeFixture({ corruptReceipt = false, omitRoute = false, wrongManifest
   const tools = join(f.dir, 'tools'); mkdirSync(tools);
   const oras = join(tools, 'oras'); writeFileSync(oras, '#!/bin/sh\ncp "$CUB_TEST_TARBALL" "$4/bundle.tar"\n');
   spawnSync('chmod', ['+x', oras]);
-  return { ...f, env: { PATH: `${tools}:${process.env.PATH}`, CUB_TEST_TARBALL: tarball } };
+  // A receipt at a repository path is read over HTTPS: serve the receipt from a stubbed fetch.
+  const preload = join(f.dir, 'fetch-receipt.mjs');
+  writeFileSync(preload, `globalThis.fetch = async (url) => String(url) === ${JSON.stringify(`https://raw.githubusercontent.com/confighub/helm-expt/main/${receiptRepoPath}`)} ? new Response(Buffer.from(${JSON.stringify(receiptBytes.toString('base64'))}, 'base64'), { status: 200 }) : new Response('not found', { status: 404 });\n`);
+  return { ...f, env: { PATH: `${tools}:${process.env.PATH}`, CUB_TEST_TARBALL: tarball, ...(receiptRepoPath ? { NODE_OPTIONS: `--import ${preload}` } : {}) } };
 }
 
 test('composes an explicitly selected published route bundle as a resumable declared-unexecuted workspace', () => {
@@ -336,6 +342,65 @@ test('refuses missing, tampered, or mismatched published route evidence before c
       assert.equal(existsSync(f.out), false);
     } finally { rmSync(f.dir, { recursive: true, force: true }); }
   }
+});
+
+const LITERAL = { receiptKind: 'CatalogLiteralBundlePublicationReceipt', receiptStatus: 'decided' };
+const LITERAL_PATH = 'runs/catalog-literal-bundles/traefik-route/publication-receipt.yaml';
+
+test('accepts a catalog literal-bundle publication receipt with a decided verdict at its published path', () => {
+  const f = routeFixture({ ...LITERAL, receiptRepoPath: LITERAL_PATH });
+  try {
+    const result = runWithEnv(f.env, '--entry', 'traefik-route', '--name', 'route-demo', '--out', f.out, '--catalog-index', f.index, '--json');
+    assert.equal(result.status, 0, `${result.stderr} ${result.stdout}`);
+    const provenance = JSON.parse(readFileSync(join(f.out, 'provenance.json'))).entries[0].publishedBundle;
+    assert.equal(provenance.receipt.declaredPath, LITERAL_PATH);
+    assert.equal(provenance.state, 'declared-unexecuted');
+    assert.equal(JSON.parse(readFileSync(join(f.out, 'result.json'))).lifecycleCompanions.state, 'declared-unexecuted');
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});
+
+test('refuses a bundle receipt of an unknown kind or a known kind with the other kind\'s verdict status', () => {
+  const cases = [
+    { receiptKind: 'SomeOtherReceipt', receiptStatus: 'decided' },
+    { receiptKind: 'SomeOtherReceipt', receiptStatus: 'certified' },
+    { receiptKind: 'CatalogLiteralBundlePublicationReceipt', receiptStatus: 'certified' },
+    { receiptKind: 'CertifiedBundleReceipt', receiptStatus: 'decided' },
+    { receiptKind: 'CatalogLiteralBundlePublicationReceipt', receiptStatus: 'watch' },
+  ];
+  for (const options of cases) {
+    const f = routeFixture({ ...options, receiptRepoPath: options.receiptKind === 'CatalogLiteralBundlePublicationReceipt' ? LITERAL_PATH : undefined });
+    try {
+      const result = runWithEnv(f.env, '--entry', 'traefik-route', '--name', 'route-demo', '--out', f.out, '--catalog-index', f.index, '--json');
+      assert.equal(result.status, 1, `${JSON.stringify(options)} ${result.stdout}`);
+      assert.equal(JSON.parse(result.stdout).code, 'source_integrity_failed', JSON.stringify(options));
+      assert.match(JSON.parse(result.stdout).message, /does not bind the retained objects/);
+      assert.equal(existsSync(f.out), false);
+    } finally { rmSync(f.dir, { recursive: true, force: true }); }
+  }
+});
+
+test('refuses a literal-bundle receipt whose path is outside the two allowed receipt locations', () => {
+  for (const receiptRepoPath of ['runs/other-bundles/traefik-route/publication-receipt.yaml', 'runs/catalog-literal-bundles/traefik-route/receipt.yaml', 'runs/catalog-literal-bundles/Traefik_Route/publication-receipt.yaml', 'runs/catalog-literal-bundles/a/b/publication-receipt.yaml', 'data/other/receipt.yaml']) {
+    const f = routeFixture({ ...LITERAL, receiptRepoPath });
+    try {
+      const result = runWithEnv(f.env, '--entry', 'traefik-route', '--name', 'route-demo', '--out', f.out, '--catalog-index', f.index, '--json');
+      assert.equal(result.status, 1, `${receiptRepoPath} ${result.stdout}`);
+      assert.equal(JSON.parse(result.stdout).code, 'source_integrity_failed', receiptRepoPath);
+      assert.match(JSON.parse(result.stdout).message, /receipt path does not match receiptUrl/);
+      assert.equal(existsSync(f.out), false);
+    } finally { rmSync(f.dir, { recursive: true, force: true }); }
+  }
+});
+
+test('refuses a literal-bundle receipt that binds a different manifest digest', () => {
+  const f = routeFixture({ ...LITERAL, receiptRepoPath: LITERAL_PATH, wrongManifest: true });
+  try {
+    const result = runWithEnv(f.env, '--entry', 'traefik-route', '--name', 'route-demo', '--out', f.out, '--catalog-index', f.index, '--json');
+    assert.equal(result.status, 1, result.stdout);
+    assert.equal(JSON.parse(result.stdout).code, 'source_integrity_failed');
+    assert.match(JSON.parse(result.stdout).message, /does not bind the retained objects/);
+    assert.equal(existsSync(f.out), false);
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });
 
 test('published route workspaces resume offline from their materialized files', () => {

@@ -5,6 +5,13 @@ requests hold the reasons and the evidence.
 
 ## Unreleased
 
+- `cub stack compose` accepts the Catalog's literal-bundle publication receipts. A
+  `flatten-with-routes` entry bound by a `CatalogLiteralBundlePublicationReceipt` with
+  verdict `decided`, at `runs/catalog-literal-bundles/<record>/publication-receipt.yaml`,
+  composes the same way as one bound by a `CertifiedBundleReceipt` with verdict `certified`.
+  The receipt must still pin the manifest, reference, object count, retained-object hash
+  and at least one route; the other kind-and-verdict pairs are refused. Routes stay
+  `declared-unexecuted`, and nothing is uploaded to ConfigHub.
 - `cub config examples` describes the Kubara kind lab as "Kubara's managed
   add-ons", and points it at `cub kubara` v0.3.0, the first release that works
   with ConfigHub v0.8.0. The snapshot reads confighub/examples at `bcc3166`.
