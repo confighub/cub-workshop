@@ -1,0 +1,63 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "BundleRoute"
+metadata:
+  name: "eks-inference-ack-controllers-crd-ordering"
+spec:
+  quirkClass: "crd-ordering"
+  routeKind: "apply-ordering"
+  discharges: "Without an ordering declaration, per-file Units apply in no guaranteed order, so a custom resource can reach the cluster before the definition that gives it meaning, and a controller before the namespace that holds it."
+  declaration:
+    stages:
+      -
+        order: 1
+        name: "namespace"
+        selector:
+          files:
+            - "namespace.yaml"
+        objectCount: 1
+        observedSyncWave: -30
+      -
+        order: 2
+        name: "custom-resource-definitions"
+        selector:
+          files:
+            - "ec2-crds.yaml"
+            - "eks-crds.yaml"
+            - "iam-crds.yaml"
+        waitFor: "every definition in this stage reports the Established condition"
+        objectCount: 3
+        observedSyncWave: -20
+      -
+        order: 3
+        name: "controllers"
+        selector:
+          files:
+            - "ec2-controller.yaml"
+            - "eks-controller.yaml"
+            - "iam-controller.yaml"
+        objectCount: 3
+        observedSyncWave: -10
+  executedBy:
+    runtimes:
+      -
+        name: "Argo CD"
+        mechanism: "the sync-wave annotations the producer already emits, which this route reads back"
+        proven: false
+      -
+        name: "Flux"
+        mechanism: "dependsOn between one Kustomization per stage, in the order below"
+        proven: false
+      -
+        name: "cub-direct applier"
+        mechanism: "apply each stage and wait before starting the next"
+        proven: false
+    automatic: true
+  boundedness:
+    - "the stages restate the ordering the producer's own sync waves declare; they do not add an ordering nobody chose"
+    - "the route orders what the bundle contains, so a definition this bundle does not ship must already exist on the target"
+    - "only Argo is proven to execute this ordering today, because that is the runtime the producer uses"
+  provenance:
+    emittedBy: "scripts/generate-certified-bundle-receipts.mjs"
+    generatedFrom:
+      - "data/certified-bundles/witnesses/eks-inference-ack-controllers/witness.yaml"
+    verdictRef: "recipes/aws-controllers-k8s/ec2-chart/1.18.4/publication/flattening-safety-verdict.yaml"
