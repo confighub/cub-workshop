@@ -1,0 +1,19 @@
+apiVersion: helm-expt.confighub.com/v1alpha1
+kind: Stack
+metadata:
+  name: gpu-node
+spec:
+  description: "A static composition of NVIDIA's GPU Operator, NVSentinel, and cluster-readiness-engine from the catalog's published bundles, where nothing runs on a GPU and the chart hooks are recorded as declared and not run."
+  components:
+    - name: gpu-operator
+      order: 0
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-nvidia-gpu-operator-v26-3-3-default@sha256:408cfa607e699388f62c1859f3f0daeecc99b8110f8cee076f06855be2d8ea1e"
+      receipt: receipts/catalog/nvidia-gpu-operator-v26-3-3-default.yaml
+    - name: nvsentinel
+      order: 1
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-nvidia-nvsentinel-v1-25-0-default@sha256:b82a55de98d9b14a8aa63f684ada15a86389aa607c4371843c55df87ff9d4368"
+      receipt: receipts/catalog/nvidia-nvsentinel-v1-25-0-default.yaml
+    - name: cluster-readiness-engine
+      order: 2
+      bundle: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-nvidia-cluster-readiness-engine-v0-6-0-default@sha256:895c73481b565d3c05ad5be56feeb2a54452b9e0d781f7d379a154d7b9448f4d"
+      receipt: receipts/catalog/nvidia-cluster-readiness-engine-v0-6-0-default.yaml

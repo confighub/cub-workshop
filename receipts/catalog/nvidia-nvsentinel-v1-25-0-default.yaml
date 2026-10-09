@@ -1,0 +1,70 @@
+apiVersion: "evidence.confighub.com/v1alpha1"
+kind: "CatalogLiteralBundlePublicationReceipt"
+metadata:
+  name: "nvidia-nvsentinel-v1-25-0-default"
+spec:
+  catalogEntry: "nvidia-nvsentinel-v1-25-0-default"
+  plan: "data/nvidia-literal-bundles/nvidia-nvsentinel-v1-25-0-default/literal-config-oci.yaml"
+  source:
+    kind: "helm-chart"
+    charts:
+      -
+        repository: "nvidia"
+        name: "nvsentinel"
+        version: "v1.25.0"
+    base: "default"
+    revision: "r001"
+    installerPackage: "oci://europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/nvidia-nvsentinel:v1.25.0@sha256:5b6363f704e89c754c2901a85ade183312afca87a94d97aa22f55d2f4d23189e"
+  verdict:
+    lane: "safe-to-flatten"
+    status: "decided"
+    record: "recipes/nvidia/nvsentinel/v1.25.0/publication/flattening-safety-verdict.yaml"
+  bundle:
+    contentsKind: "rendered-config"
+    artifactType: "application/vnd.confighub.config.bundle.v1"
+    reference: "europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-nvidia-nvsentinel-v1-25-0-default:r001"
+    manifestDigest: "sha256:b82a55de98d9b14a8aa63f684ada15a86389aa607c4371843c55df87ff9d4368"
+    layerDigest: "sha256:f4b42b7487d117e4886f1e19ab1071e5f0a285361a336a5c969a577120f3145d"
+    layerBytes: 70172
+    layerMediaType: "application/vnd.oci.image.layer.v1.tar+gzip"
+    objectCount: 22
+    objectSetSha256: "sha256:f12a375c7b63cdfe02ed6eda602a22c771d43216297ab2089f374ef913a86ec2"
+    files:
+      -
+        path: "packages/nvidia/nvsentinel/v1.25.0/bases/default/upstream.yaml"
+        stagedAs: "upstream.yaml"
+        role: "rendered object set"
+        sha256: "f12a375c7b63cdfe02ed6eda602a22c771d43216297ab2089f374ef913a86ec2"
+        bytes: 62677
+      -
+        path: "data/nvidia-literal-bundles/nvidia-nvsentinel-v1-25-0-default/requirements/target-requirements.yaml"
+        stagedAs: "requirements/target-requirements.yaml"
+        role: "requirement: target"
+        sha256: "260cc773b959f18444b4188349188485025e3cd7351d881d4321a4ea87e62715"
+        bytes: 2637
+      -
+        path: "data/nvidia-literal-bundles/nvidia-nvsentinel-v1-25-0-default/space-guide.md"
+        stagedAs: "README.md"
+        role: "space-guide"
+        sha256: "f72d75433b24b29c4168b9a81c67fb64352260c8b741a8b38c0b5607bbac0023"
+        bytes: 1165
+    reproducible: true
+    immutableReference: "europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-nvidia-nvsentinel-v1-25-0-default@sha256:b82a55de98d9b14a8aa63f684ada15a86389aa607c4371843c55df87ff9d4368"
+  contents:
+    containerImages: false
+    helmHookObjects: false
+    secretObjects: 0
+  push:
+    result: "pass"
+    command: "oras cp --from-oci-layout <layout>:r001 europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-nvidia-nvsentinel-v1-25-0-default:r001"
+  anonymousPull:
+    result: "pass"
+    manifestDigest: "sha256:b82a55de98d9b14a8aa63f684ada15a86389aa607c4371843c55df87ff9d4368"
+    layerDigest: "sha256:f4b42b7487d117e4886f1e19ab1071e5f0a285361a336a5c969a577120f3145d"
+    filesMatched: 3
+    command: "oras pull --registry-config <empty config> europe-west1-docker.pkg.dev/nth-fort-499605-q5/helm-expt/bundles/catalog-nvidia-nvsentinel-v1-25-0-default@sha256:b82a55de98d9b14a8aa63f684ada15a86389aa607c4371843c55df87ff9d4368"
+  configHubUpload: "not-run. This receipt records a registry publication and nothing else."
+  signature: "none. The Catalog does not sign literal configuration bundles."
+  observedAt: "2026-10-08T17:55:41.308Z"
+status:
+  result: "pass"
