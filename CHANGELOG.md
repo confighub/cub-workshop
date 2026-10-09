@@ -5,6 +5,17 @@ requests hold the reasons and the evidence.
 
 ## Unreleased
 
+- `cub stack sandbox gpu-node` checks NVIDIA's GPU Operator v26.3.3, NVSentinel v1.25.0
+  and cluster-readiness-engine v0.6.0 as one shipped stack. It gives the same 89
+  objects and the same check lines as `cub stack compose` with those three catalog
+  entries. Each component is the Catalog's published bundle pinned by digest, with
+  its `CatalogLiteralBundlePublicationReceipt` copied unchanged into
+  `receipts/catalog/`. The resolver did not change. It already refuses a receipt for
+  another digest, verifies the rendered objects against the receipt's SHA-256, and
+  verifies the three routes when a workspace is saved. The routes and target
+  requirements inside the bundles are never counted or rendered as Kubernetes
+  objects. This is a static composition. Nothing runs on a GPU, and the GPU
+  Operator's Helm hooks are recorded as declared and not run.
 - `cub stack sandbox eks-inference --workspace DIR` saves the workspace instead of
   refusing `ack-controllers` with "pulled files do not match its receipt". The
   `ack-controllers` and `karpenter` receipts each name a `crd-ordering` route that

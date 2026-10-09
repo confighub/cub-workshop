@@ -344,6 +344,7 @@ cub app score shop-web                # export its workloads to Score (score.dev
 cub stack list
 cub stack check metrics-double      # the composition alone; exits non-zero on a conflict
 cub stack sandbox eks-inference       # check, then render the whole platform with no infrastructure
+cub stack sandbox gpu-node            # NVIDIA's three GPU node components from the catalog; nothing runs on a GPU
 cub stack sandbox shop-platform --out shop-platform.yaml   # and write the rendered objects, in plane order
 cub stack check ./my-stack.yaml     # your own manifest, anywhere on disk
 cub stack compose --entry prometheus-community-prometheus-29-9-0-default \
@@ -632,6 +633,29 @@ controller observation or an application response.
 The [local CLI and assistant task](tasks/compose-local.md) gives the same save,
 change and refusal exercise to a person, Claude Code or Codex. It is a bounded
 local workflow, with live delivery and independent human trials still separate.
+
+## Check NVIDIA's GPU node components
+
+```sh
+cub stack sandbox gpu-node
+```
+
+This named selection holds the GPU Operator v26.3.3, NVSentinel v1.25.0 and the
+cluster-readiness-engine v0.6.0, the three NVIDIA GPU node components the public
+Catalog publishes. Each one is the Catalog's published bundle, pulled by digest and
+hash-verified against the Catalog's publication receipt in `receipts/catalog/`.
+`cub stack compose` with those three catalog entries gives the same 89 objects and
+the same check lines.
+
+The check reports `CHECKED`, and its warnings name what the target must already
+have. Two custom resources need CRDs from `monitoring.coreos.com`, and the
+namespaces `gpu-operator` and `nvcre` must exist.
+
+This is a static composition. Nothing here runs on a GPU, no driver is installed
+and no node is labelled. The GPU Operator's Helm hooks are not objects in the
+stack. `cub stack sandbox gpu-node --workspace DIR` saves the route that declares
+them, and the two CRD ordering routes, under `evidence/` as `declared-unexecuted`.
+No route is run.
 
 ## Certification for assistants and automation
 
