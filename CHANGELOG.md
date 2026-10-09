@@ -3,6 +3,18 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
+## Unreleased
+
+- `cub stack sandbox eks-inference --workspace DIR` saves the workspace instead of
+  refusing `ack-controllers` with "pulled files do not match its receipt". The
+  `ack-controllers` and `karpenter` receipts each name a `crd-ordering` route that
+  their published bundles do not carry. The plugin now ships those two routes at the
+  receipts' own paths under `data/certified-bundles/routes/`. A route the bundle
+  lacks is read from that copy only when its SHA-256 equals the receipt's, and a
+  route the bundle does carry must still verify there. Each saved route records
+  `suppliedBy` as `bundle` or `plugin` in the workspace evidence. Configuration
+  files always come from the bundle, and no digest or receipt changed (#105).
+
 ## 0.6.57
 
 - `cub stack compose` accepts the Catalog's literal-bundle publication receipts. A

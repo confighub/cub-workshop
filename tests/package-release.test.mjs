@@ -11,6 +11,23 @@ const script = join(repoRoot, "scripts/package-release.mjs");
 
 function git(cwd, ...args) { return execFileSync("git", args, { cwd, encoding: "utf8" }).trim(); }
 
+// The routes the plugin ships for eks-inference bundles that carry
+// configuration only, by component, with the SHA-256 each receipt records.
+const shippedRoutes = {
+  "ack-controllers": "e9cbdfd14d486ab04ba676519e7a11266f26b5825a8e639e86a7f1ef3b818119",
+  karpenter: "a72c44bbce5b0fbb0dfc774593b30f01d8affa32087ef5533899e558d6c1065c",
+};
+
+// The release is git archive of HEAD, so a file ships only when it is tracked
+// and not marked export-ignore.
+test("the shipped routes are tracked files the release archive keeps", (t) => {
+  const paths = Object.keys(shippedRoutes).map((component) => `data/certified-bundles/routes/eks-inference/${component}/crd-ordering.yaml`);
+  let tracked;
+  try { tracked = git(repoRoot, "ls-files", "--", ...paths).split("\n").filter(Boolean); } catch { return t.skip("not a git checkout, so there are no tracked files to read"); }
+  assert.deepEqual(tracked.sort(), paths.sort());
+  for (const line of git(repoRoot, "check-attr", "export-ignore", "--", ...paths).split("\n")) assert.match(line, /: export-ignore: unspecified$/);
+});
+
 test("packages committed HEAD reproducibly and refuses overwrite", () => {
   const fixture = mkdtempSync(join(tmpdir(), "cub-workshop-package-"));
   try {
@@ -26,6 +43,9 @@ test("packages committed HEAD reproducibly and refuses overwrite", () => {
     cpSync(join(repoRoot, "catalog/examples.json"), join(fixture, "catalog/examples.json"));
     cpSync(join(repoRoot, "catalog/source.json"), join(fixture, "catalog/source.json"));
     cpSync(join(repoRoot, "cub-plugin.yaml"), join(fixture, "cub-plugin.yaml"));
+    // Two receipts name a lifecycle route their bundles do not carry, so the
+    // release must carry those routes at the receipts' own paths.
+    for (const evidence of ["data", "receipts/eks-inference"]) cpSync(join(repoRoot, evidence), join(fixture, evidence), { recursive: true });
     writeFileSync(join(fixture, "cub-plugin.yaml"), readFileSync(join(fixture, "cub-plugin.yaml"), "utf8").replace(/^version:.*$/m, "version: 1.2.3"));
     const sourceInstallManifest = readFileSync(join(fixture, "cub-plugin.yaml"), "utf8");
     for (const [command, entrypoint] of Object.entries({ config: "cub-config", app: "cub-app", stack: "cub-stack", fleet: "cub-fleet" })) {
@@ -86,6 +106,11 @@ test("packages committed HEAD reproducibly and refuses overwrite", () => {
       assert.match(releaseManifest, new RegExp(`name: ${command}[\\s\\S]*?entrypoint: bin/cub-workshop[\\s\\S]*?--workshop-command=${command}`));
     }
     assert.equal(readFileSync(join(root, "tracked.txt"), "utf8"), "tracked\n");
+    for (const [component, sha256] of Object.entries(shippedRoutes)) {
+      const path = `data/certified-bundles/routes/eks-inference/${component}/crd-ordering.yaml`;
+      assert.match(readFileSync(join(root, `receipts/eks-inference/${component}.yaml`), "utf8"), new RegExp(`path: "${path}"\\s+sha256: "${sha256}"`));
+      assert.equal(createHash("sha256").update(readFileSync(join(root, path))).digest("hex"), sha256, `${path} is not in the release with its receipt's bytes`);
+    }
     for (const entrypoint of ["cub-config", "cub-app", "cub-stack", "cub-fleet"]) {
       assert.equal(statSync(join(root, `bin/${entrypoint}`)).mode & 0o111, 0o111);
     }

@@ -569,6 +569,9 @@ original component sources, file hashes and explicit not-checked target status.
 For a receipt-bound bundle, it also preserves required lifecycle route evidence under
 `evidence/`. Those routes are `declared-unexecuted`: keep the whole directory when
 handing it over, and do not read the saved files as a delivery or readiness result.
+Each route records `suppliedBy`. It is `bundle` when the pulled bundle carried the
+route, and `plugin` when the bundle carries configuration only and the plugin ships
+the route at the receipt's path. Either copy must match the receipt's SHA-256.
 
 A route workspace may append a new uniquely named `authored` component and save a
 new workspace. Its original materialized manifest remains hashed evidence: do not
