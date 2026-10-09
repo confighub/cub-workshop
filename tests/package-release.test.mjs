@@ -18,6 +18,15 @@ const shippedRoutes = {
   karpenter: "a72c44bbce5b0fbb0dfc774593b30f01d8affa32087ef5533899e558d6c1065c",
 };
 
+// The gpu-node stack resolves three Catalog bundles against receipts shipped
+// with the plugin, so the release must carry the manifest and all three.
+const gpuNodeFiles = [
+  "stacks/gpu-node.yaml",
+  "receipts/catalog/nvidia-gpu-operator-v26-3-3-default.yaml",
+  "receipts/catalog/nvidia-nvsentinel-v1-25-0-default.yaml",
+  "receipts/catalog/nvidia-cluster-readiness-engine-v0-6-0-default.yaml",
+];
+
 // The release is git archive of HEAD, so a file ships only when it is tracked
 // and not marked export-ignore.
 test("the shipped routes are tracked files the release archive keeps", (t) => {
@@ -26,6 +35,16 @@ test("the shipped routes are tracked files the release archive keeps", (t) => {
   try { tracked = git(repoRoot, "ls-files", "--", ...paths).split("\n").filter(Boolean); } catch { return t.skip("not a git checkout, so there are no tracked files to read"); }
   assert.deepEqual(tracked.sort(), paths.sort());
   for (const line of git(repoRoot, "check-attr", "export-ignore", "--", ...paths).split("\n")) assert.match(line, /: export-ignore: unspecified$/);
+});
+
+test("the gpu-node stack and its receipts are tracked files the release archive keeps", (t) => {
+  let tracked;
+  try { tracked = git(repoRoot, "ls-files", "--", ...gpuNodeFiles).split("\n").filter(Boolean); } catch { return t.skip("not a git checkout, so there are no tracked files to read"); }
+  assert.deepEqual(tracked.sort(), [...gpuNodeFiles].sort());
+  for (const line of git(repoRoot, "check-attr", "export-ignore", "--", ...gpuNodeFiles).split("\n")) assert.match(line, /: export-ignore: unspecified$/);
+  // Every receipt the manifest names is one of those files.
+  const named = readFileSync(join(repoRoot, gpuNodeFiles[0]), "utf8").match(/^\s+receipt: (\S+)$/gm).map((line) => line.trim().slice("receipt: ".length));
+  assert.deepEqual(named.sort(), gpuNodeFiles.slice(1).sort());
 });
 
 test("packages committed HEAD reproducibly and refuses overwrite", () => {
@@ -46,6 +65,10 @@ test("packages committed HEAD reproducibly and refuses overwrite", () => {
     // Two receipts name a lifecycle route their bundles do not carry, so the
     // release must carry those routes at the receipts' own paths.
     for (const evidence of ["data", "receipts/eks-inference"]) cpSync(join(repoRoot, evidence), join(fixture, evidence), { recursive: true });
+    for (const file of gpuNodeFiles) {
+      mkdirSync(join(fixture, file, ".."), { recursive: true });
+      cpSync(join(repoRoot, file), join(fixture, file));
+    }
     writeFileSync(join(fixture, "cub-plugin.yaml"), readFileSync(join(fixture, "cub-plugin.yaml"), "utf8").replace(/^version:.*$/m, "version: 1.2.3"));
     const sourceInstallManifest = readFileSync(join(fixture, "cub-plugin.yaml"), "utf8");
     for (const [command, entrypoint] of Object.entries({ config: "cub-config", app: "cub-app", stack: "cub-stack", fleet: "cub-fleet" })) {
@@ -111,6 +134,7 @@ test("packages committed HEAD reproducibly and refuses overwrite", () => {
       assert.match(readFileSync(join(root, `receipts/eks-inference/${component}.yaml`), "utf8"), new RegExp(`path: "${path}"\\s+sha256: "${sha256}"`));
       assert.equal(createHash("sha256").update(readFileSync(join(root, path))).digest("hex"), sha256, `${path} is not in the release with its receipt's bytes`);
     }
+    for (const file of gpuNodeFiles) assert.deepEqual(readFileSync(join(root, file)), readFileSync(join(repoRoot, file)), `${file} is not in the release as committed`);
     for (const entrypoint of ["cub-config", "cub-app", "cub-stack", "cub-fleet"]) {
       assert.equal(statSync(join(root, `bin/${entrypoint}`)).mode & 0o111, 0o111);
     }

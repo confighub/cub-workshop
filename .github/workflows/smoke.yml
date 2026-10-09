@@ -20,12 +20,12 @@ jobs:
       - name: test the SDK plugin host
         run: go test ./...
         working-directory: plugin-host
-      # Every test file runs here except the two that pull bundle-form stacks from
+      # Every test file runs here except the three that pull bundle-form stacks from
       # public registries; those run in the bundles job. A new tests/*.test.mjs is
       # picked up without editing this file.
       - name: every offline test file
         run: |
-          files=$(ls tests/*.test.mjs | grep -v -e stack-workspace.test.mjs -e kubara-gitops.test.mjs)
+          files=$(ls tests/*.test.mjs | grep -v -e stack-workspace.test.mjs -e kubara-gitops.test.mjs -e stack-gpu-node.test.mjs)
           echo "$files"
           node --test $files
       - name: config lists and checks a shipped render
@@ -40,8 +40,8 @@ jobs:
           node bin/cub-app check shop-web
           node bin/cub-app score shop-web
       # Stacks whose components are authored files or bundles seeded in cache/ resolve
-      # with no registry. eks-inference, kubara-* and kubara-gitops-shop pull from
-      # public registries and are sandboxed in the bundles job.
+      # with no registry. eks-inference, kubara-*, kubara-gitops-shop and gpu-node pull
+      # from public registries and are sandboxed in the bundles job.
       - name: stack certifies every stack that resolves offline
         run: |
           node bin/cub-stack list
@@ -146,9 +146,12 @@ jobs:
           node bin/cub-stack sandbox eks-inference
           node bin/cub-stack sandbox kubara-platform
           node bin/cub-stack sandbox kubara-shop-platform
+          node bin/cub-stack sandbox gpu-node
           if node bin/cub-stack check kubara-shop-first-try; then exit 1; fi
 
       - name: saved workspace survives handoff and a local edit
         run: node --test tests/stack-workspace.test.mjs
       - name: Kubara GitOps selection retains the existing app
         run: node --test tests/kubara-gitops.test.mjs
+      - name: gpu-node checks with 89 objects and refuses a changed receipt
+        run: node --test tests/stack-gpu-node.test.mjs
