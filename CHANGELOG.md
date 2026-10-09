@@ -3,7 +3,7 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
-## Unreleased
+## 0.6.58
 
 - `cub stack sandbox gpu-node` checks NVIDIA's GPU Operator v26.3.3, NVSentinel v1.25.0
   and cluster-readiness-engine v0.6.0 as one shipped stack. It gives the same 89
