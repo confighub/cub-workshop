@@ -3,6 +3,19 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
+## 0.6.59
+
+- `cub config check` validates every object against its Kubernetes API schema with the
+  Flux schema plugin (`flux plugin install schema`, Flux 2.9 or later), under a new
+  `Schema` heading. A wrong field type, an unknown field or a broken CEL rule fails the
+  check with exit 1, and nothing is written. A missing plugin or an unreachable schema
+  catalog is reported and does not fail it. `--no-schema` skips the step.
+- `cub config check` refuses a Deployment, StatefulSet, DaemonSet or ReplicaSet whose
+  selector does not match its pod labels. The API server rejects such a workload, and
+  the schema plugin does not catch it.
+- The README has a table of what each check catches, what it does not, and what it
+  needs.
+
 ## 0.6.58
 
 - `cub stack sandbox gpu-node` checks NVIDIA's GPU Operator v26.3.3, NVSentinel v1.25.0
