@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -43,7 +43,15 @@ test('CLI refuses bad API versions before writing a sandbox and accepts the repa
   const dir = mkdtempSync(join(tmpdir(), 'stack-api-test-'));
   const stack = join(dir, 'stack.yaml'), objects = join(dir, 'objects.yaml'), output = join(dir, 'rendered.yaml');
   const bin = fileURLToPath(new URL('../bin/cub-stack', import.meta.url));
-  const run = (...args) => spawnSync(process.execPath, [bin, ...args], { encoding: 'utf8', timeout: 15000 });
+  // The CRD is cut down to its versions. A flux that lacks the schema plugin
+  // stands in for whatever flux this machine has, so the schema step reports
+  // itself as not run and the test reads only the API version check.
+  const fakeBin = join(dir, 'bin');
+  mkdirSync(fakeBin);
+  writeFileSync(join(fakeBin, 'flux'), '#!/bin/sh\necho \'Error: unknown command "schema" for "flux"\' >&2\nexit 1\n');
+  chmodSync(join(fakeBin, 'flux'), 0o755);
+  const env = { ...process.env, PATH: `${fakeBin}:${process.env.PATH}` };
+  const run = (...args) => spawnSync(process.execPath, [bin, ...args], { encoding: 'utf8', timeout: 15000, env });
   const manifest = { apiVersion: 'helm-expt.confighub.com/v1alpha1', kind: 'Stack', metadata: { name: 'api-test' }, spec: { components: [{ name: 'objects', render: 'objects.yaml' }] } };
   try {
     writeFileSync(stack, JSON.stringify(manifest));

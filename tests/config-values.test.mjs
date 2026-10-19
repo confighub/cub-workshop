@@ -400,11 +400,13 @@ test('check names images tagged latest or not tagged, and passes a digest or a f
     const pod = (name, image) => ({ apiVersion: 'apps/v1', kind: 'Deployment', metadata: { name, namespace: 'shop' }, spec: { template: { spec: { initContainers: [{ name: 'init', image: 'busybox' }], containers: [{ name: 'app', image }] } } } });
     const file = join(dir, 'app.yaml');
     writeFileSync(file, [pod('a', 'registry-1.docker.io/bitnami/redis:latest'), pod('b', 'localhost:5000/team/app:1.2.3'), pod('c', 'ghcr.io/x/y@sha256:' + '0'.repeat(64))].map((doc) => JSON.stringify(doc)).join('\n---\n'));
-    const run = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file], { encoding: 'utf8' });
+    // The Deployments are cut down to their images, so the schema step is
+    // skipped; it would fail them on any machine with the Flux schema plugin.
+    const run = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file, '--no-schema'], { encoding: 'utf8' });
     assert.equal(run.status, 0, run.stderr);
     assert.match(run.stdout, /\[NOTE\] images tagged latest or not tagged: 2 \(busybox, registry-1\.docker\.io\/bitnami\/redis:latest\)/);
     writeFileSync(file, JSON.stringify(pod('d', 'nginx:1.27.0')).replace('"busybox"', '"busybox:1.36"'));
-    const pinned = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file], { encoding: 'utf8' });
+    const pinned = spawnSync(process.execPath, [join(root, 'bin/cub-config'), 'check', file, '--no-schema'], { encoding: 'utf8' });
     assert.match(pinned.stdout, /\[PASS\] images tagged latest or not tagged: 0/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
