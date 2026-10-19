@@ -17,7 +17,8 @@ supported). CI tests Node 22, the current LTS; Node 25 can hang when a command e
 prefer Node 22. The plugin is tested with cub 0.6.8. Some commands need more: `helm`
 for `cub config values`, `cub kubara` v0.2.3 or later (`cub plugin install
 confighub/kubara-confighub`) and `helm` for `cub stack from-kubara`, `cosign` only for `--sign` and
-`--key`, and `flux` with its schema plugin for the optional schema check. A command
+`--key`, and `flux` 2.9 or later with its schema plugin for the schema step of
+`cub config check` and `cub stack check`. A command
 that needs a tool you do not have stops and names it. Without `node` the shell
 reports `env: node: No such file or directory`; install Node and run the command again.
 
@@ -210,6 +211,21 @@ check incomplete. The latter is not reported as missing. A strict check writes n
 It also names the bytes. An image already pinned by digest reads `pinned`, and one named
 by a tag reads `resolves … -> sha256:…`, which is the digest that name answers to right
 now. Pin with `name@digest` and you keep the bytes you checked.
+
+## What each check catches
+
+| Command | Catches | Does not catch | Needs |
+| --- | --- | --- | --- |
+| `cub config check` | YAML or JSON that does not parse; invalid container resource requests and limits; a workload selector that does not match its pod labels; schema violations such as a wrong field type, an unknown field or a broken CEL rule; CRDs, Helm hooks, setup Jobs, webhooks that need a certificate and images that are not pinned | Admission policies, quotas and anything that depends on your cluster; whether the workload runs | Nothing for the file checks. The schema step needs `flux` 2.9 or later, its schema plugin and network access |
+| `cub config check --images` | Images that do not exist or cannot be pulled anonymously | Private images, which read as incomplete | `oras` and network access |
+| `cub config values` | Values that changed nothing in the render | Whether a value that did change something is right | `helm` |
+| `cub config diff` | Every object and field that changed between two files | Whether the change is safe | Nothing |
+| `cub app check` | The platform services a workload needs | Whether a platform provides them; `cub app match` compares | Nothing |
+| `cub stack check` | Conflicts and missing needs between components, and schema violations | Runtime compatibility between components | The schema step needs `flux` as above |
+
+The scan plugin's `cub check` adds best-practice and security findings, such as
+missing resource limits or a container that may run as root. In ConfigHub, the
+`vet-schemas` function blocks an apply that fails its schema.
 
 ## Check configuration you already have
 
@@ -710,6 +726,16 @@ proves a response from that image and command only; Kubernetes, ingress, issuer,
 secret-store and release observations still need the named target.
 
 ## Validate the delivered objects against their schemas
+
+`cub config check` validates every object in the file the same way, under a
+`Schema` heading. A violation fails it with exit 1 and nothing is written, and
+`--no-schema` skips the step. Before the schema step it also refuses a Deployment,
+StatefulSet, DaemonSet or ReplicaSet whose selector does not match its pod labels,
+which the API server rejects and no schema describes.
+
+```bash
+cub config check ./rendered.yaml
+```
 
 `cub stack check` and `cub stack sandbox` add one line to the verdict: every object
 a cluster would receive is validated against its API schema, including its CEL
