@@ -762,6 +762,12 @@ catalog schema are skipped and counted. The catalogs track the latest stable API
 pass says nothing about the Kubernetes version of your target. `publish` and `upload`
 repeat the composition checks but not this one.
 
+The default catalog types a Kubernetes quantity, such as `cpu` in a container's
+resources or `pods` in a ResourceQuota, as a string. The API server also accepts a
+number there, so both checks accept `cpu: 1` and `pods: 100` in built-in kinds and
+the pass line says how many they accepted. A number anywhere else that wants a
+string, such as an env value or a label, still fails.
+
 ## What ships in the plugin
 
 - `renders/` — nine verified chart renders from the public catalog, the config catalog.

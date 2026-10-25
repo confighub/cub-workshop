@@ -131,3 +131,96 @@ test('a selector that does not match the pod labels is refused before the schema
     assert.equal(existsSync(join(f.dir, 'args')), false);
   } finally { f.cleanup(); }
 });
+
+// The default catalog types resource.Quantity as a string, but the API server
+// takes a number there too, and charts write one: gatekeeper 3.22.2 renders a
+// ResourceQuota with `pods: 100`. The reports below are what flux-schema 0.16.0
+// printed for these objects, and a kind cluster accepted each object with
+// `kubectl apply --dry-run=server` except the one in the second test.
+const quantities = `apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: gatekeeper-critical-pods
+  namespace: gatekeeper-system
+spec:
+  hard:
+    pods: 100
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: web}
+  template:
+    metadata:
+      labels: {app: web}
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27
+          resources:
+            limits: {cpu: 1, memory: 128Mi, nvidia.com/gpu: 1}
+            requests: {cpu: 0.5}
+      volumes:
+        - name: scratch
+          emptyDir: {sizeLimit: 1073741824}
+`;
+const quota = { apiVersion: 'v1', kind: 'ResourceQuota', namespace: 'gatekeeper-system', name: 'gatekeeper-critical-pods' };
+const numberForString = (path, nullable = false) => ({ path, message: `got number, want ${nullable ? 'null or ' : ''}string` });
+
+test('a quantity written as a number passes, as the API server accepts it', () => {
+  const f = fixture({ stdout: report([
+    { resource: quota, source: 'stdin', idx: 1, status: 'invalid', reason: 'schema-violation', violations: [numberForString('/spec/hard/pods')] },
+    { resource: web, source: 'stdin', idx: 2, status: 'invalid', reason: 'schema-violation', violations: [
+      { path: '/spec/template/spec/containers/0/resources', message: 'validation failed' },
+      numberForString('/spec/template/spec/containers/0/resources/limits/cpu'),
+      numberForString('/spec/template/spec/containers/0/resources/limits/nvidia.com~1gpu'),
+      numberForString('/spec/template/spec/containers/0/resources/requests/cpu'),
+      numberForString('/spec/template/spec/volumes/0/emptyDir/sizeLimit', true),
+    ] },
+  ]) });
+  try {
+    writeFileSync(join(f.dir, 'web.yaml'), quantities);
+    const run = f.run('check', 'web.yaml', '--out', 'copy.yaml');
+    assert.equal(run.status, 0, run.stdout);
+    assert.match(run.stdout, /\[PASS\] schema validation: 2 object\(s\) valid against the default and ecosystem catalogs \(flux-schema\/v0\.14\.0\); 5 quantities written as a number, which the API server accepts/);
+    assert.equal(existsSync(join(f.dir, 'copy.yaml')), true);
+  } finally { f.cleanup(); }
+});
+
+test('a number where the API server wants a string still fails beside an accepted quantity', () => {
+  // replicas: "two" and imagee as in the first Deployment, plus an env value
+  // and a label written as numbers, which the API server refuses.
+  const mixed = deployment
+    .replace('labels: {app: web}', 'labels: {app: web, tier: 1}')
+    .replace('imagee: nginx:1.27', 'imagee: nginx:1.27\n          env: [{name: PORT, value: 8080}]\n          resources: {requests: {cpu: 1}, limits: {cpu: 2}}');
+  const f = fixture({ stdout: report([{ resource: web, source: 'stdin', idx: 1, status: 'invalid', reason: 'schema-violation', violations: [
+    { path: '/spec/replicas', message: 'got string, want null or integer' },
+    { path: '/spec/template', message: 'validation failed' },
+    { path: '/spec/template/spec', message: 'validation failed' },
+    { path: '/spec/template/spec/containers/0', message: 'validation failed' },
+    numberForString('/spec/template/spec/containers/0/env/0/value', true),
+    { path: '/spec/template/spec/containers/0/resources', message: 'validation failed' },
+    numberForString('/spec/template/spec/containers/0/resources/limits/cpu'),
+    numberForString('/spec/template/spec/containers/0/resources/requests/cpu'),
+    { path: '/spec/template/spec/containers/0', message: "additional properties 'imagee' not allowed" },
+    numberForString('/spec/template/metadata/labels/tier'),
+  ] }]) });
+  try {
+    writeFileSync(join(f.dir, 'web.yaml'), mixed);
+    const run = f.run('check', 'web.yaml', '--out', 'copy.yaml');
+    assert.equal(run.status, 1, run.stdout);
+    const lines = schemaLines(run.stdout);
+    assert.match(lines[0], /\[FAIL\] schema validation: 7 violation\(s\) in 1 object\(s\)/);
+    for (const kept of ['/spec/replicas: got string', '/env/0/value: got number, want null or string', "additional properties 'imagee' not allowed",
+      '/metadata/labels/tier: got number, want string', '/spec/template/spec/containers/0: validation failed']) {
+      assert.ok(lines.some(line => line.includes(kept)), kept);
+    }
+    assert.ok(!lines.some(line => line.includes('/resources')), lines.join('\n'));
+    assert.equal(existsSync(join(f.dir, 'copy.yaml')), false);
+  } finally { f.cleanup(); }
+});
