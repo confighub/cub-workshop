@@ -3,6 +3,22 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
+## 0.6.61
+
+- The schema step in `cub config check` and `cub stack check` accepts a null in a
+  custom resource field when the API server would drop it. The gpu-operator chart
+  v25.10.1 renders its ClusterPolicy with `migManager.config.name: null`, and the API
+  server prunes that null and applies the field's default. That render now passes
+  instead of failing on `/spec/migManager/config/name`, so `cub stack compose` of
+  `nvidia-gpu-operator-v25-10-1-default` works. A null is accepted only when the CRD
+  is among the checked objects and shows the field is optional or has a default. A
+  null in a built-in kind, a null array item, a null in a required field with no
+  default, and a null whose removal could break a rule above it, such as
+  `minProperties` or a CEL rule, still fail. The pass line says how many nulls were
+  accepted (#113).
+- When `cub stack compose` is refused by the sandbox, the error now lists the checks
+  that failed and their details, not only "Not rendered" (#113).
+
 ## 0.6.60
 
 - The schema step in `cub config check` and `cub stack check` accepts a Kubernetes
