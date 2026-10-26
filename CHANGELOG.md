@@ -3,6 +3,16 @@
 Each release names what changed for someone running the plugin. The pull
 requests hold the reasons and the evidence.
 
+## 0.6.60
+
+- The schema step in `cub config check` and `cub stack check` accepts a Kubernetes
+  quantity written as a number, such as `cpu: 1` in a container's resources or
+  `pods: 100` in a ResourceQuota. The Flux schema plugin's default catalog types these
+  fields as strings, but the API server accepts a number. A render of the gatekeeper
+  chart 3.22.2 with default values now passes instead of failing on `/spec/hard/pods`.
+  A number where the API server wants a string, such as an env value or a label, still
+  fails. The pass line says how many quantities were accepted this way (#111).
+
 ## 0.6.59
 
 - `cub config check` validates every object against its Kubernetes API schema with the
