@@ -5,7 +5,7 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateStackSchemas } from '../lib/schema-validation.mjs';
+import { validateObjectSchemas, validateStackSchemas } from '../lib/schema-validation.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const bin = join(root, 'bin/cub-stack');
@@ -163,4 +163,26 @@ test('the Kubernetes version a receipt rendered for is named beside a pass, and 
   assert.deepEqual(record.targetVersions, { kubernetes: ['1.30.0'] });
   assert.match(findings[0][1], /; receipts render for Kubernetes 1\.30\.0, the catalogs hold the latest stable APIs$/);
   assert.doesNotMatch(seen[0], /held/);
+});
+
+// Only a number at a Quantity field of a built-in kind is accepted. The same
+// path in a custom resource, a string reported as wrong there, or a result that
+// does not match the object it counts as all still fail.
+test('a numeric quantity is accepted only for the built-in kind and object the result names', () => {
+  const pod = (apiVersion, kind, value) => ({ apiVersion, kind, metadata: { name: 'w', namespace: 'web' },
+    spec: { containers: [{ name: 'c', image: 'nginx', resources: { limits: { cpu: value } } }] } });
+  const path = '/spec/containers/0/resources/limits/cpu';
+  const check = (object, { name = 'w', message = 'got number, want string' } = {}) => validateObjectSchemas([object], {
+    run: () => ({ status: 1, stdout: report([{ resource: { apiVersion: object.apiVersion, kind: object.kind, namespace: 'web', name }, source: 'stdin', idx: 1,
+      status: 'invalid', reason: 'schema-violation', violations: [{ path, message }] }]) }),
+  }).record;
+
+  const accepted = check(pod('v1', 'Pod', 1));
+  assert.equal(accepted.status, 'passed');
+  assert.deepEqual(accepted.numericQuantities, [{ object: 'Pod/web/w', path, value: 1 }]);
+  assert.deepEqual(accepted.summary, { total: 1, valid: 1, invalid: 0, skipped: 0 });
+  assert.equal(check(pod('example.com/v1', 'Widget', 1)).status, 'failed');
+  assert.equal(check(pod('v1', 'Pod', '1')).status, 'failed');
+  assert.equal(check(pod('v1', 'Pod', 1), { name: 'other' }).status, 'failed');
+  assert.equal(check(pod('v1', 'Pod', 1), { message: 'got number, want integer' }).status, 'failed');
 });
