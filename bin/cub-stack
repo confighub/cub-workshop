@@ -10,8 +10,11 @@ import(new URL(`../lib/${implementation}`, import.meta.url).href).catch((error) 
     return;
   }
   // A failure reads as one line, never a stack trace. With no message, name the code or error type.
+  // A compose error is written by compose itself, so it is printed whole: a
+  // refused check carries the lines that failed under its first line.
   const kind = [error?.code, error?.name].find((value) => value && value !== "Error");
-  const text = String(error?.stderr ?? error?.message ?? (typeof error === "string" ? error : "")).trim().split("\n").filter(Boolean).pop() ?? `unknown error${kind ? ` (${kind})` : ""}`;
+  const lines = String(error?.stderr ?? error?.message ?? (typeof error === "string" ? error : "")).trim().split("\n").filter(Boolean);
+  const text = (error?.name === "ComposeError" ? lines.join("\n") : lines.pop()) || `unknown error${kind ? ` (${kind})` : ""}`;
   console.error(text.startsWith("Failed") ? text : `Failed: ${text}`);
   process.exit(error?.exitCode ?? 1);
 });

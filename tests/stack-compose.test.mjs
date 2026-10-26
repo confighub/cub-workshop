@@ -436,3 +436,28 @@ test('published route sandbox refusals retain a bounded diagnostic in the struct
     assert.equal(existsSync(f.out), false);
   } finally { rmSync(f.dir, { recursive: true, force: true }); }
 });
+
+// The sandbox ends a refusal with "Not rendered", which names no cause, so the
+// refusal carries the failed check lines: here a schema violation from a fake
+// flux that answers like `flux schema validate -o json`.
+test('a published route sandbox refusal names the checks that failed, not only its last line', () => {
+  const f = routeFixture();
+  try {
+    const report = { apiVersion: 'schema.plugin.fluxcd.io/v1beta1', kind: 'Report', report: { reporter: 'flux-schema/0.16.0',
+      summary: { total: 1, valid: 0, invalid: 1, skipped: 0 },
+      results: [{ resource: { apiVersion: 'nvidia.com/v1', kind: 'ClusterPolicy', name: 'cluster-policy' }, source: 'stdin', idx: 1, status: 'invalid', reason: 'schema-violation',
+        violations: [{ path: '/spec/migManager/config/name', message: 'got null, want string' }] }] } };
+    writeFileSync(join(f.dir, 'tools', 'flux'), `#!/bin/sh\ncat > /dev/null\ncat <<'REPORT'\n${JSON.stringify(report)}\nREPORT\nexit 1\n`);
+    spawnSync('chmod', ['+x', join(f.dir, 'tools', 'flux')]);
+    const text = runWithEnv(f.env, '--entry', 'traefik-route', '--name', 'route-demo', '--out', f.out, '--catalog-index', f.index);
+    assert.equal(text.status, 1, text.stdout);
+    assert.match(text.stderr, /^Failed: published bundle stack sandbox refused:\n {2}\[FAIL\] schema validation: 1 violation\(s\) in 1 object\(s\)[^\n]*\n {6}ClusterPolicy\/cluster-policy {2}\/spec\/migManager\/config\/name: got null, want string\n$/);
+    assert.doesNotMatch(text.stderr, /Not rendered/);
+    assert.equal(existsSync(f.out), false);
+    const json = runWithEnv(f.env, '--entry', 'traefik-route', '--name', 'route-demo', '--out', f.out, '--catalog-index', f.index, '--json');
+    assert.equal(json.status, 1);
+    const body = JSON.parse(json.stdout);
+    assert.equal(body.code, 'check_failed');
+    assert.match(body.message, /\/spec\/migManager\/config\/name: got null, want string/);
+  } finally { rmSync(f.dir, { recursive: true, force: true }); }
+});

@@ -186,3 +186,109 @@ test('a numeric quantity is accepted only for the built-in kind and object the r
   assert.equal(check(pod('v1', 'Pod', 1), { name: 'other' }).status, 'failed');
   assert.equal(check(pod('v1', 'Pod', 1), { message: 'got number, want integer' }).status, 'failed');
 });
+
+// A null in a custom resource is accepted only where the API server prunes it.
+// Each case below was applied with `kubectl apply --dry-run=server` to a kind
+// cluster (Kubernetes 1.33.1) holding CRDs that declare these fields: the
+// nulls in withDefault, plain, count, nested, nested.a, a map value and a
+// required field with a default were dropped and the object stored, while a
+// null array item (list[1]: must be of type string) and a null in a required
+// field with no default (must: Required value) were refused. The violations
+// are what flux-schema 0.16.0 printed for the same object against this CRD.
+test('a null in a custom resource is accepted only where its CRD shows the API server prunes it', () => {
+  const crd = { apiVersion: 'apiextensions.k8s.io/v1', kind: 'CustomResourceDefinition', metadata: { name: 'widgets.example.com' },
+    spec: { group: 'example.com', scope: 'Namespaced', names: { kind: 'Widget', plural: 'widgets' }, versions: [{ name: 'v1', served: true, storage: true,
+      schema: { openAPIV3Schema: { type: 'object', properties: { spec: { type: 'object', required: ['must', 'mustWithDefault'], properties: {
+        withDefault: { type: 'string', default: 'fallback' }, plain: { type: 'string' }, count: { type: 'integer' },
+        nested: { type: 'object', properties: { a: { type: 'string' } } }, labels: { type: 'object', additionalProperties: { type: 'string' } },
+        list: { type: 'array', items: { type: 'string' } }, must: { type: 'string' }, mustWithDefault: { type: 'string', default: 'd' },
+      } } } } } }] } };
+  const widget = (spec, apiVersion = 'example.com/v1') => ({ apiVersion, kind: 'Widget', metadata: { name: 'w', namespace: 'default' }, spec });
+  const check = (object, violations, objects = [crd, object]) => validateObjectSchemas(objects, {
+    run: () => ({ status: 1, stdout: report([
+      ...objects.filter(o => o !== object).map((o, i) => ({ resource: { apiVersion: o.apiVersion, kind: o.kind, name: o.metadata.name }, source: 'stdin', idx: i + 1, status: 'valid' })),
+      { resource: { apiVersion: object.apiVersion, kind: 'Widget', namespace: 'default', name: 'w' }, source: 'stdin', idx: objects.indexOf(object) + 1,
+        status: 'invalid', reason: 'schema-violation', violations },
+    ]) }),
+  }).record;
+  const got = (path, want = 'string') => ({ path, message: `got null, want ${want}` });
+
+  const mixed = check(widget({ must: null, withDefault: null, nested: { a: null }, list: ['a', null], count: 'x' }), [
+    got('/spec/list/1'), got('/spec/must'), got('/spec/nested/a'), got('/spec/withDefault'), { path: '/spec/count', message: 'got string, want integer' },
+  ]);
+  assert.equal(mixed.status, 'failed');
+  assert.deepEqual(mixed.violations.map(v => v.path), ['/spec/list/1', '/spec/must', '/spec/count']);
+  assert.deepEqual(mixed.prunedNulls, [
+    { object: 'Widget/default/w', path: '/spec/nested/a', message: 'got null, want string' },
+    { object: 'Widget/default/w', path: '/spec/withDefault', message: 'got null, want string' },
+  ]);
+
+  const clean = check(widget({ must: 'x', plain: null, mustWithDefault: null, count: null, nested: null, labels: { k1: null, k2: 'z' } }), [
+    got('/spec/plain'), got('/spec/mustWithDefault'), got('/spec/count', 'integer'), got('/spec/nested', 'object'), got('/spec/labels/k1'),
+  ]);
+  assert.equal(clean.status, 'passed');
+  assert.equal(clean.prunedNulls.length, 5);
+  assert.deepEqual(clean.summary, { total: 2, valid: 2, invalid: 0, skipped: 0 });
+
+  // Without its CRD, with a value that is not null, or in a built-in group
+  // even when a CRD claims it, the null still fails.
+  const plain = widget({ must: 'x', plain: null });
+  assert.equal(check(plain, [got('/spec/plain')], [plain]).status, 'failed');
+  assert.equal(check(widget({ must: 'x', plain: 'set' }), [got('/spec/plain')]).status, 'failed');
+  const apps = { ...crd, spec: { ...crd.spec, group: 'apps' } };
+  const builtIn = widget({ must: 'x', plain: null }, 'apps/v1');
+  assert.equal(check(builtIn, [got('/spec/plain')], [apps, builtIn]).status, 'failed');
+});
+
+// A "validation failed" line goes only when every violation under it went.
+test('a validation failed line above an accepted null goes only when nothing else failed under it', () => {
+  const crd = { apiVersion: 'apiextensions.k8s.io/v1', kind: 'CustomResourceDefinition', metadata: { name: 'clusterpolicies.nvidia.com' },
+    spec: { group: 'nvidia.com', names: { kind: 'ClusterPolicy' }, versions: [{ name: 'v1', schema: { openAPIV3Schema: { type: 'object', properties: { spec: { type: 'object', properties: {
+      migManager: { type: 'object', properties: { enabled: { type: 'boolean' }, config: { type: 'object', properties: { name: { type: 'string', default: 'default-mig-parted-config' } } } } },
+    } } } } } }] } };
+  const policy = { apiVersion: 'nvidia.com/v1', kind: 'ClusterPolicy', metadata: { name: 'cluster-policy' }, spec: { migManager: { enabled: 'yes', config: { name: null } } } };
+  const check = (violations) => validateObjectSchemas([crd, policy], {
+    run: () => ({ status: 1, stdout: report([
+      { resource: { apiVersion: crd.apiVersion, kind: crd.kind, name: crd.metadata.name }, source: 'stdin', idx: 1, status: 'valid' },
+      { resource: { apiVersion: policy.apiVersion, kind: policy.kind, name: 'cluster-policy' }, source: 'stdin', idx: 2, status: 'invalid', reason: 'schema-violation', violations },
+    ]) }),
+  }).record;
+  const parent = { path: '/spec/migManager', message: 'validation failed' };
+  const name = { path: '/spec/migManager/config/name', message: 'got null, want string' };
+  assert.equal(check([parent, name]).status, 'passed');
+  const kept = check([parent, name, { path: '/spec/migManager/enabled', message: 'got string, want boolean' }]);
+  assert.equal(kept.status, 'failed');
+  assert.deepEqual(kept.violations.map(v => `${v.path}: ${v.message}`), ['/spec/migManager: validation failed', '/spec/migManager/enabled: got string, want boolean']);
+});
+
+// The API server validates the object after it prunes the nulls, so a null
+// whose removal breaks a rule above it is refused. On the kind cluster, with
+// this CRD, gen: {a: null} was refused (spec.gen should have at least 1
+// properties), cel: {x: null, y: z} was refused by the CEL rule on spec, and
+// one: {p: null} by the oneOf; gen: {a: null, b: z} was stored as gen: {b: z}.
+// flux-schema 0.16.0 printed only the null for each.
+test('a null stays a violation where pruning it could break a rule above it', () => {
+  const crd = { apiVersion: 'apiextensions.k8s.io/v1', kind: 'CustomResourceDefinition', metadata: { name: 'probes.example.com' },
+    spec: { group: 'example.com', names: { kind: 'Probe' }, versions: [{ name: 'v1', schema: { openAPIV3Schema: { type: 'object', properties: { spec: { type: 'object',
+      properties: {
+        gen: { type: 'object', minProperties: 1, properties: { a: { type: 'object' }, b: { type: 'string' } } },
+        one: { type: 'object', oneOf: [{ required: ['p'] }, { required: ['q'] }], properties: { p: { type: 'string' }, q: { type: 'string' } } },
+      } } } } } }] } };
+  const withCel = { ...crd, spec: { ...crd.spec, versions: [{ name: 'v1', schema: { openAPIV3Schema: { type: 'object', properties: { spec: { type: 'object',
+    'x-kubernetes-validations': [{ rule: '!has(self.cel) || has(self.cel.x)' }],
+    properties: { cel: { type: 'object', properties: { x: { type: 'string' }, y: { type: 'string' } } } } } } } } }] } };
+  const check = (definition, spec, path, want = 'string') => {
+    const probe = { apiVersion: 'example.com/v1', kind: 'Probe', metadata: { name: 'p', namespace: 'default' }, spec };
+    return validateObjectSchemas([definition, probe], {
+      run: () => ({ status: 1, stdout: report([
+        { resource: { apiVersion: definition.apiVersion, kind: definition.kind, name: definition.metadata.name }, source: 'stdin', idx: 1, status: 'valid' },
+        { resource: { apiVersion: probe.apiVersion, kind: 'Probe', namespace: 'default', name: 'p' }, source: 'stdin', idx: 2, status: 'invalid', reason: 'schema-violation',
+          violations: [{ path, message: `got null, want ${want}` }] },
+      ]) }),
+    }).record.status;
+  };
+  assert.equal(check(crd, { gen: { a: null } }, '/spec/gen/a', 'object'), 'failed');
+  assert.equal(check(crd, { gen: { a: null, b: 'z' } }, '/spec/gen/a', 'object'), 'passed');
+  assert.equal(check(crd, { one: { p: null } }, '/spec/one/p'), 'failed');
+  assert.equal(check(withCel, { cel: { x: null, y: 'z' } }, '/spec/cel/x'), 'failed');
+});
