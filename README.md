@@ -768,6 +768,14 @@ number there, so both checks accept `cpu: 1` and `pods: 100` in built-in kinds a
 the pass line says how many they accepted. A number anywhere else that wants a
 string, such as an env value or a label, still fails.
 
+A chart can also render a null into a custom resource, as gpu-operator v25.10.1 does
+with `migManager.config.name` in its ClusterPolicy. The catalogs read that as the
+wrong type, but the API server drops a null from a CRD field before it applies the
+field's default. Both checks accept such a null when the CRD is among the checked
+objects and it shows the field is optional or has a default, and the pass line says
+how many they accepted. A null in a built-in kind, a null array item, a null in a
+required field with no default, and a null whose CRD is not in the check still fail.
+
 ## What ships in the plugin
 
 - `renders/` — nine verified chart renders from the public catalog, the config catalog.

@@ -224,3 +224,94 @@ test('a number where the API server wants a string still fails beside an accepte
     assert.equal(existsSync(join(f.dir, 'copy.yaml')), false);
   } finally { f.cleanup(); }
 });
+
+// gpu-operator v25.10.1 renders its ClusterPolicy with `migManager.config.name:
+// null`, and its CRD types that field as a string with a default, not
+// nullable. The API server prunes the null before defaulting: on a kind
+// cluster (Kubernetes 1.33.1) with this CRD, `kubectl apply --dry-run=server`
+// accepted the ClusterPolicy and stored name: default-mig-parted-config, and
+// refused `name: 7`. The CRD below keeps the chart's schema for that field;
+// the violation is what flux-schema 0.16.0 printed for the rendered object.
+const clusterPolicyCrd = `apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clusterpolicies.nvidia.com
+spec:
+  group: nvidia.com
+  scope: Cluster
+  names: {kind: ClusterPolicy, listKind: ClusterPolicyList, plural: clusterpolicies, singular: clusterpolicy}
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                migManager:
+                  type: object
+                  properties:
+                    enabled: {type: boolean}
+                    config:
+                      type: object
+                      properties:
+                        default: {type: string, default: all-disabled, enum: [all-disabled, ""]}
+                        name: {type: string, default: default-mig-parted-config}
+`;
+const clusterPolicy = `apiVersion: nvidia.com/v1
+kind: ClusterPolicy
+metadata:
+  name: cluster-policy
+spec:
+  migManager:
+    enabled: true
+    config:
+      name:
+      default: "all-disabled"
+`;
+const policy = { apiVersion: 'nvidia.com/v1', kind: 'ClusterPolicy', name: 'cluster-policy' };
+const crdResource = { apiVersion: 'apiextensions.k8s.io/v1', kind: 'CustomResourceDefinition', name: 'clusterpolicies.nvidia.com' };
+const migName = { path: '/spec/migManager/config/name', message: 'got null, want string' };
+
+test('a null the API server prunes from a custom resource field passes when its CRD is checked too', () => {
+  const f = fixture({ stdout: report([
+    { resource: crdResource, source: 'stdin', idx: 1, status: 'valid' },
+    { resource: policy, source: 'stdin', idx: 2, status: 'invalid', reason: 'schema-violation', violations: [migName] },
+  ]) });
+  try {
+    writeFileSync(join(f.dir, 'gpu.yaml'), `${clusterPolicyCrd}---\n${clusterPolicy}`);
+    const run = f.run('check', 'gpu.yaml', '--out', 'copy.yaml');
+    assert.equal(run.status, 0, run.stdout);
+    assert.match(run.stdout, /\[PASS\] schema validation: 2 object\(s\) valid against the default and ecosystem catalogs \(flux-schema\/v0\.14\.0\); 1 null in a custom resource field, which the API server drops before defaulting/);
+    assert.equal(existsSync(join(f.dir, 'copy.yaml')), true);
+  } finally { f.cleanup(); }
+});
+
+test('the same null fails when the CRD is not among the checked objects', () => {
+  const f = fixture({ stdout: report([{ resource: policy, source: 'stdin', idx: 1, status: 'invalid', reason: 'schema-violation', violations: [migName] }]) });
+  try {
+    writeFileSync(join(f.dir, 'gpu.yaml'), clusterPolicy);
+    const run = f.run('check', 'gpu.yaml', '--out', 'copy.yaml');
+    assert.equal(run.status, 1, run.stdout);
+    assert.ok(schemaLines(run.stdout).some(line => line.includes('ClusterPolicy/cluster-policy  /spec/migManager/config/name: got null, want string')), run.stdout);
+    assert.equal(existsSync(join(f.dir, 'copy.yaml')), false);
+  } finally { f.cleanup(); }
+});
+
+test('a null in a built-in kind still fails, as the API server refuses it', () => {
+  // flux-schema 0.16.0 printed this violation for a container named null, and
+  // the kind cluster refused it: containers[0].name: Required value.
+  const f = fixture({ stdout: report([{ resource: web, source: 'stdin', idx: 1, status: 'invalid', reason: 'schema-violation',
+    violations: [{ path: '/spec/template/spec/containers/0/name', message: 'got null, want string' }] }]) });
+  try {
+    writeFileSync(join(f.dir, 'web.yaml'), deployment.replace('replicas: "two"', 'replicas: 1').replace('- name: web\n          imagee: nginx:1.27', '- name: null\n          image: nginx:1.27'));
+    const run = f.run('check', 'web.yaml', '--out', 'copy.yaml');
+    assert.equal(run.status, 1, run.stdout);
+    const lines = schemaLines(run.stdout);
+    assert.match(lines[0], /\[FAIL\] schema validation: 1 violation\(s\) in 1 object\(s\)/);
+    assert.ok(lines.some(line => line.includes('Deployment/default/web  /spec/template/spec/containers/0/name: got null, want string')), lines.join('\n'));
+  } finally { f.cleanup(); }
+});
