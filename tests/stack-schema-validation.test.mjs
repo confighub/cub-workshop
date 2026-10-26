@@ -260,3 +260,35 @@ test('a validation failed line above an accepted null goes only when nothing els
   assert.equal(kept.status, 'failed');
   assert.deepEqual(kept.violations.map(v => `${v.path}: ${v.message}`), ['/spec/migManager: validation failed', '/spec/migManager/enabled: got string, want boolean']);
 });
+
+// The API server validates the object after it prunes the nulls, so a null
+// whose removal breaks a rule above it is refused. On the kind cluster, with
+// this CRD, gen: {a: null} was refused (spec.gen should have at least 1
+// properties), cel: {x: null, y: z} was refused by the CEL rule on spec, and
+// one: {p: null} by the oneOf; gen: {a: null, b: z} was stored as gen: {b: z}.
+// flux-schema 0.16.0 printed only the null for each.
+test('a null stays a violation where pruning it could break a rule above it', () => {
+  const crd = { apiVersion: 'apiextensions.k8s.io/v1', kind: 'CustomResourceDefinition', metadata: { name: 'probes.example.com' },
+    spec: { group: 'example.com', names: { kind: 'Probe' }, versions: [{ name: 'v1', schema: { openAPIV3Schema: { type: 'object', properties: { spec: { type: 'object',
+      properties: {
+        gen: { type: 'object', minProperties: 1, properties: { a: { type: 'object' }, b: { type: 'string' } } },
+        one: { type: 'object', oneOf: [{ required: ['p'] }, { required: ['q'] }], properties: { p: { type: 'string' }, q: { type: 'string' } } },
+      } } } } } }] } };
+  const withCel = { ...crd, spec: { ...crd.spec, versions: [{ name: 'v1', schema: { openAPIV3Schema: { type: 'object', properties: { spec: { type: 'object',
+    'x-kubernetes-validations': [{ rule: '!has(self.cel) || has(self.cel.x)' }],
+    properties: { cel: { type: 'object', properties: { x: { type: 'string' }, y: { type: 'string' } } } } } } } } }] } };
+  const check = (definition, spec, path, want = 'string') => {
+    const probe = { apiVersion: 'example.com/v1', kind: 'Probe', metadata: { name: 'p', namespace: 'default' }, spec };
+    return validateObjectSchemas([definition, probe], {
+      run: () => ({ status: 1, stdout: report([
+        { resource: { apiVersion: definition.apiVersion, kind: definition.kind, name: definition.metadata.name }, source: 'stdin', idx: 1, status: 'valid' },
+        { resource: { apiVersion: probe.apiVersion, kind: 'Probe', namespace: 'default', name: 'p' }, source: 'stdin', idx: 2, status: 'invalid', reason: 'schema-violation',
+          violations: [{ path, message: `got null, want ${want}` }] },
+      ]) }),
+    }).record.status;
+  };
+  assert.equal(check(crd, { gen: { a: null } }, '/spec/gen/a', 'object'), 'failed');
+  assert.equal(check(crd, { gen: { a: null, b: 'z' } }, '/spec/gen/a', 'object'), 'passed');
+  assert.equal(check(crd, { one: { p: null } }, '/spec/one/p'), 'failed');
+  assert.equal(check(withCel, { cel: { x: null, y: 'z' } }, '/spec/cel/x'), 'failed');
+});

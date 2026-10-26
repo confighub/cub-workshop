@@ -775,6 +775,9 @@ field's default. Both checks accept such a null when the CRD is among the checke
 objects and it shows the field is optional or has a default, and the pass line says
 how many they accepted. A null in a built-in kind, a null array item, a null in a
 required field with no default, and a null whose CRD is not in the check still fail.
+So does a null whose removal could break a rule above it, such as a parent's
+`minProperties`, a `oneOf`, or a CEL rule, because the API server checks those after
+it drops the null.
 
 ## What ships in the plugin
 
