@@ -66,6 +66,7 @@ test('a clean report passes, and flux is given the file\'s objects on stdin', ()
     const run = f.run('check', 'web.yaml');
     assert.equal(run.status, 0, run.stderr);
     assert.match(run.stdout, /\nSchema\n {2}\[PASS\] schema validation: 1 object\(s\) valid against the default and ecosystem catalogs \(flux-schema\/v0\.14\.0\)/);
+    assert.doesNotMatch(run.stdout, /cub stack|cub app/);
     assert.equal(readFileSync(join(f.dir, 'args'), 'utf8').trim(), 'schema validate -s default -s ecosystem --skip-missing-schemas -o json');
     assert.match(readFileSync(join(f.dir, 'stdin'), 'utf8'), /imagee: nginx:1\.27/);
   } finally { f.cleanup(); }
